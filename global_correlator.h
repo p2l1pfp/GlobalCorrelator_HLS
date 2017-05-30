@@ -21,7 +21,7 @@ void hier_func(din_t A, din_t B, dout_t *C, dout_t *D);
 void calo_track_linking_grid(int10 calos_pt[ieta_max][iphi_max],
 							 int10 calos_h_over_e[ieta_max][iphi_max],
 							 int10 tracks_pt[ieta_max][iphi_max],
-							 int10 (*pf_neutral_pt)[ieta_max][iphi_max]);
+							 int10 pf_neutral_pt[ieta_max][iphi_max]);
 
 void calo_track_linking_list(int10 track_list_pt[ntrack_max],
 							 int10 track_list_ieta[ntrack_max],
