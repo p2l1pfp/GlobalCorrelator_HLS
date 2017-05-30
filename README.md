@@ -7,4 +7,4 @@ board: xc7vx690tffg1927-2
 
 Import global_correlator.cpp as source.  Choose the function you want to test as the top level.  No need to manually include global_correlator.h.
 
-Import global_correlator_test.cpp as test bench.  Input data is in tb_data.  You can compare output with expectations inside the test bench using standard C++.
+Import global_correlator_test.cpp as test bench.  Import tb_data as a folder in Test Bench.  You can compare output with expectations inside the test bench using standard C++.
