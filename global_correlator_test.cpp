@@ -151,7 +151,7 @@ int main() {
 	std::ifstream read_track_list_file("tb_data/in_track_list.dat");
 	std::string read_track_list_object;
 	int read_track_list_ieta, read_track_list_iphi, read_track_list_pt;
-	int i=-1;
+	i=-1;
 	while(read_track_list_file>>read_track_list_object>>read_track_list_ieta>>read_track_list_iphi>>read_track_list_pt){
 		i++;
 		if(i>=ntrack_max) break;
