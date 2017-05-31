@@ -12,6 +12,7 @@
 #define npf_neutral_max 20
 
 typedef ap_uint<10> int10;
+typedef ap_uint<10> int11;
 typedef int din_t;
 typedef int dint_t;
 typedef int dout_t;
@@ -21,7 +22,7 @@ void hier_func(din_t A, din_t B, dout_t *C, dout_t *D);
 void calo_track_linking_grid(int10 calos_pt[ieta_max][iphi_max],
 							 int10 calos_h_over_e[ieta_max][iphi_max],
 							 int10 tracks_pt[ieta_max][iphi_max],
-							 int10 pf_neutral_pt[ieta_max][iphi_max]);
+                             int11 pf_neutral_pt[ieta_max][iphi_max]);
 
 void calo_track_linking_list(int10 track_list_pt[ntrack_max],
 							 int10 track_list_ieta[ntrack_max],
@@ -30,9 +31,9 @@ void calo_track_linking_list(int10 track_list_pt[ntrack_max],
 							 int10 calo_list_h_over_e[ncalo_max],
 							 int10 calo_list_ieta[ncalo_max],
 							 int10 calo_list_iphi[ncalo_max],
-							 int10 pf_neutral_list_pt[npf_neutral_max],
-							 int10 pf_neutral_list_ieta[npf_neutral_max],
-							 int10 pf_neutral_list_iphi[npf_neutral_max]);
+			                 int10 pf_neutral_list_pt[npf_neutral_max],
+				             int10 pf_neutral_list_ieta[npf_neutral_max],
+					         int10 pf_neutral_list_iphi[npf_neutral_max]);
 
 
 #endif

@@ -106,7 +106,7 @@ int main() {
 	std::string read_calo_object;
 	int read_calo_ieta, read_calo_iphi, read_calo_pt, read_calo_h_over_e;
 	while(read_calo_file>>read_calo_object>>read_calo_ieta>>read_calo_iphi>>read_calo_pt>>read_calo_h_over_e){
-		calos_pt[read_calo_ieta][read_calo_iphi] = read_calo_pt;
+		calos_pt[read_calo_ieta][read_calo_iphi] = read_calo_pt + 1;
 		calos_h_over_e[read_calo_ieta][read_calo_iphi] = read_calo_h_over_e;
 	}
 	read_calo_file.close();
@@ -117,14 +117,12 @@ int main() {
 	std::string read_track_object;
 	int read_track_ieta, read_track_iphi, read_track_pt;
 	while(read_track_file>>read_track_object>>read_track_ieta>>read_track_iphi>>read_track_pt){
-	    tracks_pt[read_calo_ieta][read_calo_iphi] = read_track_pt;
-	    std::cout << "TRACK READ: eta = " << read_track_ieta << ", phi = " << read_track_iphi << std::endl;
-	    std::cout << "TRACK READ: int = " << read_track_pt << ", int10 = " << tracks_pt[read_calo_ieta][read_calo_iphi] << std::endl;
+	    tracks_pt[read_track_ieta][read_track_iphi] = read_track_pt + 4;
 	}
 	read_track_file.close();
 
 
-	int10 pf_neutral_pt[ieta_max][iphi_max] = {0};
+	int11 pf_neutral_pt[ieta_max][iphi_max] = {0};
 	calo_track_linking_grid(calos_pt, calos_h_over_e, tracks_pt, pf_neutral_pt);
 
 	std::ofstream out_pf("tb_data/out_pf.dat", std::ofstream::out);
@@ -154,7 +152,7 @@ int main() {
 	int i=-1;
 	while(read_calo_list_file>>read_calo_list_object>>read_calo_list_ieta>>read_calo_list_iphi>>read_calo_list_pt>>read_calo_list_h_over_e){
 		i++;
-		if(i>=ntrack_max) break;
+		if(i>=ncalo_max) break;
 		calo_list_pt[i]=read_calo_list_pt;
 		calo_list_h_over_e[i]=read_calo_list_h_over_e;
 		calo_list_ieta[i]=read_calo_list_ieta;
@@ -173,7 +171,7 @@ int main() {
 		track_list_ieta[i]=read_track_list_ieta;
 		track_list_ieta[i]=read_track_list_iphi;
 	}
-	read_calo_list_file.close();
+	read_track_list_file.close();
 
 	int10 pf_neutral_list_pt[npf_neutral_max] = {0};
 	int10 pf_neutral_list_ieta[npf_neutral_max] = {0};
