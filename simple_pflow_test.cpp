@@ -1,7 +1,7 @@
 #include <cstdio>
 #include "simple_pflow.h"
 
-#define NTEST 50
+#define NTEST 500
 
 int main() {
 

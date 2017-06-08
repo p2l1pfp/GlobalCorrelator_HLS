@@ -27,155 +27,6 @@ ap_uint<12> dr2_int_cap(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t ph
 	return (dr2 < int(max) ? ap_uint<12>(dr2) : max);
 }
 
-void simple_pflow_iterative_ref(CaloObj calo[NCALO], TkObj track[NTRACK], PFObj out[NPF]) {
-	// constants
-	const etaphi_t BOX_SIZE = 81; // ETAPHI_SCALE * 0.2 * std::sqrt(M_PI/4);
-	const pt_t     TKPT_MAX = 80; // 20 * PT_SCALE;
-
-	
-	// initialize subtracted pt
-	pt_t calo_subpt[NCALO];
-	for (int ic = 0; ic < NCALO; ++ic) { calo_subpt[ic] = calo[ic].hwPt; }
-
-	// initialize good track bit
-	bool track_good[NTRACK];
-	for (int it = 0; it < NTRACK; ++it) { track_good[it] = (track[it].hwPt < TKPT_MAX); }
-
-	// initialize output
-	for (int ipf = 0; ipf < NPF; ++ipf) { out[ipf].hwPt = 0; }
-
-	// link tracks to calo
-	for (int it = 0; it < NTRACK; ++it) {
-		if (track[it].hwPt > 0) {
-			pt_t caloPtMin = track[it].hwPt - 2*(track[it].hwPtErr);
-			pt_t caloPtMax = track[it].hwPt + 2*(track[it].hwPtErr);
-			for (int ic = 0; ic < NCALO; ++ic) {
-				if (match_box(track[it].hwEta, track[it].hwPhi, calo[ic].hwEta, calo[ic].hwPhi, BOX_SIZE)) {
-					if (calo_subpt[ic] > caloPtMin) {
-						track_good[it] = 1;
-						if (calo_subpt[ic] < caloPtMax) {
-							calo_subpt[ic]= 0;
-						} else {
-							calo_subpt[ic] -= track[it].hwPt;
-						}
-						break;
-					}
-				}
-			}			
-		}
-	}
-
-	// copy out charged hadrons
-	for (int it = 0, ipf = 0; it < NTRACK; ++it, ++ipf) {
-		if (track_good[it]) {
-			out[ipf].hwPt = track[it].hwPt;
-			out[ipf].hwEta = track[it].hwEta;
-			out[ipf].hwPhi = track[it].hwPhi;
-			out[ipf].hwId  = PID_Charged;
-		} 
-	}
-
-	// copy out neutral hadrons
-	for (int ic = 0, ipf = NTRACK; ic < NCALO; ++ic, ++ipf) {
-		if (calo_subpt[ic] > 0) {
-			out[ipf].hwPt  = calo_subpt[ic];
-			out[ipf].hwEta = calo[ic].hwEta;
-			out[ipf].hwPhi = calo[ic].hwPhi;
-			out[ipf].hwId  = PID_Neutral;
-		} 
-	}
-}
-
-void simple_pflow_iterative_hwopt(CaloObj calo[NCALO], TkObj track[NTRACK], PFObj out[NPF]) {
-//#pragma HLS DATA_PACK variable=calo
-//#pragma HLS DATA_PACK variable=track
-//#pragma HLS DATA_PACK variable=out
-#pragma HLS ARRAY_PARTITION variable=calo complete
-#pragma HLS ARRAY_PARTITION variable=track complete
-#pragma HLS ARRAY_PARTITION variable=out complete
-	// now we assume things are sorted.
-	
-	// constants
-	const etaphi_t BOX_SIZE = 81; // ETAPHI_SCALE * 0.2 * std::sqrt(M_PI/4);
-	const pt_t     TKPT_MAX = 80; // 20 * PT_SCALE;
-	
-	// initialize subtracked pt
-	pt_t calo_subpt[NCALO];
-	for (int ic = 0; ic < NCALO; ++ic) {
-#pragma HLS UNROLL
-		calo_subpt[ic] = calo[ic].hwPt;
-	}
-
-	// initialize good track bit
-	bool track_good[NTRACK];
-	for (int it = 0; it < NTRACK; ++it) {
-#pragma HLS UNROLL
-		track_good[it] = (track[it].hwPt < TKPT_MAX);
-	}
-
-	// link tracks to calo
-	for (int it = 0; it < NTRACK; ++it) {
-		if (track[it].hwPt > 0) {
-			pt_t caloPtMin = track[it].hwPt - (track[it].hwPtErr << 1);
-			pt_t caloPtMax = track[it].hwPt + (track[it].hwPtErr << 1);
-			bool calo_match[NCALO];
-			for (int ic = 0; ic < NCALO; ++ic) {
-				#pragma HLS UNROLL
-				calo_match[ic] = calo_subpt[ic] > caloPtMin && match_box(track[it].hwEta, track[it].hwPhi, calo[ic].hwEta, calo[ic].hwPhi, BOX_SIZE);
-			}
-			for (int i = 0; i < NCALO; ++i) {
-				#pragma HLS UNROLL
-				for (int j = 0; j < i; ++j) {
-					if (calo_match[j]) calo_match[i] = 0;
-				}
-			}
-			for (int ic = 0; ic < NCALO; ++ic) {
-				#pragma HLS UNROLL
-				if (calo_match[ic]) {
-					track_good[it] = 1;
-					if (calo_subpt[ic] < caloPtMax) {
-						calo_subpt[ic]= 0;
-					} else {
-						calo_subpt[ic] -= track[it].hwPt;
-					}
-				}
-			}			
-		}
-	}
-	
-	// copy out charged hadrons
-	for (int it = 0, ipf = 0; it < NTRACK; ++it, ++ipf) {
-#pragma HLS UNROLL
-		if (track_good[it]) {
-			out[ipf].hwPt = track[it].hwPt;
-			out[ipf].hwEta = track[it].hwEta;
-			out[ipf].hwPhi = track[it].hwPhi;
-			out[ipf].hwId  = PID_Charged;
-		} else {
-			out[ipf].hwPt  = 0;
-			out[ipf].hwEta = 0;
-			out[ipf].hwPhi = 0;
-			out[ipf].hwId  = 0;		
-		}
-	}
-
-	// copy out neutral hadrons
-	for (int ic = 0, ipf = NTRACK; ic < NCALO; ++ic, ++ipf) {
-#pragma HLS UNROLL
-		if (calo_subpt[ic] > 0) {
-			out[ipf].hwPt  = calo_subpt[ic];
-			out[ipf].hwEta = calo[ic].hwEta;
-			out[ipf].hwPhi = calo[ic].hwPhi;
-			out[ipf].hwId  = PID_Neutral;
-		} else {
-			out[ipf].hwPt  = 0;
-			out[ipf].hwEta = 0;
-			out[ipf].hwPhi = 0;
-			out[ipf].hwId  = 0;		
-		}
-	}
-}
-
 void simple_pflow_parallel_ref(CaloObj calo[NCALO], TkObj track[NTRACK], PFObj out[NPF]) {
 	// constants
 	const etaphi_t BOX_SIZE = 81; // ETAPHI_SCALE * 0.2 * std::sqrt(M_PI/4);
@@ -249,7 +100,7 @@ void simple_pflow_parallel_ref(CaloObj calo[NCALO], TkObj track[NTRACK], PFObj o
 	}
 }
 
-void simple_pflow_parallel_hwopt_tk2calo_link(CaloObj calo[NCALO], TkObj track[NTRACK], bool calo_track_link_bit[NTRACK][NCALO]) {
+void _spfph_tk2calo_link(CaloObj calo[NCALO], TkObj track[NTRACK], bool calo_track_link_bit[NTRACK][NCALO]) {
 	//const ap_uint<12> DR2MAX = 2101;
 	const int DR2MAX = 2101;
 
@@ -304,7 +155,7 @@ void simple_pflow_parallel_hwopt_tk2calo_link(CaloObj calo[NCALO], TkObj track[N
 
 	}
 }
-void simple_pflow_parallel_hwopt_sumtk(TkObj track[NTRACK], bool calo_track_link_bit[NTRACK][NCALO], pt_t sumtk[NCALO], pt_t sumtkerr[NCALO]) {
+void _spfph_sumtk(TkObj track[NTRACK], bool calo_track_link_bit[NTRACK][NCALO], pt_t sumtk[NCALO], pt_t sumtkerr[NCALO]) {
 	for (int icalo = 0; icalo < NCALO; ++icalo) {
 		pt_t sum = 0;
 		pt_t sumerr = 0;
@@ -316,7 +167,7 @@ void simple_pflow_parallel_hwopt_sumtk(TkObj track[NTRACK], bool calo_track_link
 	}
 }
 
-void simple_pflow_parallel_hwopt_tkalgo(TkObj track[NTRACK], bool calo_track_link_bit[NTRACK][NCALO], PFObj pfout[NPF]) {
+void _spfph_tkalgo(TkObj track[NTRACK], bool calo_track_link_bit[NTRACK][NCALO], PFObj pfout[NPF]) {
 	const pt_t TKPT_MAX = 80; // 20 * PT_SCALE;
 	for (int it = 0; it < NTRACK; ++it) {
 		bool good = (track[it].hwPt < TKPT_MAX);
@@ -337,7 +188,7 @@ void simple_pflow_parallel_hwopt_tkalgo(TkObj track[NTRACK], bool calo_track_lin
 	}
 }
 
-void simple_pflow_parallel_hwopt_caloalgo(CaloObj calo[NCALO], pt_t sumtk[NCALO], pt_t sumtkerr[NCALO], PFObj pfout[NPF]) {
+void _spfph_caloalgo(CaloObj calo[NCALO], pt_t sumtk[NCALO], pt_t sumtkerr[NCALO], PFObj pfout[NPF]) {
 	for (int icalo = 0, ipf = NTRACK; icalo < NCALO; ++icalo, ++ipf) {
 		pt_t calopt;
 		if (sumtk[icalo] == 0) {
@@ -363,13 +214,13 @@ void simple_pflow_parallel_hwopt(CaloObj calo[NCALO], TkObj track[NTRACK], PFObj
 	bool calo_track_link_bit[NTRACK][NCALO];
 	#pragma HLS ARRAY_PARTITION variable=calo_track_link_bit dim=0 complete
 
-	simple_pflow_parallel_hwopt_tk2calo_link(calo, track, calo_track_link_bit);
+	_spfph_tk2calo_link(calo, track, calo_track_link_bit);
 
 	pt_t sumtk[NCALO]; pt_t sumtkerr[NCALO];
 	#pragma HLS ARRAY_PARTITION variable=sumtk complete
     #pragma HLS ARRAY_PARTITION variable=sumtkerr complete
 
-	simple_pflow_parallel_hwopt_tkalgo(track, calo_track_link_bit, out);
-	simple_pflow_parallel_hwopt_sumtk(track, calo_track_link_bit, sumtk, sumtkerr);
-	simple_pflow_parallel_hwopt_caloalgo(calo, sumtk, sumtkerr, out);
+	_spfph_tkalgo(track, calo_track_link_bit, out);
+	_spfph_sumtk(track, calo_track_link_bit, sumtk, sumtkerr);
+	_spfph_caloalgo(calo, sumtk, sumtkerr, out);
 }
