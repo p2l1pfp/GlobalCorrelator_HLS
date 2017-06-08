@@ -1,6 +1,8 @@
 #include "simple_pflow.h"
 
-void simple_pflow_parallel_ref(CaloObj calo[NCALO], TkObj track[NTRACK], PFObj out[NPF]) {
+template <typename T> int sqr(const T & t) { return t*t; }
+
+void simple_pflow_parallel_ref(CaloObj calo[NCALO], TkObj track[NTRACK], PFChargedObj outch[NTRACK], PFNeutralObj outne[NCALO]) {
 	// constants
 	const etaphi_t BOX_SIZE = 81; // ETAPHI_SCALE * 0.2 * std::sqrt(M_PI/4);
 	const pt_t     TKPT_MAX = 80; // 20 * PT_SCALE;
@@ -16,7 +18,8 @@ void simple_pflow_parallel_ref(CaloObj calo[NCALO], TkObj track[NTRACK], PFObj o
 	for (int it = 0; it < NTRACK; ++it) { track_good[it] = (track[it].hwPt < TKPT_MAX); }
 
 	// initialize output
-	for (int ipf = 0; ipf < NPF; ++ipf) { out[ipf].hwPt = 0; }
+	for (int ipf = 0; ipf < NTRACK; ++ipf) { outch[ipf].hwPt = 0; }
+	for (int ipf = 0; ipf < NCALO; ++ipf) { outne[ipf].hwPt = 0; }
 
 	// for each track, find the closest calo
 	for (int it = 0; it < NTRACK; ++it) {
@@ -34,7 +37,7 @@ void simple_pflow_parallel_ref(CaloObj calo[NCALO], TkObj track[NTRACK], PFObj o
 //#endif
 				track_good[it] = 1;
 				calo_sumtk[ibest]    += track[it].hwPt;
-				calo_sumtkErr2[ibest] += track[it].hwPtErr*track[it].hwPtErr;
+				calo_sumtkErr2[ibest] += sqr(track[it].hwPtErr);
 			}
 		}
 	}
@@ -54,22 +57,22 @@ void simple_pflow_parallel_ref(CaloObj calo[NCALO], TkObj track[NTRACK], PFObj o
 	}
 
 	// copy out charged hadrons
-	for (int it = 0, ipf = 0; it < NTRACK; ++it, ++ipf) {
+	for (int it = 0; it < NTRACK; ++it) {
 		if (track_good[it]) {
-			out[ipf].hwPt = track[it].hwPt;
-			out[ipf].hwEta = track[it].hwEta;
-			out[ipf].hwPhi = track[it].hwPhi;
-			out[ipf].hwId  = PID_Charged;
+			outch[it].hwPt = track[it].hwPt;
+			outch[it].hwEta = track[it].hwEta;
+			outch[it].hwPhi = track[it].hwPhi;
+			outch[it].hwId  = PID_Charged;
 		}
 	}
 
 	// copy out neutral hadrons
-	for (int ic = 0, ipf = NTRACK; ic < NCALO; ++ic, ++ipf) {
+	for (int ic = 0; ic < NCALO; ++ic) {
 		if (calo_subpt[ic] > 0) {
-			out[ipf].hwPt  = calo_subpt[ic];
-			out[ipf].hwEta = calo[ic].hwEta;
-			out[ipf].hwPhi = calo[ic].hwPhi;
-			out[ipf].hwId  = PID_Neutral;
+			outne[ic].hwPt  = calo_subpt[ic];
+			outne[ic].hwEta = calo[ic].hwEta;
+			outne[ic].hwPhi = calo[ic].hwPhi;
+			outne[ic].hwId  = PID_Neutral;
 		}
 	}
 }

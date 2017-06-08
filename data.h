@@ -24,7 +24,12 @@ struct TkObj {
 	pt_t hwPt, hwPtErr;
 	etaphi_t hwEta, hwPhi; // relative to the region center, at calo
 };
-struct PFObj {
+struct PFChargedObj {
+	pt_t hwPt;
+	etaphi_t hwEta, hwPhi; // relative to the region center, at calo
+	particleid_t hwId;
+};
+struct PFNeutralObj {
 	pt_t hwPt;
 	etaphi_t hwEta, hwPhi; // relative to the region center, at calo
 	particleid_t hwId;

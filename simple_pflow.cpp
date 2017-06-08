@@ -86,7 +86,7 @@ void _spfph_tk2calo_link(CaloObj calo[NCALO], TkObj track[NTRACK], bool calo_tra
 }
 void _spfph_tkerr2(TkObj track[NTRACK], int tkerr2[NTRACK]) {
 	for (int it = 0; it < NTRACK; ++it) {
-		tkerr2[it] = track[it].hwPtErr * track[it].hwPtErr;
+		tkerr2[it] = (track[it].hwPtErr * track[it].hwPtErr) << 2;
 	}
 }
 void _spfph_sumtk(TkObj track[NTRACK], int tkerr2[NTRACK], bool calo_track_link_bit[NTRACK][NCALO], pt_t sumtk[NCALO], int sumtkerr2[NCALO]) {
@@ -101,7 +101,7 @@ void _spfph_sumtk(TkObj track[NTRACK], int tkerr2[NTRACK], bool calo_track_link_
 	}
 }
 
-void _spfph_tkalgo(TkObj track[NTRACK], bool calo_track_link_bit[NTRACK][NCALO], PFObj pfout[NPF]) {
+void _spfph_tkalgo(TkObj track[NTRACK], bool calo_track_link_bit[NTRACK][NCALO], PFChargedObj pfout[NPF]) {
 	const pt_t TKPT_MAX = 80; // 20 * PT_SCALE;
 	for (int it = 0; it < NTRACK; ++it) {
 		bool good = (track[it].hwPt < TKPT_MAX);
@@ -122,30 +122,31 @@ void _spfph_tkalgo(TkObj track[NTRACK], bool calo_track_link_bit[NTRACK][NCALO],
 	}
 }
 
-void _spfph_caloalgo(CaloObj calo[NCALO], pt_t sumtk[NCALO], int sumtkerr2[NCALO], PFObj pfout[NPF]) {
-	for (int icalo = 0, ipf = NTRACK; icalo < NCALO; ++icalo, ++ipf) {
+void _spfph_caloalgo(CaloObj calo[NCALO], pt_t sumtk[NCALO], int sumtkerr2[NCALO], PFNeutralObj pfout[NPF]) {
+	for (int icalo = 0; icalo < NCALO; ++icalo) {
 		pt_t calopt;
 		if (sumtk[icalo] == 0) {
 			calopt = calo[icalo].hwPt;
 		} else {
 			pt_t ptdiff = calo[icalo].hwPt - sumtk[icalo];
-			if (ptdiff > 0 && ptdiff*ptdiff > 4*sumtkerr2[icalo]) {
+			if (ptdiff > 0 && (ptdiff*ptdiff) > sumtkerr2[icalo]) {
 				calopt = ptdiff;
 			} else {
 				calopt = 0;
 			}
 		}
-		pfout[ipf].hwPt  = calopt;
-		pfout[ipf].hwEta = calopt ? calo[icalo].hwEta : etaphi_t(0);
-		pfout[ipf].hwPhi = calopt ? calo[icalo].hwPhi : etaphi_t(0);
-		pfout[ipf].hwId  = calopt ? PID_Neutral : 0;
+		pfout[icalo].hwPt  = calopt;
+		pfout[icalo].hwEta = calopt ? calo[icalo].hwEta : etaphi_t(0);
+		pfout[icalo].hwPhi = calopt ? calo[icalo].hwPhi : etaphi_t(0);
+		pfout[icalo].hwId  = calopt ? PID_Neutral : 0;
 	}
 }
 
-void simple_pflow_parallel_hwopt(CaloObj calo[NCALO], TkObj track[NTRACK], PFObj out[NPF]) {
+void simple_pflow_parallel_hwopt(CaloObj calo[NCALO], TkObj track[NTRACK], PFChargedObj outch[NTRACK], PFNeutralObj outne[NCALO]) {
 	#pragma HLS ARRAY_PARTITION variable=calo complete
 	#pragma HLS ARRAY_PARTITION variable=track complete
-	#pragma HLS ARRAY_PARTITION variable=out complete
+	#pragma HLS ARRAY_PARTITION variable=outch complete
+	#pragma HLS ARRAY_PARTITION variable=outne complete
 
 	#pragma HLS pipeline II=5 rewind
 
@@ -162,7 +163,7 @@ void simple_pflow_parallel_hwopt(CaloObj calo[NCALO], TkObj track[NTRACK], PFObj
 	#pragma HLS ARRAY_PARTITION variable=sumtk complete
     #pragma HLS ARRAY_PARTITION variable=sumtkerr2 complete
 
-	_spfph_tkalgo(track, calo_track_link_bit, out);
+	_spfph_tkalgo(track, calo_track_link_bit, outch);
 	_spfph_sumtk(track, tkerr2, calo_track_link_bit, sumtk, sumtkerr2);
-	_spfph_caloalgo(calo, sumtk, sumtkerr2, out);
+	_spfph_caloalgo(calo, sumtk, sumtkerr2, outne);
 }
