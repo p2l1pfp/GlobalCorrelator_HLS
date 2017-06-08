@@ -8,14 +8,15 @@ bool pf_equals(const PFChargedObj &out_ref, const PFChargedObj &out, const char 
 	if (out_ref.hwPt == 0) {
 		ret = (out.hwPt == 0);
 	} else {
-		ret = (out_ref.hwPt == out.hwPt && out_ref.hwEta == out.hwEta && out_ref.hwPhi == out.hwPhi && out_ref.hwId  == out.hwId);
+		ret = (out_ref.hwPt == out.hwPt && out_ref.hwEta == out.hwEta && out_ref.hwPhi == out.hwPhi && out_ref.hwId  == out.hwId && out_ref.hwZ0  == out.hwZ0);
 	}
 	if  (!ret) {
-		printf("Mismatch at %s[%3d], hwPt % 7d % 7d   hwEta %+7d %+7d   hwPhi %+7d %+7d   hwId %1d %1d \n", what, idx,
+		printf("Mismatch at %s[%3d], hwPt % 7d % 7d   hwEta %+7d %+7d   hwPhi %+7d %+7d   hwId %1d %1d      hwZ0 %+7d %+7d   \n", what, idx,
 				int(out_ref.hwPt), int(out.hwPt),
 				int(out_ref.hwEta), int(out.hwEta),
 				int(out_ref.hwPhi), int(out.hwPhi),
-				int(out_ref.hwId), int(out.hwId));
+				int(out_ref.hwId), int(out.hwId),
+				int(out_ref.hwZ0), int(out.hwZ0));
 	}
 	return ret;
 }
@@ -39,13 +40,13 @@ int main() {
 
 	srand(37); // 37 is a good random number
 	
-	CaloObj calo[NCALO]; TkObj track[NTRACK];
+	CaloObj calo[NCALO]; TkObj track[NTRACK]; z0_t hwZPV, hwZ0Cut;
     PFChargedObj outch[NTRACK], outch_ref[NTRACK];
     PFNeutralObj outne[NCALO], outne_ref[NCALO];
 
 	for (int test = 1; test <= NTEST; ++test) {
 		for (int i = 0; i < NTRACK; ++i) {
-			track[i].hwPt = 0; track[i].hwPtErr = 0; track[i].hwEta = 0; track[i].hwPhi = 0;
+			track[i].hwPt = 0; track[i].hwPtErr = 0; track[i].hwEta = 0; track[i].hwPhi = 0; track[i].hwZ0 = 0;
 		}
 		for (int i = 0; i < NCALO; ++i) {
 			calo[i].hwPt = 0; calo[i].hwEta = 0; calo[i].hwPhi = 0;
@@ -58,12 +59,17 @@ int main() {
 			calo[i].hwEta = eta * ETAPHI_SCALE;
 			calo[i].hwPhi = phi * ETAPHI_SCALE;
 		}
+		float zPV = (rand()/float(RAND_MAX))*20-10;
+		hwZPV = zPV * Z0_SCALE; hwZ0Cut = 7;
+
 		for (int i = 0; i < ncharged && i < NTRACK; ++i) {
 			float pt = (rand()/float(RAND_MAX))*50+2, eta = (rand()/float(RAND_MAX))*2.0-1.0, phi = (rand()/float(RAND_MAX))*2.0-1.0;
+			float z = (i % 2 == 0) ? (zPV + (rand()/float(RAND_MAX))*0.7-.35) : ((rand()/float(RAND_MAX))*30-15);
 			track[i].hwPt    = pt * PT_SCALE;
 			track[i].hwPtErr = (0.2*pt+4) * PT_SCALE; 
 			track[i].hwEta = eta * ETAPHI_SCALE;
 			track[i].hwPhi = phi * ETAPHI_SCALE;
+			track[i].hwZ0  = z * Z0_SCALE;
 			int icalo = rand() % NCALO;
 			if (i % 3 == 1 || icalo >= NCALO) continue;
 			float dpt_calo = ((rand()/float(RAND_MAX))*3-1.5) * (0.2*pt+4);
@@ -91,28 +97,45 @@ int main() {
 			if (!pf_equals(outne_ref[i], outne[i], "PF Neutral", i)) errors++;
 			if (outne_ref[i].hwPt > 0) { ntot++; nneu++; }
 		}
+
+		// ------- run CHS and PUPPI ------
+		bool isPV[NTRACK], isPV_ref[NTRACK];
+		pt_t puppiPt[NCALO], puppiPt_ref[NCALO];
+		simple_chs_ref(outch_ref, hwZPV, hwZ0Cut, isPV_ref) ;
+		simple_chs_hwopt(outch, hwZPV, hwZ0Cut, isPV) ;
+		simple_puppi_ref(outch_ref, isPV_ref, outne_ref, puppiPt_ref) ;
+		simple_puppi_hwopt(outch, isPV, outne, puppiPt) ;
+		for (int i = 0; i < NTRACK; ++i) {
+			if (outch_ref[i].hwPt > 0 && isPV[i] != isPV_ref[i]) errors++;
+		}
+		for (int i = 0; i < NCALO; ++i) {
+			if (outne_ref[i].hwPt > 0 && puppiPt[i] != puppiPt_ref[i]) errors++;
+		}
 		if (errors != 0) {
 			printf("Error in computing test %d (%d)\n", test, errors);
 			for (int i = 0; i < NCALO; ++i) {
 				printf("calo  %3d, hwPt % 7d   hwPtErr % 7d    hwEta %+7d   hwPhi %+7d\n", i, int(calo[i].hwPt), 0, int(calo[i].hwEta), int(calo[i].hwPhi));
 			}
 			for (int i = 0; i < NTRACK; ++i) {
-				printf("track %3d, hwPt % 7d   hwPtErr % 7d    hwEta %+7d   hwPhi %+7d\n", i, int(track[i].hwPt), int(track[i].hwPtErr), int(track[i].hwEta), int(track[i].hwPhi));
+				printf("track %3d, hwPt % 7d   hwPtErr % 7d    hwEta %+7d   hwPhi %+7d     hwZ0 %+7d\n", i, int(track[i].hwPt), int(track[i].hwPtErr), int(track[i].hwEta), int(track[i].hwZ0));
 			}
 			for (int i = 0; i < NTRACK; ++i) {
-				printf("charged pf %3d, hwPt % 7d % 7d   hwEta %+7d %+7d   hwPhi %+7d %+7d   hwId %1d %1d \n", i,
+				printf("charged pf %3d, hwPt % 7d % 7d   hwEta %+7d %+7d   hwPhi %+7d %+7d   hwId %1d %1d      hwZ0 %+7d %+7d    isPV %1d %1d\n", i,
 					int(outch_ref[i].hwPt), int(outch[i].hwPt), int(outch_ref[i].hwEta), int(outch[i].hwEta),
-					int(outch_ref[i].hwId), int(outch[i].hwPhi), int(outch_ref[i].hwId), int(outch[i].hwId));
+					int(outch_ref[i].hwPhi), int(outch[i].hwPhi), int(outch_ref[i].hwId), int(outch[i].hwId),
+					int(outch_ref[i].hwZ0), int(outch[i].hwZ0), int(isPV_ref[i]), int(isPV[i]));
 			}
 			for (int i = 0; i < NCALO; ++i) {
-				printf("neutral pf %3d, hwPt % 7d % 7d   hwEta %+7d %+7d   hwPhi %+7d %+7d   hwId %1d %1d \n", i,
+				printf("neutral pf %3d, hwPt % 7d % 7d   hwEta %+7d %+7d   hwPhi %+7d %+7d   hwId %1d %1d      puppiPt % 7d % 7d \n", i,
 					int(outne_ref[i].hwPt), int(outne[i].hwPt), int(outne_ref[i].hwEta), int(outne[i].hwEta),
-					int(outne_ref[i].hwId), int(outne[i].hwPhi), int(outne_ref[i].hwId), int(outne[i].hwId));
+					int(outne_ref[i].hwPhi), int(outne[i].hwPhi), int(outne_ref[i].hwId), int(outne[i].hwId),
+					int(puppiPt_ref[i]), int(puppiPt[i]));
 			}
 			return 1;
 		} else {
 			printf("Passed test %d (%d, %d, %d)\n", test, ntot, nch, nneu);
 		}
+
 	}	
 	return 0;
 }

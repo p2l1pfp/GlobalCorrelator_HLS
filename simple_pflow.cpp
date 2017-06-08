@@ -109,15 +109,17 @@ void _spfph_tkalgo(TkObj track[NTRACK], bool calo_track_link_bit[NTRACK][NCALO],
 			if (calo_track_link_bit[it][icalo]) good = true;
 		}
 		if (good) {
-			pfout[it].hwPt = track[it].hwPt;
+			pfout[it].hwPt  = track[it].hwPt;
 			pfout[it].hwEta = track[it].hwEta;
 			pfout[it].hwPhi = track[it].hwPhi;
 			pfout[it].hwId  = PID_Charged;
+			pfout[it].hwZ0  = track[it].hwZ0;
 		} else {
 			pfout[it].hwPt  = 0;
 			pfout[it].hwEta = 0;
 			pfout[it].hwPhi = 0;
 			pfout[it].hwId  = 0;
+			pfout[it].hwZ0  = 0;
 		}
 	}
 }
@@ -166,4 +168,37 @@ void simple_pflow_parallel_hwopt(CaloObj calo[NCALO], TkObj track[NTRACK], PFCha
 	_spfph_tkalgo(track, calo_track_link_bit, outch);
 	_spfph_sumtk(track, tkerr2, calo_track_link_bit, sumtk, sumtkerr2);
 	_spfph_caloalgo(calo, sumtk, sumtkerr2, outne);
+}
+
+void simple_chs_hwopt(PFChargedObj pfch[NTRACK], z0_t pvZ, z0_t pvZCut, bool isPV[NTRACK]) {
+	#pragma HLS ARRAY_PARTITION variable=pfch complete
+	#pragma HLS ARRAY_PARTITION variable=isPV complete
+	#pragma HLS pipeline II=5 rewind
+	for (int it = 0; it < NTRACK; ++it) {
+		if (pfch[it].hwPt == 0) {
+			isPV[it] = false;
+		} else {
+			z0_t dz = pfch[it].hwZ0 - pvZ;
+			isPV[it] = (-pvZCut <= dz && dz <= pvZCut);
+		}
+	}
+}
+void simple_puppi_hwopt(PFChargedObj pfch[NTRACK], bool isPV[NTRACK], PFNeutralObj pfne[NCALO], pt_t puppiPt[NCALO]) {
+	#pragma HLS ARRAY_PARTITION variable=pfch complete
+	#pragma HLS ARRAY_PARTITION variable=isPV complete
+	#pragma HLS ARRAY_PARTITION variable=pfne complete
+	#pragma HLS ARRAY_PARTITION variable=puppiPt complete
+	#pragma HLS pipeline II=5 rewind
+
+	const int DR2MAX = 8404; // 0.4 cone
+	for (int ic = 0; ic < NCALO; ++ic) {
+		pt_t ret = 0;
+		for (int it = 0; it < NTRACK; ++it) {
+			int dr2 = dr2_int(pfch[it].hwEta, pfch[it].hwPhi, pfne[ic].hwEta, pfne[ic].hwPhi);
+			if (isPV[it] && dr2 <= DR2MAX) {
+				ret = pfne[ic].hwPt;
+			}
+		}
+		puppiPt[ic] = ret;
+	}
 }

@@ -1,3 +1,4 @@
+#include "data.h"
 #include "simple_pflow.h"
 
 template <typename T> int sqr(const T & t) { return t*t; }
@@ -62,6 +63,7 @@ void simple_pflow_parallel_ref(CaloObj calo[NCALO], TkObj track[NTRACK], PFCharg
 			outch[it].hwPt = track[it].hwPt;
 			outch[it].hwEta = track[it].hwEta;
 			outch[it].hwPhi = track[it].hwPhi;
+			outch[it].hwZ0 = track[it].hwZ0;
 			outch[it].hwId  = PID_Charged;
 		}
 	}
@@ -73,6 +75,26 @@ void simple_pflow_parallel_ref(CaloObj calo[NCALO], TkObj track[NTRACK], PFCharg
 			outne[ic].hwEta = calo[ic].hwEta;
 			outne[ic].hwPhi = calo[ic].hwPhi;
 			outne[ic].hwId  = PID_Neutral;
+		}
+	}
+}
+
+void simple_chs_ref(PFChargedObj pfch[NTRACK], z0_t pvZ, z0_t pvZCut, bool isPV[NTRACK]) {
+	for (int it = 0; it < NTRACK; ++it) {
+		isPV[it] = false;
+		if (pfch[it].hwPt == 0) continue;
+		isPV[it] = (std::abs(pfch[it].hwZ0 - pvZ) <= pvZCut);
+	}
+}
+void simple_puppi_ref(PFChargedObj pfch[NTRACK], bool isPV[NTRACK], PFNeutralObj pfne[NCALO], pt_t puppiPt[NCALO]) {
+	const int DR2MAX = 8404; // 0.4 cone
+	for (int ic = 0; ic < NCALO; ++ic) {
+		puppiPt[ic] = 0;
+		for (int it = 0; it < NTRACK; ++it) {
+			int dr2 = dr2_int(pfch[it].hwEta, pfch[it].hwPhi, pfne[ic].hwEta, pfne[ic].hwPhi);
+			if (isPV[it] && dr2 <= DR2MAX) {
+				puppiPt[ic] = pfne[ic].hwPt;
+			}
 		}
 	}
 }
