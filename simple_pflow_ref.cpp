@@ -90,11 +90,19 @@ void simple_puppi_ref(PFChargedObj pfch[NTRACK], bool isPV[NTRACK], PFNeutralObj
 	const int DR2MAX = 8404; // 0.4 cone
 	for (int ic = 0; ic < NCALO; ++ic) {
 		puppiPt[ic] = 0;
+		int sum = 0;
 		for (int it = 0; it < NTRACK; ++it) {
 			int dr2 = dr2_int(pfch[it].hwEta, pfch[it].hwPhi, pfne[ic].hwEta, pfne[ic].hwPhi);
 			if (isPV[it] && dr2 <= DR2MAX) {
-				puppiPt[ic] = pfne[ic].hwPt;
+				ap_uint<9> dr2short = dr2 >> 5;
+				//puppiPt[ic] = pfne[ic].hwPt;
+				sum += (pfch[it].hwPt*pfch[it].hwPt); ///(dr2short > 0 ? dr2short : ap_uint<9>(1));
 			}
+		}
+		if (sum > 0) {
+			//sum = hls::log(sum);
+			if (sum > 120) puppiPt[ic] = pfne[ic].hwPt;
+			printf(" alpha: %5d \n",int(sum));
 		}
 	}
 }

@@ -192,12 +192,19 @@ void simple_puppi_hwopt(PFChargedObj pfch[NTRACK], bool isPV[NTRACK], PFNeutralO
 
 	const int DR2MAX = 8404; // 0.4 cone
 	for (int ic = 0; ic < NCALO; ++ic) {
-		pt_t ret = 0;
+		int sum = 0; pt_t ret = 0;
 		for (int it = 0; it < NTRACK; ++it) {
 			int dr2 = dr2_int(pfch[it].hwEta, pfch[it].hwPhi, pfne[ic].hwEta, pfne[ic].hwPhi);
 			if (isPV[it] && dr2 <= DR2MAX) {
-				ret = pfne[ic].hwPt;
+				ap_uint<9> dr2short = dr2 >> 5;
+				if (dr2short == 0) dr2short = 1;
+				//sum += half(pfne[ic].hwPt*pfne[ic].hwPt)/half(dr2);
+				sum += ((pfch[it].hwPt*pfch[it].hwPt));//(dr2short);
 			}
+		}
+		if (sum != 0) {
+			//sum = hls::log(sum);
+			if (sum > 120) ret = pfne[ic].hwPt;
 		}
 		puppiPt[ic] = ret;
 	}
