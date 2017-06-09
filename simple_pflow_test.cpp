@@ -86,6 +86,10 @@ int main() {
 		simple_pflow_parallel_ref(calo, track, outch_ref, outne_ref);
 		simple_pflow_parallel_hwopt(calo, track, outch, outne);
 
+		PFNeutralObj outne_sorted_ref[NSELCALO], outne_sorted[NSELCALO];
+		ptsort_ref<PFNeutralObj,NCALO,NSELCALO>(outne_ref, outne_sorted_ref);
+		ptsort_pfneutral_hwopt(outne, outne_sorted);
+
 // ---------------- COMPARE WITH EXPECTED ----------------
 
 		int errors = 0; int ntot = 0, nch = 0, nneu = 0;
@@ -97,20 +101,41 @@ int main() {
 			if (!pf_equals(outne_ref[i], outne[i], "PF Neutral", i)) errors++;
 			if (outne_ref[i].hwPt > 0) { ntot++; nneu++; }
 		}
+		for (int i = 0; i < NSELCALO; ++i) {
+			if (!pf_equals(outne_sorted_ref[i], outne_sorted[i], "PF sorted neutral", i)) errors++;
+		}
 
 		// ------- run CHS and PUPPI ------
 		bool isPV[NTRACK], isPV_ref[NTRACK];
 		pt_t puppiPt[NCALO], puppiPt_ref[NCALO];
+
 		simple_chs_ref(outch_ref, hwZPV, hwZ0Cut, isPV_ref) ;
 		simple_chs_hwopt(outch, hwZPV, hwZ0Cut, isPV) ;
 		simple_puppi_ref(outch_ref, isPV_ref, outne_ref, puppiPt_ref) ;
 		simple_puppi_hwopt(outch, isPV, outne, puppiPt) ;
+
+		PFChargedObj pvch[NTRACK], pvch_ref[NTRACK];
+		apply_chs_sort_ref(outch_ref, isPV_ref, pvch_ref);
+		apply_chs_sort_hwopt(outch, isPV, pvch);
+
+
+// ---------------- COMPARE WITH EXPECTED ----------------
+
+		int nchpv = 0, nnepv = 0;
 		for (int i = 0; i < NTRACK; ++i) {
 			if (outch_ref[i].hwPt > 0 && isPV[i] != isPV_ref[i]) errors++;
+			if (isPV_ref[i]) nchpv++;
 		}
 		for (int i = 0; i < NCALO; ++i) {
 			if (outne_ref[i].hwPt > 0 && puppiPt[i] != puppiPt_ref[i]) errors++;
+			if (puppiPt[i]) nnepv++;
 		}
+		for (int i = 0; i < NPVTRACK; ++i) {
+			if (!pf_equals(pvch_ref[i], pvch[i], "PF CHS", i)) errors++;
+		}
+
+
+
 		if (errors != 0) {
 			printf("Error in computing test %d (%d)\n", test, errors);
 			for (int i = 0; i < NCALO; ++i) {
@@ -130,6 +155,12 @@ int main() {
 					int(outne_ref[i].hwPt), int(outne[i].hwPt), int(outne_ref[i].hwEta), int(outne[i].hwEta),
 					int(outne_ref[i].hwPhi), int(outne[i].hwPhi), int(outne_ref[i].hwId), int(outne[i].hwId),
 					int(puppiPt_ref[i]), int(puppiPt[i]));
+			}
+			for (int i = 0; i < NPVTRACK; ++i) {
+				printf("CHS charged pf %3d, hwPt % 7d % 7d   hwEta %+7d %+7d   hwPhi %+7d %+7d   hwId %1d %1d      hwZ0 %+7d %+7d\n", i,
+					int(pvch_ref[i].hwPt), int(pvch[i].hwPt), int(pvch_ref[i].hwEta), int(pvch[i].hwEta),
+					int(pvch_ref[i].hwPhi), int(pvch[i].hwPhi), int(pvch_ref[i].hwId), int(pvch[i].hwId),
+					int(pvch_ref[i].hwZ0), int(pvch[i].hwZ0));
 			}
 			return 1;
 		} else {

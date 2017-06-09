@@ -1,5 +1,8 @@
 #include "data.h"
 #include "simple_pflow.h"
+//#include <hls_half.h>
+#include <cmath>
+#include <algorithm>
 
 template <typename T> int sqr(const T & t) { return t*t; }
 
@@ -102,7 +105,40 @@ void simple_puppi_ref(PFChargedObj pfch[NTRACK], bool isPV[NTRACK], PFNeutralObj
 		if (sum > 0) {
 			//sum = hls::log(sum);
 			if (sum > 120) puppiPt[ic] = pfne[ic].hwPt;
-			printf(" alpha: %5d \n",int(sum));
+			//printf(" alpha: %5d \n",int(sum));
+		}
+	}
+}
+void apply_chs_ref(PFChargedObj allch[NTRACK], bool isPV[NTRACK], PFChargedObj pvch[NPVTRACK]) {
+	for (int iout = 0; iout < NPVTRACK; ++iout) {
+		pvch[iout].hwPt = 0;
+	}
+	int nout = 0;
+	for (int it = 0; it < NTRACK; ++it) {
+		if (isPV[it]) {
+			pvch[nout++] = allch[it];
+			if (nout >= NPVTRACK) break;
+		}
+	}
+	// now we reverse them, as it's simpler to get the reversed list in the firmware
+	std::reverse(pvch, pvch+nout);
+}
+void apply_chs_sort_ref(PFChargedObj allch[NTRACK], bool isPV[NTRACK], PFChargedObj pvch[NPVTRACK]) {
+	for (int iout = 0; iout < NPVTRACK; ++iout) {
+		pvch[iout].hwPt = 0;
+	}
+	int nout = 0;
+	for (int it = 0; it < NTRACK; ++it) {
+		if (isPV[it]) {
+			for (int iout = 0; iout < NPVTRACK; ++iout) {
+				if (allch[it].hwPt >= pvch[iout].hwPt) {
+					for (int i2 = NPVTRACK-1; i2 > iout; --i2) {
+						pvch[i2] = pvch[i2-1];
+					}
+					pvch[iout] = allch[it];
+					break;
+				}
+			}
 		}
 	}
 }

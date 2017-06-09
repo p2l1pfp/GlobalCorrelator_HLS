@@ -150,7 +150,7 @@ void simple_pflow_parallel_hwopt(CaloObj calo[NCALO], TkObj track[NTRACK], PFCha
 	#pragma HLS ARRAY_PARTITION variable=outch complete
 	#pragma HLS ARRAY_PARTITION variable=outne complete
 
-	#pragma HLS pipeline II=5 rewind
+	#pragma HLS pipeline II=5
 
 	bool calo_track_link_bit[NTRACK][NCALO];
 	#pragma HLS ARRAY_PARTITION variable=calo_track_link_bit dim=0 complete
@@ -173,7 +173,7 @@ void simple_pflow_parallel_hwopt(CaloObj calo[NCALO], TkObj track[NTRACK], PFCha
 void simple_chs_hwopt(PFChargedObj pfch[NTRACK], z0_t pvZ, z0_t pvZCut, bool isPV[NTRACK]) {
 	#pragma HLS ARRAY_PARTITION variable=pfch complete
 	#pragma HLS ARRAY_PARTITION variable=isPV complete
-	#pragma HLS pipeline II=5 rewind
+	#pragma HLS pipeline II=5
 	for (int it = 0; it < NTRACK; ++it) {
 		if (pfch[it].hwPt == 0) {
 			isPV[it] = false;
@@ -188,7 +188,7 @@ void simple_puppi_hwopt(PFChargedObj pfch[NTRACK], bool isPV[NTRACK], PFNeutralO
 	#pragma HLS ARRAY_PARTITION variable=isPV complete
 	#pragma HLS ARRAY_PARTITION variable=pfne complete
 	#pragma HLS ARRAY_PARTITION variable=puppiPt complete
-	#pragma HLS pipeline II=5 rewind
+	#pragma HLS pipeline II=5
 
 	const int DR2MAX = 8404; // 0.4 cone
 	for (int ic = 0; ic < NCALO; ++ic) {
@@ -208,4 +208,85 @@ void simple_puppi_hwopt(PFChargedObj pfch[NTRACK], bool isPV[NTRACK], PFNeutralO
 		}
 		puppiPt[ic] = ret;
 	}
+}
+
+void apply_chs_hwopt(PFChargedObj allch[NTRACK], bool isPV[NTRACK], PFChargedObj pvch[NPVTRACK]) {
+#pragma HLS ARRAY_PARTITION variable=allch complete
+#pragma HLS ARRAY_PARTITION variable=pvch complete
+#pragma HLS ARRAY_PARTITION variable=isPV complete
+#pragma HLS pipeline II=5
+
+	PFChargedObj pvch_tmp[NPVTRACK];
+	#pragma HLS ARRAY_PARTITION variable=pvch_tmp complete
+
+	for (int iout = 0; iout < NPVTRACK; ++iout) {
+		#pragma HLS unroll
+		pvch_tmp[iout].hwPt = 0;
+		pvch_tmp[iout].hwEta = 0;
+		pvch_tmp[iout].hwPhi = 0;
+		pvch_tmp[iout].hwId  = 0;
+		pvch_tmp[iout].hwZ0  = 0;
+	}
+
+	int nout = 0;
+	for (int it = 0; it < NTRACK; ++it) {
+		if (isPV[it]) nout++;
+		for (int iout = NPVTRACK-1; iout >= 0; --iout) {
+			if (isPV[it] && nout <= NPVTRACK) {
+				if (iout == 0) {
+					pvch_tmp[iout] = allch[it];
+				} else {
+					pvch_tmp[iout] = pvch_tmp[iout-1];
+				}
+			//} else {
+			//	pvch_tmp[iout] = pvch_tmp[iout];
+			}
+		}
+
+	}
+	for (int iout = 0; iout < NPVTRACK; ++iout) {
+		pvch[iout] = pvch_tmp[iout];
+	}
+}
+
+void apply_chs_sort_hwopt(PFChargedObj allch[NTRACK], bool isPV[NTRACK], PFChargedObj pvch[NPVTRACK]) {
+#pragma HLS ARRAY_PARTITION variable=allch complete
+#pragma HLS ARRAY_PARTITION variable=pvch complete
+#pragma HLS ARRAY_PARTITION variable=isPV complete
+#pragma HLS pipeline II=5
+
+	PFChargedObj pvch_tmp[NPVTRACK];
+	#pragma HLS ARRAY_PARTITION variable=pvch_tmp complete
+
+	for (int iout = 0; iout < NPVTRACK; ++iout) {
+		#pragma HLS unroll
+		pvch_tmp[iout].hwPt = 0;
+		pvch_tmp[iout].hwEta = 0;
+		pvch_tmp[iout].hwPhi = 0;
+		pvch_tmp[iout].hwId  = 0;
+		pvch_tmp[iout].hwZ0  = 0;
+	}
+
+	for (int it = 0; it < NTRACK; ++it) {
+		for (int iout = NPVTRACK-1; iout >= 0; --iout) {
+			if (isPV[it] && pvch_tmp[iout].hwPt <= allch[it].hwPt) {
+				if (iout == 0 || pvch_tmp[iout-1].hwPt > allch[it].hwPt) {
+					pvch_tmp[iout] = allch[it];
+				} else {
+					pvch_tmp[iout] = pvch_tmp[iout-1];
+				}
+			}
+		}
+
+	}
+	for (int iout = 0; iout < NPVTRACK; ++iout) {
+		pvch[iout] = pvch_tmp[iout];
+	}
+}
+
+void ptsort_pfneutral_hwopt(PFNeutralObj in[NCALO], PFNeutralObj out[NSELCALO]) {
+#pragma HLS ARRAY_PARTITION variable=in complete
+#pragma HLS ARRAY_PARTITION variable=out complete
+#pragma HLS pipeline II=5 rewind
+	ptsort_hwopt<PFNeutralObj,NCALO,NSELCALO>(in, out);
 }
