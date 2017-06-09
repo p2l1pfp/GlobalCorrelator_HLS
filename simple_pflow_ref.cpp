@@ -99,13 +99,17 @@ void simple_puppi_ref(PFChargedObj pfch[NTRACK], bool isPV[NTRACK], PFNeutralObj
 	const int DR2MAX = 8404; // 0.4 cone
 	for (int ic = 0; ic < NCALO; ++ic) {
 		puppiPt[ic] = 0;
+		if (pfne[ic].hwPt == 0) continue;
 		int sum = 0;
 		for (int it = 0; it < NTRACK; ++it) {
 			int dr2 = dr2_int(pfch[it].hwEta, pfch[it].hwPhi, pfne[ic].hwEta, pfne[ic].hwPhi);
 			if (isPV[it] && dr2 <= DR2MAX) {
 				ap_uint<9> dr2short = dr2 >> 5;
 				//puppiPt[ic] = pfne[ic].hwPt;
-				sum += (pfch[it].hwPt*pfch[it].hwPt); ///(dr2short > 0 ? dr2short : ap_uint<9>(1));
+				int pt2 = pfch[it].hwPt*pfch[it].hwPt;
+				int term = (std::min(pt2 >> 5, 131071) << 15)/(dr2short > 0 ? dr2short : ap_uint<9>(1));
+				sum += term;
+				//printf(" alpha term %3d %3d: %9d (dr2 %6d, pt2 %8d)\n",ic, it, term, dr2>>5, pt2>>5);
 			}
 		}
 		if (sum > 0) {

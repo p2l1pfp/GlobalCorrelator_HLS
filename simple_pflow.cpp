@@ -196,6 +196,18 @@ void simple_chs_hwopt(PFChargedObj pfch[NTRACK], z0_t pvZ, z0_t pvZCut, bool isP
 		}
 	}
 }
+
+void _lut_invert_init(ap_uint<16> _table[512]) {
+	_table[0] = 32768;
+	for (int i = 1; i <= 511; ++i) {
+		_table[i] = (32768 / i);
+	}
+}
+int _lut_divide(ap_uint<17> num, ap_uint<9> den) {
+	ap_uint<16> _table[512];
+	_lut_invert_init(_table);
+	return (num * _table[den]);
+}
 void simple_puppi_hwopt(PFChargedObj pfch[NTRACK], bool isPV[NTRACK], PFNeutralObj pfne[NCALO], pt_t puppiPt[NCALO]) {
 	#pragma HLS ARRAY_PARTITION variable=pfch complete
 	#pragma HLS ARRAY_PARTITION variable=isPV complete
@@ -204,15 +216,21 @@ void simple_puppi_hwopt(PFChargedObj pfch[NTRACK], bool isPV[NTRACK], PFNeutralO
 	#pragma HLS pipeline II=5
 
 	const int DR2MAX = 8404; // 0.4 cone
+	ap_uint<17> pt2[NTRACK];
+	for (int it = 0; it < NTRACK; ++it) {
+		int mypt2 = (pfch[it].hwPt*pfch[it].hwPt) >> 5;
+		pt2[it] = (mypt2 < 131071 ? mypt2 : 131071);
+	}
 	for (int ic = 0; ic < NCALO; ++ic) {
 		int sum = 0; pt_t ret = 0;
 		for (int it = 0; it < NTRACK; ++it) {
 			int dr2 = dr2_int(pfch[it].hwEta, pfch[it].hwPhi, pfne[ic].hwEta, pfne[ic].hwPhi);
 			if (isPV[it] && dr2 <= DR2MAX) {
 				ap_uint<9> dr2short = dr2 >> 5;
-				if (dr2short == 0) dr2short = 1;
+				//if (dr2short == 0) dr2short = 1;
 				//sum += half(pfne[ic].hwPt*pfne[ic].hwPt)/half(dr2);
-				sum += ((pfch[it].hwPt*pfch[it].hwPt));//(dr2short);
+				//sum += ((pfch[it].hwPt*pfch[it].hwPt))/(dr2short);
+				sum += _lut_divide(pt2[it], dr2short);
 			}
 		}
 		if (sum != 0) {
