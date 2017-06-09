@@ -170,6 +170,19 @@ void simple_pflow_parallel_hwopt(CaloObj calo[NCALO], TkObj track[NTRACK], PFCha
 	_spfph_caloalgo(calo, sumtk, sumtkerr2, outne);
 }
 
+void medium_pflow_parallel_hwopt(CaloObj calo[NCALO], TkObj track[NTRACK], PFChargedObj outch[NTRACK], PFNeutralObj outne[NSELCALO]) {
+	#pragma HLS ARRAY_PARTITION variable=calo complete
+	#pragma HLS ARRAY_PARTITION variable=track complete
+	#pragma HLS ARRAY_PARTITION variable=outch complete
+	#pragma HLS ARRAY_PARTITION variable=outne complete
+
+	#pragma HLS pipeline II=5
+	PFNeutralObj outne_all[NCALO];
+	#pragma HLS ARRAY_PARTITION variable=outne_all complete
+	simple_pflow_parallel_hwopt(calo, track, outch, outne_all);
+	ptsort_hwopt<PFNeutralObj,NCALO,NSELCALO>(outne_all, outne);
+}
+
 void simple_chs_hwopt(PFChargedObj pfch[NTRACK], z0_t pvZ, z0_t pvZCut, bool isPV[NTRACK]) {
 	#pragma HLS ARRAY_PARTITION variable=pfch complete
 	#pragma HLS ARRAY_PARTITION variable=isPV complete

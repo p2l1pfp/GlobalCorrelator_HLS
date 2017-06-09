@@ -81,6 +81,12 @@ void simple_pflow_parallel_ref(CaloObj calo[NCALO], TkObj track[NTRACK], PFCharg
 		}
 	}
 }
+void medium_pflow_parallel_ref(CaloObj calo[NCALO], TkObj track[NTRACK], PFChargedObj outch[NTRACK], PFNeutralObj outne[NCALO]) {
+	PFNeutralObj outne_all[NCALO];
+	simple_pflow_parallel_ref(calo, track, outch, outne_all);
+	ptsort_ref<PFNeutralObj,NCALO,NSELCALO>(outne_all, outne);
+
+}
 
 void simple_chs_ref(PFChargedObj pfch[NTRACK], z0_t pvZ, z0_t pvZCut, bool isPV[NTRACK]) {
 	for (int it = 0; it < NTRACK; ++it) {

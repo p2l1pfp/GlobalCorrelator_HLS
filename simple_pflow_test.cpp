@@ -1,7 +1,7 @@
 #include <cstdio>
 #include "simple_pflow.h"
 
-#define NTEST 500
+#define NTEST 50
 
 bool pf_equals(const PFChargedObj &out_ref, const PFChargedObj &out, const char *what, int idx) {
 	bool ret;
@@ -83,12 +83,14 @@ int main() {
 
 		//simple_pflow_iterative_ref(calo, track, out_ref);
 		//simple_pflow_iterative_hwopt(calo, track, out);
-		simple_pflow_parallel_ref(calo, track, outch_ref, outne_ref);
-		simple_pflow_parallel_hwopt(calo, track, outch, outne);
+		//simple_pflow_parallel_ref(calo, track, outch_ref, outne_ref);
+		//simple_pflow_parallel_hwopt(calo, track, outch, outne);
+		medium_pflow_parallel_ref(calo, track, outch_ref, outne_ref);
+		medium_pflow_parallel_hwopt(calo, track, outch, outne);
 
-		PFNeutralObj outne_sorted_ref[NSELCALO], outne_sorted[NSELCALO];
-		ptsort_ref<PFNeutralObj,NCALO,NSELCALO>(outne_ref, outne_sorted_ref);
-		ptsort_pfneutral_hwopt(outne, outne_sorted);
+		//PFNeutralObj outne_sorted_ref[NSELCALO], outne_sorted[NSELCALO];
+		//ptsort_ref<PFNeutralObj,NCALO,NSELCALO>(outne_ref, outne_sorted_ref);
+		//ptsort_pfneutral_hwopt(outne, outne_sorted);
 
 // ---------------- COMPARE WITH EXPECTED ----------------
 
@@ -101,9 +103,9 @@ int main() {
 			if (!pf_equals(outne_ref[i], outne[i], "PF Neutral", i)) errors++;
 			if (outne_ref[i].hwPt > 0) { ntot++; nneu++; }
 		}
-		for (int i = 0; i < NSELCALO; ++i) {
-			if (!pf_equals(outne_sorted_ref[i], outne_sorted[i], "PF sorted neutral", i)) errors++;
-		}
+		//for (int i = 0; i < NSELCALO; ++i) {
+		//	if (!pf_equals(outne_sorted_ref[i], outne_sorted[i], "PF sorted neutral", i)) errors++;
+		//}
 
 		// ------- run CHS and PUPPI ------
 		bool isPV[NTRACK], isPV_ref[NTRACK];
