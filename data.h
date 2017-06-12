@@ -17,10 +17,6 @@ enum PID { PID_Charged=0, PID_Neutral=1 };
 
 #define NPVTRACK 7
 
-#define PT_SCALE 4.0
-#define ETAPHI_SCALE (4*180/M_PI)
-#define Z0_SCALE 20.
-
 struct CaloObj {
 	pt_t hwPt;
 	etaphi_t hwEta, hwPhi; // relative to the region center, at calo
