@@ -57,6 +57,14 @@ int main() {
 
 		if (!inputs.nextRegion(calo, track, hwZPV)) break;
 
+		//bool calo_track_link_bit[NTRACK][NCALO];
+		//link_pflow_parallel_hwopt(calo, track, calo_track_link_bit);
+		ap_uint<NCALO> calo_track_link_bit[NTRACK];
+		//link_pflow_parallel_hwopt2(calo, track, calo_track_link_bit);
+		spfph_tk2calo_link_v2(calo, track, calo_track_link_bit);
+		//spfph_tk2calo_link_v3(calo, track, calo_track_link_bit);
+		ap_uint<NCALO> calo_track_link_bit_ref[NTRACK];
+		link_pflow_parallel_ref(calo, track, calo_track_link_bit_ref);
 		//simple_pflow_iterative_ref(calo, track, out_ref);
 		//simple_pflow_iterative_hwopt(calo, track, out);
 		//simple_pflow_parallel_ref(calo, track, outch_ref, outne_ref);
@@ -71,6 +79,23 @@ int main() {
 // ---------------- COMPARE WITH EXPECTED ----------------
 
 		int errors = 0; int ntot = 0, nch = 0, nneu = 0;
+		for (int i = 0; i < NTRACK; ++i) { for (int j = 0; j < NCALO; ++j) {
+			if (calo_track_link_bit[i][j] != calo_track_link_bit_ref[i][j]) {
+				printf("mismatch track-calo link[%3d][%3d] = %1d (hwopt), %1d (ref)\n",
+						i,j,int(calo_track_link_bit[i][j]),int(calo_track_link_bit_ref[i][j]));
+				errors++;
+			}
+		} }
+		if (errors) {
+			printf("          ");
+			for (int j = 0; j < NCALO; ++j) printf("C%02d   ", j);
+			printf("\n");
+			for (int i = 0; i < NTRACK; ++i) {
+				printf("TRACK %2d: ",i);
+				for (int j = 0; j < NCALO; ++j) printf("%1d %1d   ", int(calo_track_link_bit[i][j]),int(calo_track_link_bit_ref[i][j]));
+				printf("\n");
+			}
+		}
 		for (int i = 0; i < NTRACK; ++i) {
 			if (!pf_equals(outch_ref[i], outch[i], "PF Charged", i)) errors++;
 			if (outch_ref[i].hwPt > 0) { ntot++; nch++; }
