@@ -59,26 +59,26 @@ int main() {
 
 		//bool calo_track_link_bit[NTRACK][NCALO];
 		//link_pflow_parallel_hwopt(calo, track, calo_track_link_bit);
-		ap_uint<NCALO> calo_track_link_bit[NTRACK];
+		//ap_uint<NCALO> calo_track_link_bit[NTRACK];
 		//link_pflow_parallel_hwopt2(calo, track, calo_track_link_bit);
-		spfph_tk2calo_link_v2(calo, track, calo_track_link_bit);
+		//spfph_tk2calo_link_v2(calo, track, calo_track_link_bit);
 		//spfph_tk2calo_link_v3(calo, track, calo_track_link_bit);
-		ap_uint<NCALO> calo_track_link_bit_ref[NTRACK];
-		link_pflow_parallel_ref(calo, track, calo_track_link_bit_ref);
+		//ap_uint<NCALO> calo_track_link_bit_ref[NTRACK];
+		//link_pflow_parallel_ref(calo, track, calo_track_link_bit_ref);
 		//simple_pflow_iterative_ref(calo, track, out_ref);
 		//simple_pflow_iterative_hwopt(calo, track, out);
 		//simple_pflow_parallel_ref(calo, track, outch_ref, outne_ref);
-		simple_pflow_parallel_hwopt(calo, track, outch, outne);
-		//medium_pflow_parallel_ref(calo, track, outch_ref, outne_ref);
-		//medium_pflow_parallel_hwopt(calo, track, outch, outne);
+		//simple_pflow_parallel_hwopt(calo, track, outch, outne);
+		medium_pflow_parallel_ref(calo, track, outch_ref, outne_ref);
+		medium_pflow_parallel_hwopt(calo, track, outch, outne);
 
 		//PFNeutralObj outne_sorted_ref[NSELCALO], outne_sorted[NSELCALO];
 		//ptsort_ref<PFNeutralObj,NCALO,NSELCALO>(outne_ref, outne_sorted_ref);
 		//ptsort_pfneutral_hwopt(outne, outne_sorted);
 
 // ---------------- COMPARE WITH EXPECTED ----------------
-/*
 		int errors = 0; int ntot = 0, nch = 0, nneu = 0;
+		/*// == LINKING COMPARISON ===
 		for (int i = 0; i < NTRACK; ++i) { for (int j = 0; j < NCALO; ++j) {
 			if (calo_track_link_bit[i][j] != calo_track_link_bit_ref[i][j]) {
 				printf("mismatch track-calo link[%3d][%3d] = %1d (hwopt), %1d (ref)\n",
@@ -95,7 +95,8 @@ int main() {
 				for (int j = 0; j < NCALO; ++j) printf("%1d %1d   ", int(calo_track_link_bit[i][j]),int(calo_track_link_bit_ref[i][j]));
 				printf("\n");
 			}
-		}
+		} */
+		// == PF COMPARISON ===
 		for (int i = 0; i < NTRACK; ++i) {
 			if (!pf_equals(outch_ref[i], outch[i], "PF Charged", i)) errors++;
 			if (outch_ref[i].hwPt > 0) { ntot++; nch++; }
@@ -104,6 +105,7 @@ int main() {
 			if (!pf_equals(outne_ref[i], outne[i], "PF Neutral", i)) errors++;
 			if (outne_ref[i].hwPt > 0) { ntot++; nneu++; }
 		}
+		// == SORT COMPARISON ===
 		//for (int i = 0; i < NSELCALO; ++i) {
 		//	if (!pf_equals(outne_sorted_ref[i], outne_sorted[i], "PF sorted neutral", i)) errors++;
 		//}
@@ -169,7 +171,6 @@ int main() {
 		} else {
 			printf("Passed test %d (%d, %d, %d)\n", test, ntot, nch, nneu);
 		}
-	*/
 
 	}
 	return 0;

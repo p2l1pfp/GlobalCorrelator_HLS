@@ -4,7 +4,7 @@
 #include "DiscretePFInputs.h"
 #include <vector>
 #include <cassert>
-#include "data.h"
+#include "src/data.h"
 
 struct Region {
 	float etaCenter, etaMin, etaMax, phiCenter, phiHalfWidth, etaExtra, phiExtra;
