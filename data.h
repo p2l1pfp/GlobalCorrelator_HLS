@@ -12,7 +12,6 @@ enum PID { PID_Charged=0, PID_Neutral=1 };
 
 #define NTRACK 12
 #define NCALO 20
-#define NPF 32
 #define NSELCALO 15
 
 #define NPVTRACK 7

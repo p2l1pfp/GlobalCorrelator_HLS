@@ -56,17 +56,17 @@ struct Event {
 		fread(&run, sizeof(uint32_t), 1, fRegionDump);
 		fread(&lumi, sizeof(uint32_t), 1, fRegionDump);
 		fread(&event, sizeof(uint64_t), 1, fRegionDump);
-		fread(&z0, sizeof(float), 1, fRegionDump);
-		fread(&alphaCMed, sizeof(float), 1, fRegionDump);
-		fread(&alphaCRms, sizeof(float), 1, fRegionDump);
-		fread(&alphaFMed, sizeof(float), 1, fRegionDump);
-		fread(&alphaFRms, sizeof(float), 1, fRegionDump);
 		uint32_t nregions;
 		fread(&nregions, sizeof(uint32_t), 1, fRegionDump);
 		regions.resize(nregions);
 		for (unsigned int i = 0; i < nregions; ++i) {
 			regions[i].readFromFile(fRegionDump);
 		}
+		fread(&z0, sizeof(float), 1, fRegionDump);
+		fread(&alphaCMed, sizeof(float), 1, fRegionDump);
+		fread(&alphaCRms, sizeof(float), 1, fRegionDump);
+		fread(&alphaFMed, sizeof(float), 1, fRegionDump);
+		fread(&alphaFRms, sizeof(float), 1, fRegionDump);
 	}
 };
 

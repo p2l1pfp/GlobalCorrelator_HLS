@@ -20,11 +20,12 @@ int dr2_int(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2) {
 	etaphi_t dphi = (phi1-phi2);
 	return deta*deta + dphi*dphi;
 }
-ap_uint<12> dr2_int_cap(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2, ap_uint<12> max) {
+template<unsigned NB>
+ap_uint<NB> dr2_int_cap(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2, ap_uint<NB> max) {
 	etaphi_t deta = (eta1-eta2);
 	etaphi_t dphi = (phi1-phi2);
 	int dr2 = deta*deta + dphi*dphi;
-	return (dr2 < int(max) ? ap_uint<12>(dr2) : max);
+	return (dr2 < int(max) ? ap_uint<NB>(dr2) : max);
 }
 
 
@@ -101,7 +102,7 @@ void _spfph_sumtk(TkObj track[NTRACK], int tkerr2[NTRACK], bool calo_track_link_
 	}
 }
 
-void _spfph_tkalgo(TkObj track[NTRACK], bool calo_track_link_bit[NTRACK][NCALO], PFChargedObj pfout[NPF]) {
+void _spfph_tkalgo(TkObj track[NTRACK], bool calo_track_link_bit[NTRACK][NCALO], PFChargedObj pfout[NTRACK]) {
 	const pt_t TKPT_MAX = 80; // 20 * PT_SCALE;
 	for (int it = 0; it < NTRACK; ++it) {
 		bool good = (track[it].hwPt < TKPT_MAX);
@@ -124,7 +125,7 @@ void _spfph_tkalgo(TkObj track[NTRACK], bool calo_track_link_bit[NTRACK][NCALO],
 	}
 }
 
-void _spfph_caloalgo(CaloObj calo[NCALO], pt_t sumtk[NCALO], int sumtkerr2[NCALO], PFNeutralObj pfout[NPF]) {
+void _spfph_caloalgo(CaloObj calo[NCALO], pt_t sumtk[NCALO], int sumtkerr2[NCALO], PFNeutralObj pfout[NCALO]) {
 	for (int icalo = 0; icalo < NCALO; ++icalo) {
 		pt_t calopt;
 		if (sumtk[icalo] == 0) {
