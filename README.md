@@ -8,7 +8,8 @@ board: xc7vx690tffg1927-2
 # Batch mode using Tcl script
 `vivado_hls -f run_hls.tcl`
 
-# To open the project (default name from .tcl script is `proj0`) in the GUI
+# To open the project in the GUI
+After creating the project using the tcl script (default name from tcl script is `proj0`)
 `vivado_hls -p proj0`
 
 # creating the project in the GUI 
