@@ -10,6 +10,7 @@ board: xc7vx690tffg1927-2
 
 # To open the project in the GUI
 After creating the project using the tcl script (default name from script is `proj0`
+
 `vivado_hls -p proj0`
 
 # creating the project in the GUI 
