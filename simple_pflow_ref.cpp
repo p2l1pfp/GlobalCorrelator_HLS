@@ -1,5 +1,5 @@
-#include "data.h"
-#include "simple_pflow.h"
+#include "src/data.h"
+#include "src/simple_pflow.h"
 //#include <hls_half.h>
 #include <cmath>
 #include <algorithm>

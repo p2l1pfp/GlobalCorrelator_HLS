@@ -8,7 +8,8 @@
 open_project -reset proj0
 set_top simple_pflow_parallel_hwopt
 add_files src/simple_pflow.cpp
-add_files -tb simple_pflow_test.cpp
+add_files -tb simple_pflow_test.cpp 
+add_files -tb simple_pflow_ref.cpp
 
 # reset the solution
 open_solution -reset "solution1"

@@ -10,8 +10,8 @@ typedef ap_int<10> z0_t;  // 40cm / 0.1
 		
 enum PID { PID_Charged=0, PID_Neutral=1 };
 
-#define NTRACK 12
-#define NCALO 20
+#define NTRACK 8
+#define NCALO 12
 #define NPF 32
 #define NSELCALO 15
 
