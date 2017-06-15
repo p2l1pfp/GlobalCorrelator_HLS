@@ -164,7 +164,7 @@ void _spfph_tkerr2(TkObj track[NTRACK], int tkerr2[NTRACK]) {
 		tkerr2[it] = (track[it].hwPtErr * track[it].hwPtErr) << 2;
 	}
 }
-void _spfph_sumtk(TkObj track[NTRACK], int tkerr2[NTRACK], bool calo_track_link_bit[NTRACK][NCALO], pt_t sumtk[NCALO], int sumtkerr2[NCALO]) {
+void _spfph_sumtk(TkObj track[NTRACK], int tkerr2[NTRACK], ap_uint<NCALO> calo_track_link_bit[NTRACK], pt_t sumtk[NCALO], int sumtkerr2[NCALO]) {
 	for (int icalo = 0; icalo < NCALO; ++icalo) {
 		pt_t sum = 0;
 		int sumerr = 0;
@@ -176,7 +176,7 @@ void _spfph_sumtk(TkObj track[NTRACK], int tkerr2[NTRACK], bool calo_track_link_
 	}
 }
 
-void _spfph_tkalgo(TkObj track[NTRACK], bool calo_track_link_bit[NTRACK][NCALO], PFChargedObj pfout[NTRACK]) {
+void _spfph_tkalgo(TkObj track[NTRACK], ap_uint<NCALO> calo_track_link_bit[NTRACK], PFChargedObj pfout[NTRACK]) {
 	const pt_t TKPT_MAX = 80; // 20 * PT_SCALE;
 	for (int it = 0; it < NTRACK; ++it) {
 		bool good = (track[it].hwPt < TKPT_MAX);
@@ -227,10 +227,10 @@ void simple_pflow_parallel_hwopt(CaloObj calo[NCALO], TkObj track[NTRACK], PFCha
 
 	#pragma HLS pipeline II=5
 
-	bool calo_track_link_bit[NTRACK][NCALO];
-	#pragma HLS ARRAY_PARTITION variable=calo_track_link_bit dim=0 complete
+	ap_uint<NCALO> calo_track_link_bit[NTRACK];
+	#pragma HLS ARRAY_PARTITION variable=calo_track_link_bit complete
 
-	_spfph_tk2calo_link(calo, track, calo_track_link_bit);
+	spfph_tk2calo_link_v2(calo, track, calo_track_link_bit);
 
 	int  tkerr2[NTRACK];
 	#pragma HLS ARRAY_PARTITION variable=tkerr2 complete
