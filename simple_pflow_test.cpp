@@ -1,5 +1,5 @@
 #include <cstdio>
-#include "simple_pflow.h"
+#include "src/simple_pflow.h"
 #include "random_inputs.h"
 #include "DiscretePFInputs_IO.h"
 
@@ -68,16 +68,16 @@ int main() {
 		//simple_pflow_iterative_ref(calo, track, out_ref);
 		//simple_pflow_iterative_hwopt(calo, track, out);
 		//simple_pflow_parallel_ref(calo, track, outch_ref, outne_ref);
-		//simple_pflow_parallel_hwopt(calo, track, outch, outne);
-		medium_pflow_parallel_ref(calo, track, outch_ref, outne_ref);
-		medium_pflow_parallel_hwopt(calo, track, outch, outne);
+		simple_pflow_parallel_hwopt(calo, track, outch, outne);
+		//medium_pflow_parallel_ref(calo, track, outch_ref, outne_ref);
+		//medium_pflow_parallel_hwopt(calo, track, outch, outne);
 
 		//PFNeutralObj outne_sorted_ref[NSELCALO], outne_sorted[NSELCALO];
 		//ptsort_ref<PFNeutralObj,NCALO,NSELCALO>(outne_ref, outne_sorted_ref);
 		//ptsort_pfneutral_hwopt(outne, outne_sorted);
 
 // ---------------- COMPARE WITH EXPECTED ----------------
-
+/*
 		int errors = 0; int ntot = 0, nch = 0, nneu = 0;
 		for (int i = 0; i < NTRACK; ++i) { for (int j = 0; j < NCALO; ++j) {
 			if (calo_track_link_bit[i][j] != calo_track_link_bit_ref[i][j]) {
@@ -169,7 +169,8 @@ int main() {
 		} else {
 			printf("Passed test %d (%d, %d, %d)\n", test, ntot, nch, nneu);
 		}
+	*/
 
-	}	
+	}
 	return 0;
 }
