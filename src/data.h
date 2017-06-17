@@ -18,14 +18,9 @@ enum PID { PID_Charged=0, PID_Neutral=1 };
 #define VTXPTMAX  200
 #define NTRACK 8
 #define NCALO 12
-#define NPF  32
 #define NSELCALO 15
 
 #define NPVTRACK 7
-
-#define PT_SCALE 4.0
-#define ETAPHI_SCALE (4*180/M_PI)
-#define Z0_SCALE 20.
 
 struct CaloObj {
 	pt_t hwPt;
