@@ -5,11 +5,17 @@
 
 typedef ap_int<16> pt_t;
 typedef ap_int<9>  etaphi_t;
+typedef ap_int<5>  vtx_t;
 typedef ap_int<2>  particleid_t;
 typedef ap_int<10> z0_t;  // 40cm / 0.1
 		
 enum PID { PID_Charged=0, PID_Neutral=1 };
 
+#define NVTXBINS  15
+#define NPOW 6
+#define NALLTRACK 1 << NPOW
+#define NSECTOR 1
+#define VTXPTMAX  200
 #define NTRACK 8
 #define NCALO 12
 #define NSELCALO 15
@@ -36,5 +42,12 @@ struct PFNeutralObj {
 	etaphi_t hwEta, hwPhi; // relative to the region center, at calo
 	particleid_t hwId;
 };
+struct VtxObj {
+	pt_t  hwSumPt;
+        z0_t  hwZ0;
+        vtx_t mult;
+	particleid_t hwId;
+};
+
 
 #endif
