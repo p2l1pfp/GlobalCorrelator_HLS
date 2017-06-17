@@ -41,8 +41,8 @@ int main() {
 	srand(37); // 37 is a good random number
 	
 	CaloObj calo[NCALO]; TkObj track[NTRACK]; z0_t hwZPV, hwZ0Cut;
-    PFChargedObj outch[NTRACK], outch_ref[NTRACK];
-    PFNeutralObj outne[NCALO], outne_ref[NCALO];
+	PFChargedObj outch[NTRACK], outch_ref[NTRACK];
+	PFNeutralObj outne[NCALO], outne_ref[NCALO];
 
 	for (int test = 1; test <= NTEST; ++test) {
 		for (int i = 0; i < NTRACK; ++i) {
@@ -93,7 +93,7 @@ int main() {
 		//ptsort_pfneutral_hwopt(outne, outne_sorted);
 
 // ---------------- COMPARE WITH EXPECTED ----------------
-/*
+
 		int errors = 0; int ntot = 0, nch = 0, nneu = 0;
 		for (int i = 0; i < NTRACK; ++i) {
 			if (!pf_equals(outch_ref[i], outch[i], "PF Charged", i)) errors++;
@@ -161,14 +161,13 @@ int main() {
 			for (int i = 0; i < NPVTRACK; ++i) {
 				printf("CHS charged pf %3d, hwPt % 7d % 7d   hwEta %+7d %+7d   hwPhi %+7d %+7d   hwId %1d %1d      hwZ0 %+7d %+7d\n", i,
 					int(pvch_ref[i].hwPt), int(pvch[i].hwPt), int(pvch_ref[i].hwEta), int(pvch[i].hwEta),
-					int(pvch_ref[i].hwPhi), int(pvch[i].hwPhi), int(pvch_ref[i].hwId), int(pvch[i].hwId),
+				        int(pvch_ref[i].hwPhi), int(pvch[i].hwPhi), int(pvch_ref[i].hwId), int(pvch[i].hwId),
 					int(pvch_ref[i].hwZ0), int(pvch[i].hwZ0));
 			}
-			return 1;
+			//return 1;
 		} else {
 			printf("Passed test %d (%d, %d, %d)\n", test, ntot, nch, nneu);
 		}
-	*/
 
 	}
 	return 0;

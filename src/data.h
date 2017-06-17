@@ -11,9 +11,10 @@ typedef ap_int<10> z0_t;  // 40cm / 0.1
 		
 enum PID { PID_Charged=0, PID_Neutral=1 };
 
-#define NVTXBINS  15
-#define NPOW 6
-#define NALLTRACK 1 << NPOW
+#define NVTXPOW   5 //Granularity of vtx binning + 4 for Z0_Scale
+#define NVTXBINS  (16 >> (NVTXPOW-4))  
+#define NPOW 6      // Number of tracksin powers of 2
+#define NALLTRACK (1 << NPOW)
 #define NSECTOR 1
 #define VTXPTMAX  200
 #define NTRACK 8
@@ -25,7 +26,7 @@ enum PID { PID_Charged=0, PID_Neutral=1 };
 
 #define PT_SCALE 4.0
 #define ETAPHI_SCALE (4*180/M_PI)
-#define Z0_SCALE 20.
+#define Z0_SCALE 16
 
 struct CaloObj {
 	pt_t hwPt;
