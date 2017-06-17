@@ -1,7 +1,9 @@
 #include <cstdio>
 #include "src/simple_pflow.h"
+#include "random_inputs.h"
+#include "DiscretePFInputs_IO.h"
 
-#define NTEST 50
+#define NTEST 500
 
 bool pf_equals(const PFChargedObj &out_ref, const PFChargedObj &out, const char *what, int idx) {
 	bool ret;
@@ -38,11 +40,13 @@ bool pf_equals(const PFNeutralObj &out_ref, const PFNeutralObj &out, const char 
 }
 int main() {
 
-	srand(37); // 37 is a good random number
+    //RandomPFInputs inputs(37); // 37 is a good random number
+	DiscretePFInputs inputs("regions_TTbar_PU140.dump");
 	
-	CaloObj calo[NCALO]; TkObj track[NTRACK]; z0_t hwZPV, hwZ0Cut;
-	PFChargedObj outch[NTRACK], outch_ref[NTRACK];
-	PFNeutralObj outne[NCALO], outne_ref[NCALO];
+	CaloObj calo[NCALO]; TkObj track[NTRACK]; z0_t hwZPV, hwZ0Cut = 7;
+        PFChargedObj outch[NTRACK], outch_ref[NTRACK];
+        PFNeutralObj outne_unsorted_ref[NSELCALO], outne_unsorted[NSELCALO];
+        PFNeutralObj outne_ref[NSELCALO], outne[NSELCALO];
 
 	for (int test = 1; test <= NTEST; ++test) {
 		for (int i = 0; i < NTRACK; ++i) {
@@ -51,65 +55,65 @@ int main() {
 		for (int i = 0; i < NCALO; ++i) {
 			calo[i].hwPt = 0; calo[i].hwEta = 0; calo[i].hwPhi = 0;
 		}
-		int ncharged = (rand() % NTRACK/2) + NTRACK/2;
-		int nneutral = (rand() % ((3*NCALO)/4));
-		for (int i = 1; i < nneutral && i < NCALO; i += 2) {
-			float pt = (rand()/float(RAND_MAX))*80+1, eta = (rand()/float(RAND_MAX))*2.0-1.0, phi = (rand()/float(RAND_MAX))*2.0-1.0;
-			calo[i].hwPt  = pt * PT_SCALE;
-			calo[i].hwEta = eta * ETAPHI_SCALE;
-			calo[i].hwPhi = phi * ETAPHI_SCALE;
-		}
-		float zPV = (rand()/float(RAND_MAX))*20-10;
-		hwZPV = zPV * Z0_SCALE; hwZ0Cut = 7;
 
-		for (int i = 0; i < ncharged && i < NTRACK; ++i) {
-			float pt = (rand()/float(RAND_MAX))*50+2, eta = (rand()/float(RAND_MAX))*2.0-1.0, phi = (rand()/float(RAND_MAX))*2.0-1.0;
-			float z = (i % 2 == 0) ? (zPV + (rand()/float(RAND_MAX))*0.7-.35) : ((rand()/float(RAND_MAX))*30-15);
-			track[i].hwPt    = pt * PT_SCALE;
-			track[i].hwPtErr = (0.2*pt+4) * PT_SCALE; 
-			track[i].hwEta = eta * ETAPHI_SCALE;
-			track[i].hwPhi = phi * ETAPHI_SCALE;
-			track[i].hwZ0  = z * Z0_SCALE;
-			int icalo = rand() % NCALO;
-			if (i % 3 == 1 || icalo >= NCALO) continue;
-			float dpt_calo = ((rand()/float(RAND_MAX))*3-1.5) * (0.2*pt+4);
-			float deta_calo = ((rand()/float(RAND_MAX))*0.3-0.15), dphi_calo = ((rand()/float(RAND_MAX))*0.3-0.15);
-			if (pt + dpt_calo > 0) {
-				calo[icalo].hwPt  += (pt + dpt_calo) * PT_SCALE;
-				calo[icalo].hwEta = (eta + deta_calo) * ETAPHI_SCALE;
-				calo[icalo].hwPhi = (phi + dphi_calo) * ETAPHI_SCALE;
-			}
-		}
+		if (!inputs.nextRegion(calo, track, hwZPV)) break;
 
-		//simple_pflow_iterative_ref(calo, track, out_ref);
-		//simple_pflow_iterative_hwopt(calo, track, out);
-		//simple_pflow_parallel_ref(calo, track, outch_ref, outne_ref);
-		simple_pflow_parallel_hwopt(calo, track, outch, outne);
-		//medium_pflow_parallel_ref(calo, track, outch_ref, outne_ref);
-		//medium_pflow_parallel_hwopt(calo, track, outch, outne);
+		//bool calo_track_link_bit[NTRACK][NCALO];
+		//link_pflow_parallel_hwopt(calo, track, calo_track_link_bit);
+		//ap_uint<NCALO> calo_track_link_bit[NTRACK];
+		//link_pflow_parallel_hwopt2(calo, track, calo_track_link_bit);
+		//spfph_tk2calo_link_v2(calo, track, calo_track_link_bit);
+		//spfph_tk2calo_link_v3(calo, track, calo_track_link_bit);
+		//ap_uint<NCALO> calo_track_link_bit_ref[NTRACK];
+		//link_pflow_parallel_ref(calo, track, calo_track_link_bit_ref);
+		//simple_pflow_parallel_ref(calo, track, outch_ref, outne_unsorted_ref);
+		//simple_pflow_parallel_hwopt(calo, track, outch, outne_unsorted);
+		//ptsort_ref<PFNeutralObj,NCALO,NSELCALO>(outne_unsorted_ref, outne_ref);
+		//ptsort_pfneutral_hwopt(outne_unsorted, outne);
+		medium_pflow_parallel_ref(calo, track, outch_ref, outne_ref);
+		medium_pflow_parallel_hwopt(calo, track, outch, outne);
 
-		//PFNeutralObj outne_sorted_ref[NSELCALO], outne_sorted[NSELCALO];
-		//ptsort_ref<PFNeutralObj,NCALO,NSELCALO>(outne_ref, outne_sorted_ref);
-		//ptsort_pfneutral_hwopt(outne, outne_sorted);
 
 // ---------------- COMPARE WITH EXPECTED ----------------
 
 		int errors = 0; int ntot = 0, nch = 0, nneu = 0;
+		/*// == LINKING COMPARISON ===
+		for (int i = 0; i < NTRACK; ++i) { for (int j = 0; j < NCALO; ++j) {
+			if (calo_track_link_bit[i][j] != calo_track_link_bit_ref[i][j]) {
+				printf("mismatch track-calo link[%3d][%3d] = %1d (hwopt), %1d (ref)\n",
+						i,j,int(calo_track_link_bit[i][j]),int(calo_track_link_bit_ref[i][j]));
+				errors++;
+			}
+		} }
+		if (errors) {
+			printf("          ");
+			for (int j = 0; j < NCALO; ++j) printf("C%02d   ", j);
+			printf("\n");
+			for (int i = 0; i < NTRACK; ++i) {
+				printf("TRACK %2d: ",i);
+				for (int j = 0; j < NCALO; ++j) printf("%1d %1d   ", int(calo_track_link_bit[i][j]),int(calo_track_link_bit_ref[i][j]));
+				printf("\n");
+			}
+		} */
+		// == PF COMPARISON ===
 		for (int i = 0; i < NTRACK; ++i) {
 			if (!pf_equals(outch_ref[i], outch[i], "PF Charged", i)) errors++;
 			if (outch_ref[i].hwPt > 0) { ntot++; nch++; }
 		}
-		for (int i = 0; i < NCALO; ++i) {
-			if (!pf_equals(outne_ref[i], outne[i], "PF Neutral", i)) errors++;
+		// == UNSORTED COMPARISON ===
+		//for (int i = 0; i < NCALO; ++i) {
+		//	if (!pf_equals(outne_unsorted_ref[i], outne_unsorted[i], "PF Neutral", i)) errors++;
+		//	if (outne_unsorted_ref[i].hwPt > 0) { ntot++; nneu++; }
+		//}
+		// == SORTED COMPARISON ===
+		for (int i = 0; i < NSELCALO; ++i) {
+			if (!pf_equals(outne_ref[i], outne[i], "PF sorted neutral", i)) errors++;
 			if (outne_ref[i].hwPt > 0) { ntot++; nneu++; }
 		}
-		//for (int i = 0; i < NSELCALO; ++i) {
-		//	if (!pf_equals(outne_sorted_ref[i], outne_sorted[i], "PF sorted neutral", i)) errors++;
-		//}
 
 		// ------- run CHS and PUPPI ------
 		bool isPV[NTRACK], isPV_ref[NTRACK];
-		pt_t puppiPt[NCALO], puppiPt_ref[NCALO];
+		pt_t puppiPt[NSELCALO], puppiPt_ref[NSELCALO];
 
 		simple_chs_ref(outch_ref, hwZPV, hwZ0Cut, isPV_ref) ;
 		simple_chs_hwopt(outch, hwZPV, hwZ0Cut, isPV) ;
@@ -128,7 +132,7 @@ int main() {
 			if (outch_ref[i].hwPt > 0 && isPV[i] != isPV_ref[i]) errors++;
 			if (isPV_ref[i]) nchpv++;
 		}
-		for (int i = 0; i < NCALO; ++i) {
+		for (int i = 0; i < NSELCALO; ++i) {
 			if (outne_ref[i].hwPt > 0 && puppiPt[i] != puppiPt_ref[i]) errors++;
 			if (puppiPt[i]) nnepv++;
 		}
@@ -152,12 +156,20 @@ int main() {
 					int(outch_ref[i].hwPhi), int(outch[i].hwPhi), int(outch_ref[i].hwId), int(outch[i].hwId),
 					int(outch_ref[i].hwZ0), int(outch[i].hwZ0), int(isPV_ref[i]), int(isPV[i]));
 			}
+                        /*// == unsorted ==
 			for (int i = 0; i < NCALO; ++i) {
+				printf("neutral pf %3d, hwPt % 7d % 7d   hwEta %+7d %+7d   hwPhi %+7d %+7d   hwId %1d %1d\n", i,
+					int(outne_unsorted_ref[i].hwPt), int(outne_unsorted[i].hwPt), int(outne_unsorted_ref[i].hwEta), int(outne_unsorted[i].hwEta),
+					int(outne_unsorted_ref[i].hwPhi), int(outne_unsorted[i].hwPhi), int(outne_unsorted_ref[i].hwId), int(outne_unsorted[i].hwId));
+			} */
+                        // == unsorted ==
+			for (int i = 0; i < NSELCALO; ++i) {
 				printf("neutral pf %3d, hwPt % 7d % 7d   hwEta %+7d %+7d   hwPhi %+7d %+7d   hwId %1d %1d      puppiPt % 7d % 7d \n", i,
 					int(outne_ref[i].hwPt), int(outne[i].hwPt), int(outne_ref[i].hwEta), int(outne[i].hwEta),
 					int(outne_ref[i].hwPhi), int(outne[i].hwPhi), int(outne_ref[i].hwId), int(outne[i].hwId),
 					int(puppiPt_ref[i]), int(puppiPt[i]));
 			}
+
 			for (int i = 0; i < NPVTRACK; ++i) {
 				printf("CHS charged pf %3d, hwPt % 7d % 7d   hwEta %+7d %+7d   hwPhi %+7d %+7d   hwId %1d %1d      hwZ0 %+7d %+7d\n", i,
 					int(pvch_ref[i].hwPt), int(pvch[i].hwPt), int(pvch_ref[i].hwEta), int(pvch[i].hwEta),
