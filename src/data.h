@@ -11,9 +11,9 @@ typedef ap_int<10> z0_t;  // 40cm / 0.1
 		
 enum PID { PID_Charged=0, PID_Neutral=1 };
 
-#define NVTXPOW   5 //Granularity of vtx binning + 4 for Z0_Scale
-#define NVTXBINS  (16 >> (NVTXPOW-4))  
-#define NPOW 6      // Number of tracksin powers of 2
+#define NVTXPOW   4 //Granularity of vtx binning + 4 for Z0_Scale
+#define NVTXBINS  (16 >> (NVTXPOW-4))  //Currently just 8 Vtx bins
+#define NPOW 6      // Number of tracksin powers of 2, trying 64 with 15 PV
 #define NALLTRACK (1 << NPOW)
 #define NSECTOR 1
 #define VTXPTMAX  200
