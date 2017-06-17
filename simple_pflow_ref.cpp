@@ -110,9 +110,9 @@ void simple_chs_ref(PFChargedObj pfch[NTRACK], z0_t pvZ, z0_t pvZCut, bool isPV[
 		isPV[it] = (std::abs(pfch[it].hwZ0 - pvZ) <= pvZCut);
 	}
 }
-void simple_puppi_ref(PFChargedObj pfch[NTRACK], bool isPV[NTRACK], PFNeutralObj pfne[NCALO], pt_t puppiPt[NCALO]) {
+void simple_puppi_ref(PFChargedObj pfch[NTRACK], bool isPV[NTRACK], PFNeutralObj pfne[NSELCALO], pt_t puppiPt[NSELCALO]) {
 	const int DR2MAX = 8404; // 0.4 cone
-	for (int ic = 0; ic < NCALO; ++ic) {
+	for (int ic = 0; ic < NSELCALO; ++ic) {
 		puppiPt[ic] = 0;
 		if (pfne[ic].hwPt == 0) continue;
 		int sum = 0;

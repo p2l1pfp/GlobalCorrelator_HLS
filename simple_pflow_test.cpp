@@ -44,8 +44,9 @@ int main() {
 	DiscretePFInputs inputs("regions_TTbar_PU140.dump");
 	
 	CaloObj calo[NCALO]; TkObj track[NTRACK]; z0_t hwZPV, hwZ0Cut = 7;
-    PFChargedObj outch[NTRACK], outch_ref[NTRACK];
-    PFNeutralObj outne[NCALO], outne_ref[NCALO];
+        PFChargedObj outch[NTRACK], outch_ref[NTRACK];
+        PFNeutralObj outne_unsorted_ref[NSELCALO], outne_unsorted[NSELCALO];
+        PFNeutralObj outne_ref[NSELCALO], outne[NSELCALO];
 
 	for (int test = 1; test <= NTEST; ++test) {
 		for (int i = 0; i < NTRACK; ++i) {
@@ -65,16 +66,13 @@ int main() {
 		//spfph_tk2calo_link_v3(calo, track, calo_track_link_bit);
 		//ap_uint<NCALO> calo_track_link_bit_ref[NTRACK];
 		//link_pflow_parallel_ref(calo, track, calo_track_link_bit_ref);
-		//simple_pflow_iterative_ref(calo, track, out_ref);
-		//simple_pflow_iterative_hwopt(calo, track, out);
-		//simple_pflow_parallel_ref(calo, track, outch_ref, outne_ref);
-		//simple_pflow_parallel_hwopt(calo, track, outch, outne);
+		//simple_pflow_parallel_ref(calo, track, outch_ref, outne_unsorted_ref);
+		//simple_pflow_parallel_hwopt(calo, track, outch, outne_unsorted);
+		//ptsort_ref<PFNeutralObj,NCALO,NSELCALO>(outne_unsorted_ref, outne_ref);
+		//ptsort_pfneutral_hwopt(outne_unsorted, outne);
 		medium_pflow_parallel_ref(calo, track, outch_ref, outne_ref);
 		medium_pflow_parallel_hwopt(calo, track, outch, outne);
 
-		//PFNeutralObj outne_sorted_ref[NSELCALO], outne_sorted[NSELCALO];
-		//ptsort_ref<PFNeutralObj,NCALO,NSELCALO>(outne_ref, outne_sorted_ref);
-		//ptsort_pfneutral_hwopt(outne, outne_sorted);
 
 // ---------------- COMPARE WITH EXPECTED ----------------
 		int errors = 0; int ntot = 0, nch = 0, nneu = 0;
@@ -101,18 +99,20 @@ int main() {
 			if (!pf_equals(outch_ref[i], outch[i], "PF Charged", i)) errors++;
 			if (outch_ref[i].hwPt > 0) { ntot++; nch++; }
 		}
-		for (int i = 0; i < NCALO; ++i) {
-			if (!pf_equals(outne_ref[i], outne[i], "PF Neutral", i)) errors++;
+		// == UNSORTED COMPARISON ===
+		//for (int i = 0; i < NCALO; ++i) {
+		//	if (!pf_equals(outne_unsorted_ref[i], outne_unsorted[i], "PF Neutral", i)) errors++;
+		//	if (outne_unsorted_ref[i].hwPt > 0) { ntot++; nneu++; }
+		//}
+		// == SORTED COMPARISON ===
+		for (int i = 0; i < NSELCALO; ++i) {
+			if (!pf_equals(outne_ref[i], outne[i], "PF sorted neutral", i)) errors++;
 			if (outne_ref[i].hwPt > 0) { ntot++; nneu++; }
 		}
-		// == SORT COMPARISON ===
-		//for (int i = 0; i < NSELCALO; ++i) {
-		//	if (!pf_equals(outne_sorted_ref[i], outne_sorted[i], "PF sorted neutral", i)) errors++;
-		//}
 
 		// ------- run CHS and PUPPI ------
 		bool isPV[NTRACK], isPV_ref[NTRACK];
-		pt_t puppiPt[NCALO], puppiPt_ref[NCALO];
+		pt_t puppiPt[NSELCALO], puppiPt_ref[NSELCALO];
 
 		simple_chs_ref(outch_ref, hwZPV, hwZ0Cut, isPV_ref) ;
 		simple_chs_hwopt(outch, hwZPV, hwZ0Cut, isPV) ;
@@ -131,7 +131,7 @@ int main() {
 			if (outch_ref[i].hwPt > 0 && isPV[i] != isPV_ref[i]) errors++;
 			if (isPV_ref[i]) nchpv++;
 		}
-		for (int i = 0; i < NCALO; ++i) {
+		for (int i = 0; i < NSELCALO; ++i) {
 			if (outne_ref[i].hwPt > 0 && puppiPt[i] != puppiPt_ref[i]) errors++;
 			if (puppiPt[i]) nnepv++;
 		}
@@ -155,12 +155,20 @@ int main() {
 					int(outch_ref[i].hwPhi), int(outch[i].hwPhi), int(outch_ref[i].hwId), int(outch[i].hwId),
 					int(outch_ref[i].hwZ0), int(outch[i].hwZ0), int(isPV_ref[i]), int(isPV[i]));
 			}
+                        /*// == unsorted ==
 			for (int i = 0; i < NCALO; ++i) {
+				printf("neutral pf %3d, hwPt % 7d % 7d   hwEta %+7d %+7d   hwPhi %+7d %+7d   hwId %1d %1d\n", i,
+					int(outne_unsorted_ref[i].hwPt), int(outne_unsorted[i].hwPt), int(outne_unsorted_ref[i].hwEta), int(outne_unsorted[i].hwEta),
+					int(outne_unsorted_ref[i].hwPhi), int(outne_unsorted[i].hwPhi), int(outne_unsorted_ref[i].hwId), int(outne_unsorted[i].hwId));
+			} */
+                        // == unsorted ==
+			for (int i = 0; i < NSELCALO; ++i) {
 				printf("neutral pf %3d, hwPt % 7d % 7d   hwEta %+7d %+7d   hwPhi %+7d %+7d   hwId %1d %1d      puppiPt % 7d % 7d \n", i,
 					int(outne_ref[i].hwPt), int(outne[i].hwPt), int(outne_ref[i].hwEta), int(outne[i].hwEta),
 					int(outne_ref[i].hwPhi), int(outne[i].hwPhi), int(outne_ref[i].hwId), int(outne[i].hwId),
 					int(puppiPt_ref[i]), int(puppiPt[i]));
 			}
+
 			for (int i = 0; i < NPVTRACK; ++i) {
 				printf("CHS charged pf %3d, hwPt % 7d % 7d   hwEta %+7d %+7d   hwPhi %+7d %+7d   hwId %1d %1d      hwZ0 %+7d %+7d\n", i,
 					int(pvch_ref[i].hwPt), int(pvch[i].hwPt), int(pvch_ref[i].hwEta), int(pvch[i].hwEta),

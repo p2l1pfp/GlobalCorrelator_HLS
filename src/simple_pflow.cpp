@@ -293,7 +293,7 @@ int _lut_divide(ap_uint<17> num, ap_uint<9> den) {
 	_lut_invert_init(_table);
 	return (num * _table[den]);
 }
-void simple_puppi_hwopt(PFChargedObj pfch[NTRACK], bool isPV[NTRACK], PFNeutralObj pfne[NCALO], pt_t puppiPt[NCALO]) {
+void simple_puppi_hwopt(PFChargedObj pfch[NTRACK], bool isPV[NTRACK], PFNeutralObj pfne[NSELCALO], pt_t puppiPt[NSELCALO]) {
 	#pragma HLS ARRAY_PARTITION variable=pfch complete
 	#pragma HLS ARRAY_PARTITION variable=isPV complete
 	#pragma HLS ARRAY_PARTITION variable=pfne complete
@@ -306,7 +306,7 @@ void simple_puppi_hwopt(PFChargedObj pfch[NTRACK], bool isPV[NTRACK], PFNeutralO
 		int mypt2 = (pfch[it].hwPt*pfch[it].hwPt) >> 5;
 		pt2[it] = (mypt2 < 131071 ? mypt2 : 131071);
 	}
-	for (int ic = 0; ic < NCALO; ++ic) {
+	for (int ic = 0; ic < NSELCALO; ++ic) {
 		int sum = 0; pt_t ret = 0;
 		for (int it = 0; it < NTRACK; ++it) {
 			int dr2 = dr2_int(pfch[it].hwEta, pfch[it].hwPhi, pfne[ic].hwEta, pfne[ic].hwPhi);

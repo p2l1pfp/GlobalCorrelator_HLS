@@ -19,9 +19,9 @@ void medium_pflow_parallel_ref(CaloObj calo[NCALO], TkObj track[NTRACK], PFCharg
 void medium_pflow_parallel_hwopt(CaloObj calo[NCALO], TkObj track[NTRACK], PFChargedObj outch[NTRACK], PFNeutralObj outne[NSELCALO]) ;
 
 void simple_chs_ref(PFChargedObj outch[NTRACK], z0_t pvZ, z0_t pvZErr, bool isPV[NTRACK]) ;
-void simple_puppi_ref(PFChargedObj outch[NTRACK], bool isPV[NTRACK], PFNeutralObj outne[NCALO], pt_t puppiPt[NCALO]) ;
+void simple_puppi_ref(PFChargedObj outch[NTRACK], bool isPV[NTRACK], PFNeutralObj outne[NSELCALO], pt_t puppiPt[NSELCALO]) ;
 void simple_chs_hwopt(PFChargedObj outch[NTRACK], z0_t pvZ, z0_t pvZErr, bool isPV[NTRACK]) ;
-void simple_puppi_hwopt(PFChargedObj outch[NTRACK], bool isPV[NTRACK], PFNeutralObj outne[NCALO], pt_t puppiPt[NCALO]) ;
+void simple_puppi_hwopt(PFChargedObj outch[NTRACK], bool isPV[NTRACK], PFNeutralObj outne[NSELCALO], pt_t puppiPt[NSELCALO]) ;
 
 void apply_chs_ref(PFChargedObj allch[NTRACK], bool isPV[NTRACK], PFChargedObj pvch[NPVTRACK]) ;
 void apply_chs_hwopt(PFChargedObj allch[NTRACK], bool isPV[NTRACK], PFChargedObj pvch[NPVTRACK]) ;
