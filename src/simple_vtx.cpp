@@ -5,7 +5,7 @@
 #include <cstdio>
 #endif
 
-
+/*
 void _lut_zbin_init(ap_uint<16> _table[512]) {
   _table[0] = 0;
   for (int i = 1; i <= 511; ++i) {
@@ -32,6 +32,7 @@ z0_t     convertZ0(z0_t iZ0) {
   //z0_t  dZ = iZ0*Z0_SCALE*(16/NVTXBINS);
   //return iZ0 << NVTXPOW;
 }
+*/
 void fillVtx(TkObj track,  ap_int<5>  vtxbin[NVTXBINS],pt_t       sumbin[NVTXBINS]) { 
   ap_int<5> bin0 = (track.hwZ0 >> NVTXPOW);
   pt_t       pt0=track.hwPt;
@@ -41,12 +42,12 @@ void fillVtx(TkObj track,  ap_int<5>  vtxbin[NVTXBINS],pt_t       sumbin[NVTXBIN
 }
 void simple_vtx_hwopt(TkObj track[NALLTRACK], VtxObj *outvtx) { 
   #pragma HLS ARRAY_PARTITION variable=track  complete
-  //#pragma HLS INTERFACE axis port=track
+  #pragma HLS INTERFACE axis port=track
   //#pragma HLS INTERFACE s_axilite port=return
   //#pragma HLS INTERFACE s_axilite port=outvtx
   #pragma HLS INTERFACE ap_ctrl_hs port=return
   #pragma HLS INTERFACE ap_ctrl_hs port=outvtx
-  #pragma HLS pipeline II=5
+  #pragma HLS pipeline II=2
 
   //Fill sum Et and count binned in dZ
   ap_int<5>  vtxbin[NALLTRACK][NVTXBINS];
