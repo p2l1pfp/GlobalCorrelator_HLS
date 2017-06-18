@@ -238,7 +238,7 @@ void simple_pflow_parallel_hwopt(CaloObj calo[NCALO], TkObj track[NTRACK], PFCha
 
 	pt_t sumtk[NCALO]; int sumtkerr2[NCALO];
 	#pragma HLS ARRAY_PARTITION variable=sumtk complete
-        #pragma HLS ARRAY_PARTITION variable=sumtkerr2 complete
+    #pragma HLS ARRAY_PARTITION variable=sumtkerr2 complete
 
 	_spfph_tkalgo(track, calo_track_link_bit, outch);
 	_spfph_sumtk(track, tkerr2, calo_track_link_bit, sumtk, sumtkerr2);
@@ -272,7 +272,7 @@ void simple_chs_hwopt(PFChargedObj pfch[NTRACK], z0_t pvZ, z0_t pvZCut, bool isP
 	#pragma HLS ARRAY_PARTITION variable=pfch complete
 	#pragma HLS ARRAY_PARTITION variable=isPV complete
 	#pragma HLS pipeline II=5
-        for (int it = 0; it < NTRACK; ++it) {
+	for (int it = 0; it < NTRACK; ++it) {
 		if (pfch[it].hwPt == 0) {
 			isPV[it] = false;
 		} else {

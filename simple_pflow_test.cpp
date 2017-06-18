@@ -47,7 +47,6 @@ int main() {
         PFChargedObj outch[NTRACK], outch_ref[NTRACK];
         PFNeutralObj outne_unsorted_ref[NSELCALO], outne_unsorted[NSELCALO];
         PFNeutralObj outne_ref[NSELCALO], outne[NSELCALO];
-
 	for (int test = 1; test <= NTEST; ++test) {
 		for (int i = 0; i < NTRACK; ++i) {
 			track[i].hwPt = 0; track[i].hwPtErr = 0; track[i].hwEta = 0; track[i].hwPhi = 0; track[i].hwZ0 = 0;
@@ -75,7 +74,7 @@ int main() {
 
 
 // ---------------- COMPARE WITH EXPECTED ----------------
-
+/*
 		int errors = 0; int ntot = 0, nch = 0, nneu = 0;
 		/*// == LINKING COMPARISON ===
 		for (int i = 0; i < NTRACK; ++i) { for (int j = 0; j < NCALO; ++j) {
@@ -173,13 +172,14 @@ int main() {
 			for (int i = 0; i < NPVTRACK; ++i) {
 				printf("CHS charged pf %3d, hwPt % 7d % 7d   hwEta %+7d %+7d   hwPhi %+7d %+7d   hwId %1d %1d      hwZ0 %+7d %+7d\n", i,
 					int(pvch_ref[i].hwPt), int(pvch[i].hwPt), int(pvch_ref[i].hwEta), int(pvch[i].hwEta),
-				        int(pvch_ref[i].hwPhi), int(pvch[i].hwPhi), int(pvch_ref[i].hwId), int(pvch[i].hwId),
+					int(pvch_ref[i].hwPhi), int(pvch[i].hwPhi), int(pvch_ref[i].hwId), int(pvch[i].hwId),
 					int(pvch_ref[i].hwZ0), int(pvch[i].hwZ0));
 			}
-			//return 1;
+			return 1;
 		} else {
 			printf("Passed test %d (%d, %d, %d)\n", test, ntot, nch, nneu);
 		}
+	*/
 
 	}
 	return 0;

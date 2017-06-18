@@ -1,4 +1,3 @@
-
 #include <cstdio>
 #include "src/simple_vtx.h"
 
@@ -36,7 +35,6 @@ int main() {
 	float pt = 100*(rand()/float(RAND_MAX))+2, eta = (rand()/float(RAND_MAX))*2.0-1.0, phi = (rand()/float(RAND_MAX))*2.0-1.0;
 	float  pGaus = 0.5*(rand()/RAND_MAX+rand()/RAND_MAX);
 	float  pZPV  = (pGaus-0.5)*zPVSig+zPV;
-	if(pZPV < 0) pZPV = 0;
 	track[j][i].hwPt    = pt * PT_SCALE;
 	track[j][i].hwPtErr = (0.2*pt+4) * PT_SCALE; 
 	track[j][i].hwEta = eta * ETAPHI_SCALE;
