@@ -20,12 +20,11 @@ int dr2_int(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2) {
 	etaphi_t dphi = (phi1-phi2);
 	return deta*deta + dphi*dphi;
 }
-template<unsigned NB>
-ap_uint<NB> dr2_int_cap(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2, ap_uint<NB> max) {
+ap_uint<12> dr2_int_cap(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2, ap_uint<12> max) {
 	etaphi_t deta = (eta1-eta2);
 	etaphi_t dphi = (phi1-phi2);
 	int dr2 = deta*deta + dphi*dphi;
-	return (dr2 < int(max) ? ap_uint<NB>(dr2) : max);
+	return (dr2 < int(max) ? ap_uint<12>(dr2) : max);
 }
 
 
@@ -85,86 +84,12 @@ void _spfph_tk2calo_link(CaloObj calo[NCALO], TkObj track[NTRACK], bool calo_tra
 
 	}
 }
-
-#define tk2calo_v2_dr_t ap_uint<12>
-void spfph_tk2calo_v2_drvals(CaloObj calo[NCALO], TkObj track[NTRACK], tk2calo_v2_dr_t calo_track_drval[NTRACK][NCALO]) {
-	const tk2calo_v2_dr_t DR2MAX = 2101;
-	for (int it = 0; it < NTRACK; ++it) {
-		pt_t caloPtMin = track[it].hwPt - 2*(track[it].hwPtErr);
-		for (int icalo = 0; icalo < NCALO; ++icalo) {
-			if (calo[icalo].hwPt > caloPtMin) {
-				calo_track_drval[it][icalo] = dr2_int_cap<12>(track[it].hwEta, track[it].hwPhi, calo[icalo].hwEta, calo[icalo].hwPhi, DR2MAX);
-			} else {
-				calo_track_drval[it][icalo] = DR2MAX;
-			}
-		}
-	}
-}
-void spfph_tk2calo_v2_linkstep(tk2calo_v2_dr_t calo_track_drval[NTRACK][NCALO], ap_uint<NCALO> calo_track_link_bit[NTRACK]) {
-	const tk2calo_v2_dr_t DR2MAX = 2101;
-	for (int it = 0; it < NTRACK; ++it) {
-		for (int icalo = 0; icalo < NCALO; ++icalo) {
-			tk2calo_v2_dr_t mydr = calo_track_drval[it][icalo];
-			bool link = (mydr != DR2MAX);
-			for (int j = 0; j < NCALO; ++j) {
-				if (icalo <= j) link = link && (calo_track_drval[it][j] >= mydr);
-				else            link = link && (calo_track_drval[it][j] >  mydr);
-			}
-			calo_track_link_bit[it][icalo] = link;
-		}
-	}
-}
-void spfph_tk2calo_link_v2(CaloObj calo[NCALO], TkObj track[NTRACK], ap_uint<NCALO> calo_track_link_bit[NTRACK]) {
-	#pragma HLS ARRAY_PARTITION variable=calo complete
-	#pragma HLS ARRAY_PARTITION variable=track complete
-	#pragma HLS ARRAY_PARTITION variable=calo_track_link_bit complete dim=0
-
-	#pragma HLS pipeline II=5
-
-	tk2calo_v2_dr_t drvals[NTRACK][NCALO];
-	#pragma HLS ARRAY_PARTITION variable=drvals complete dim=0
-
-	spfph_tk2calo_v2_drvals(calo, track, drvals);
-	spfph_tk2calo_v2_linkstep(drvals, calo_track_link_bit);
-}
-template<int N>
-ap_uint<12> spfph_tk2calo_v3_linkstep(etaphi_t trackEta, etaphi_t trackPhi, pt_t caloPtMin, CaloObj calo[], ap_uint<N> & calo_track_link_bit) {
-	enum { HALF=N/2, REST=N-HALF };
-	ap_uint<HALF> wtop; ap_uint<REST> wbot;
-	ap_uint<12> drtop = spfph_tk2calo_v3_linkstep<HALF>(trackEta, trackPhi, caloPtMin, calo,      wtop);
-	ap_uint<12> drbot = spfph_tk2calo_v3_linkstep<REST>(trackEta, trackPhi, caloPtMin, calo+HALF, wbot);
-	if (drtop <= drbot) {
-		calo_track_link_bit = ap_uint<REST>(0).concat(wtop); // bits are reverse-ordered!
-		return drtop;
-	} else {
-		calo_track_link_bit = wbot.concat(ap_uint<HALF>(0)); // bits are reverse-ordered!
-		return drbot;
-	}
-}
-template<>
-ap_uint<12> spfph_tk2calo_v3_linkstep(etaphi_t trackEta, etaphi_t trackPhi, pt_t caloPtMin, CaloObj calo[], ap_uint<1> & calo_track_link_bit) {
-	const ap_uint<12> DR2MAX = 2101;
-	ap_uint<12> drval = (calo[0].hwPt > caloPtMin ? dr2_int_cap<12>(trackEta, trackPhi, calo[0].hwEta, calo[0].hwPhi, DR2MAX) : DR2MAX);
-	calo_track_link_bit = (drval != DR2MAX);
-	return drval;
-}
-void spfph_tk2calo_link_v3(CaloObj calo[NCALO], TkObj track[NTRACK], ap_uint<NCALO> calo_track_link_bit[NTRACK]) {
-	#pragma HLS ARRAY_PARTITION variable=calo complete
-	#pragma HLS ARRAY_PARTITION variable=track complete
-	#pragma HLS ARRAY_PARTITION variable=calo_track_link_bit complete dim=0
-	#pragma HLS pipeline II=5
-	for (int it = 0; it < NTRACK; ++it) {
-		pt_t caloPtMin = track[it].hwPt - 2*(track[it].hwPtErr);
-		spfph_tk2calo_v3_linkstep<NCALO>(track[it].hwEta, track[it].hwPhi, caloPtMin, calo, calo_track_link_bit[it]);
-	}
-}
-
 void _spfph_tkerr2(TkObj track[NTRACK], int tkerr2[NTRACK]) {
 	for (int it = 0; it < NTRACK; ++it) {
 		tkerr2[it] = (track[it].hwPtErr * track[it].hwPtErr) << 2;
 	}
 }
-void _spfph_sumtk(TkObj track[NTRACK], int tkerr2[NTRACK], ap_uint<NCALO> calo_track_link_bit[NTRACK], pt_t sumtk[NCALO], int sumtkerr2[NCALO]) {
+void _spfph_sumtk(TkObj track[NTRACK], int tkerr2[NTRACK], bool calo_track_link_bit[NTRACK][NCALO], pt_t sumtk[NCALO], int sumtkerr2[NCALO]) {
 	for (int icalo = 0; icalo < NCALO; ++icalo) {
 		pt_t sum = 0;
 		int sumerr = 0;
@@ -176,7 +101,7 @@ void _spfph_sumtk(TkObj track[NTRACK], int tkerr2[NTRACK], ap_uint<NCALO> calo_t
 	}
 }
 
-void _spfph_tkalgo(TkObj track[NTRACK], ap_uint<NCALO> calo_track_link_bit[NTRACK], PFChargedObj pfout[NTRACK]) {
+void _spfph_tkalgo(TkObj track[NTRACK], bool calo_track_link_bit[NTRACK][NCALO], PFChargedObj pfout[NPF]) {
 	const pt_t TKPT_MAX = 80; // 20 * PT_SCALE;
 	for (int it = 0; it < NTRACK; ++it) {
 		bool good = (track[it].hwPt < TKPT_MAX);
@@ -199,7 +124,7 @@ void _spfph_tkalgo(TkObj track[NTRACK], ap_uint<NCALO> calo_track_link_bit[NTRAC
 	}
 }
 
-void _spfph_caloalgo(CaloObj calo[NCALO], pt_t sumtk[NCALO], int sumtkerr2[NCALO], PFNeutralObj pfout[NCALO]) {
+void _spfph_caloalgo(CaloObj calo[NCALO], pt_t sumtk[NCALO], int sumtkerr2[NCALO], PFNeutralObj pfout[NPF]) {
 	for (int icalo = 0; icalo < NCALO; ++icalo) {
 		pt_t calopt;
 		if (sumtk[icalo] == 0) {
@@ -227,10 +152,10 @@ void simple_pflow_parallel_hwopt(CaloObj calo[NCALO], TkObj track[NTRACK], PFCha
 
 	#pragma HLS pipeline II=5
 
-	ap_uint<NCALO> calo_track_link_bit[NTRACK];
-	#pragma HLS ARRAY_PARTITION variable=calo_track_link_bit complete
+	bool calo_track_link_bit[NTRACK][NCALO];
+	#pragma HLS ARRAY_PARTITION variable=calo_track_link_bit dim=0 complete
 
-	spfph_tk2calo_link_v2(calo, track, calo_track_link_bit);
+	_spfph_tk2calo_link(calo, track, calo_track_link_bit);
 
 	int  tkerr2[NTRACK];
 	#pragma HLS ARRAY_PARTITION variable=tkerr2 complete
@@ -243,16 +168,6 @@ void simple_pflow_parallel_hwopt(CaloObj calo[NCALO], TkObj track[NTRACK], PFCha
 	_spfph_tkalgo(track, calo_track_link_bit, outch);
 	_spfph_sumtk(track, tkerr2, calo_track_link_bit, sumtk, sumtkerr2);
 	_spfph_caloalgo(calo, sumtk, sumtkerr2, outne);
-}
-
-void link_pflow_parallel_hwopt(CaloObj calo[NCALO], TkObj track[NTRACK], bool calo_track_link_bit[NTRACK][NCALO]) {
-	#pragma HLS ARRAY_PARTITION variable=calo complete
-	#pragma HLS ARRAY_PARTITION variable=track complete
-	#pragma HLS ARRAY_PARTITION variable=calo_track_link_bit complete dim=0
-
-	#pragma HLS pipeline II=5
-
-	_spfph_tk2calo_link(calo, track, calo_track_link_bit);
 }
 
 void medium_pflow_parallel_hwopt(CaloObj calo[NCALO], TkObj track[NTRACK], PFChargedObj outch[NTRACK], PFNeutralObj outne[NSELCALO]) {
@@ -293,7 +208,7 @@ int _lut_divide(ap_uint<17> num, ap_uint<9> den) {
 	_lut_invert_init(_table);
 	return (num * _table[den]);
 }
-void simple_puppi_hwopt(PFChargedObj pfch[NTRACK], bool isPV[NTRACK], PFNeutralObj pfne[NSELCALO], pt_t puppiPt[NSELCALO]) {
+void simple_puppi_hwopt(PFChargedObj pfch[NTRACK], bool isPV[NTRACK], PFNeutralObj pfne[NCALO], pt_t puppiPt[NCALO]) {
 	#pragma HLS ARRAY_PARTITION variable=pfch complete
 	#pragma HLS ARRAY_PARTITION variable=isPV complete
 	#pragma HLS ARRAY_PARTITION variable=pfne complete
@@ -306,7 +221,7 @@ void simple_puppi_hwopt(PFChargedObj pfch[NTRACK], bool isPV[NTRACK], PFNeutralO
 		int mypt2 = (pfch[it].hwPt*pfch[it].hwPt) >> 5;
 		pt2[it] = (mypt2 < 131071 ? mypt2 : 131071);
 	}
-	for (int ic = 0; ic < NSELCALO; ++ic) {
+	for (int ic = 0; ic < NCALO; ++ic) {
 		int sum = 0; pt_t ret = 0;
 		for (int it = 0; it < NTRACK; ++it) {
 			int dr2 = dr2_int(pfch[it].hwEta, pfch[it].hwPhi, pfne[ic].hwEta, pfne[ic].hwPhi);

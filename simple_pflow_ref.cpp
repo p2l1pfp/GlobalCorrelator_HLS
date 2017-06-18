@@ -6,21 +6,6 @@
 
 template <typename T> int sqr(const T & t) { return t*t; }
 
-void link_pflow_parallel_ref(CaloObj calo[NCALO], TkObj track[NTRACK], ap_uint<NCALO> calo_track_link_bit[NTRACK]) {
-	const int DR2MAX   = 2101;
-	for (int it = 0; it < NTRACK; ++it) {
-		pt_t caloPtMin = track[it].hwPt - 2*(track[it].hwPtErr);
-		int  drmin = DR2MAX, ibest = -1;
-		for (int ic = 0; ic < NCALO; ++ic) {
-			if (calo[ic].hwPt <= caloPtMin) continue;
-			int dr = dr2_int(track[it].hwEta, track[it].hwPhi, calo[ic].hwEta, calo[ic].hwPhi);
-			if (dr < drmin) { drmin = dr; ibest = ic; }
-		}
-		calo_track_link_bit[it] = 0;
-		if (ibest != -1) calo_track_link_bit[it][ibest] = 1;
-	}
-}
-
 void simple_pflow_parallel_ref(CaloObj calo[NCALO], TkObj track[NTRACK], PFChargedObj outch[NTRACK], PFNeutralObj outne[NCALO]) {
 	// constants
 	const etaphi_t BOX_SIZE = 81; // ETAPHI_SCALE * 0.2 * std::sqrt(M_PI/4);
@@ -110,9 +95,9 @@ void simple_chs_ref(PFChargedObj pfch[NTRACK], z0_t pvZ, z0_t pvZCut, bool isPV[
 		isPV[it] = (std::abs(pfch[it].hwZ0 - pvZ) <= pvZCut);
 	}
 }
-void simple_puppi_ref(PFChargedObj pfch[NTRACK], bool isPV[NTRACK], PFNeutralObj pfne[NSELCALO], pt_t puppiPt[NSELCALO]) {
+void simple_puppi_ref(PFChargedObj pfch[NTRACK], bool isPV[NTRACK], PFNeutralObj pfne[NCALO], pt_t puppiPt[NCALO]) {
 	const int DR2MAX = 8404; // 0.4 cone
-	for (int ic = 0; ic < NSELCALO; ++ic) {
+	for (int ic = 0; ic < NCALO; ++ic) {
 		puppiPt[ic] = 0;
 		if (pfne[ic].hwPt == 0) continue;
 		int sum = 0;
