@@ -3,6 +3,9 @@
 
 #define NTEST 50
 #define NPV   15
+#define Z0_SCALE 20.
+#define PT_SCALE 4.0
+#define ETAPHI_SCALE (4*180/M_PI)
 
 int main() {
   srand(73); // 73 is also a prime number just to be different than Gio ;p

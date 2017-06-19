@@ -11,19 +11,21 @@ typedef ap_int<10> z0_t;  // 40cm / 0.1
 		
 enum PID { PID_Charged=0, PID_Neutral=1 };
 
+// VERTEXING
 #define NVTXBINS  15
 #define NPOW 6
 #define NALLTRACK 1 << NPOW
 #define NSECTOR 1
 #define VTXPTMAX  200
+
+// PF
 #define NTRACK 8
 #define NCALO 12
 #define NSELCALO 15
 
+// PUPPI & CHS
 #define NPVTRACK 7
-#define PT_SCALE 4.0
-#define ETAPHI_SCALE (4*180/M_PI)
-#define Z0_SCALE 20.
+
 
 struct CaloObj {
 	pt_t hwPt;

@@ -5,6 +5,7 @@
 #ifndef __SYNTHESIS__
 #include <cstdio>
 #endif
+#define Z0_SCALE 20.
 
 void simple_vtx_ref(TkObj track[NALLTRACK], VtxObj *outvtx) { 
   //Fill sum Et and count binned in dZ
