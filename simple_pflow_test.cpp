@@ -74,7 +74,6 @@ int main() {
 
 
 // ---------------- COMPARE WITH EXPECTED ----------------
-/*
 		int errors = 0; int ntot = 0, nch = 0, nneu = 0;
 		/*// == LINKING COMPARISON ===
 		for (int i = 0; i < NTRACK; ++i) { for (int j = 0; j < NCALO; ++j) {
@@ -179,7 +178,6 @@ int main() {
 		} else {
 			printf("Passed test %d (%d, %d, %d)\n", test, ntot, nch, nneu);
 		}
-	*/
 
 	}
 	return 0;
