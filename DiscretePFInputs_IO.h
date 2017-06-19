@@ -75,6 +75,27 @@ class DiscretePFInputs {
 		DiscretePFInputs(const char *fileName) : file_(fopen(fileName,"rb")), iregion_(0) {}
 		~DiscretePFInputs() { fclose(file_); }
 		bool nextRegion(CaloObj calo[NCALO], TkObj track[NTRACK], z0_t & hwZPV) {
+			if (!nextRegion()) return false;
+		    	const Region &r = event_.regions[iregion_];
+			readOldCalo(calo);
+			readTracks(track, hwZPV);
+			printf("Read region %u with %lu tracks and %lu calo\n", iregion_, r.track.size(), r.calo.size());
+			iregion_++;
+			return true;
+		}
+		bool nextRegion(HadCaloObj calo[NCALO], EmCaloObj emcalo[NEMCALO], TkObj track[NTRACK], z0_t & hwZPV) {
+			if (!nextRegion(calo, track, hwZPV)) return false;
+		    	const Region &r = event_.regions[iregion_];
+			readHadCalo(calo);
+			readEmCalo(emcalo);
+			readTracks(track, hwZPV);
+			printf("Read region %u with %lu tracks, %lu em calo and %lu had calo\n", iregion_, r.track.size(), r.emcalo.size(), r.calo.size());
+			iregion_++;
+			return true;
+		}
+
+	private:
+		bool nextRegion() {
 			while(true) {
 				if (event_.event == 0 || iregion_ == event_.regions.size()) {
 					if (feof(file_)) return false;
@@ -83,32 +104,50 @@ class DiscretePFInputs {
 					iregion_ = 0;
 				}
 				const Region &r = event_.regions[iregion_];
-
 				if (fabs(r.etaCenter) > 1.5) {
 					iregion_++;
 					continue; // use only regions in the barrel for now
 				}
-
-				hwZPV = event_.z0 * l1tpf_int::InputTrack::Z0_SCALE;
-				for (unsigned int i = 0; i < std::min<unsigned>(NTRACK,r.track.size()); ++i) {
-					track[i].hwPt = r.track[i].hwPt;
-					track[i].hwPtErr = r.track[i].hwCaloPtErr;
-					track[i].hwEta = r.track[i].hwEta; // @calo
-					track[i].hwPhi = r.track[i].hwPhi; // @calo
-					track[i].hwZ0 = r.track[i].hwZ0;
-				}
-				for (unsigned int i = 0; i < std::min<unsigned>(NCALO, r.calo.size()); ++i) {
-					calo[i].hwPt = r.calo[i].hwPt;
-					calo[i].hwEta = r.calo[i].hwEta;
-					calo[i].hwPhi = r.calo[i].hwPhi;
-				}
-				printf("Read region %u with %lu tracks and %lu calo\n", iregion_, r.track.size(), r.calo.size());
-
-				iregion_++;
 				return true;
 			}
 		}
-	private:
+		void readTracks(TkObj track[NTRACK], z0_t & hwZPV) {
+		    	const Region &r = event_.regions[iregion_];
+			hwZPV = event_.z0 * l1tpf_int::InputTrack::Z0_SCALE;
+			for (unsigned int i = 0; i < std::min<unsigned>(NTRACK,r.track.size()); ++i) {
+				track[i].hwPt = r.track[i].hwPt;
+				track[i].hwPtErr = r.track[i].hwCaloPtErr;
+				track[i].hwEta = r.track[i].hwEta; // @calo
+				track[i].hwPhi = r.track[i].hwPhi; // @calo
+				track[i].hwZ0 = r.track[i].hwZ0;
+			}
+		}
+		void readOldCalo(CaloObj calo[NCALO]) {
+		    	const Region &r = event_.regions[iregion_];
+			for (unsigned int i = 0; i < std::min<unsigned>(NCALO, r.calo.size()); ++i) {
+				calo[i].hwPt = r.calo[i].hwPt;
+				calo[i].hwEta = r.calo[i].hwEta;
+				calo[i].hwPhi = r.calo[i].hwPhi;
+			}
+		}
+		void readHadCalo(HadCaloObj calo[NCALO]) {
+		    	const Region &r = event_.regions[iregion_];
+			for (unsigned int i = 0; i < std::min<unsigned>(NCALO, r.calo.size()); ++i) {
+				calo[i].hwPt = r.calo[i].hwPt;
+				calo[i].hwEmPt = r.calo[i].hwEmPt;
+				calo[i].hwEta = r.calo[i].hwEta;
+				calo[i].hwPhi = r.calo[i].hwPhi;
+			}
+		}
+		void readEmCalo(EmCaloObj calo[NEMCALO]) {
+			const Region &r = event_.regions[iregion_];
+			for (unsigned int i = 0; i < std::min<unsigned>(NEMCALO, r.emcalo.size()); ++i) {
+			    calo[i].hwPt = r.emcalo[i].hwPt;
+			    calo[i].hwPtErr = r.emcalo[i].hwPtErr;
+			    calo[i].hwEta = r.emcalo[i].hwEta;
+			    calo[i].hwPhi = r.emcalo[i].hwPhi;
+			}
+		}
 		FILE *file_;
 		Event event_;
 		unsigned int iregion_;
