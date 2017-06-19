@@ -84,7 +84,7 @@ class DiscretePFInputs {
 			return true;
 		}
 		bool nextRegion(HadCaloObj calo[NCALO], EmCaloObj emcalo[NEMCALO], TkObj track[NTRACK], z0_t & hwZPV) {
-			if (!nextRegion(calo, track, hwZPV)) return false;
+			if (!nextRegion()) return false;
 		    	const Region &r = event_.regions[iregion_];
 			readHadCalo(calo);
 			readEmCalo(emcalo);
@@ -137,6 +137,7 @@ class DiscretePFInputs {
 				calo[i].hwEmPt = r.calo[i].hwEmPt;
 				calo[i].hwEta = r.calo[i].hwEta;
 				calo[i].hwPhi = r.calo[i].hwPhi;
+				calo[i].hwIsEM = r.calo[i].isEM;
 			}
 		}
 		void readEmCalo(EmCaloObj calo[NEMCALO]) {
