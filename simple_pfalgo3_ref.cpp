@@ -29,6 +29,24 @@ int best_match_ref(HadCaloObj calo[NCAL], const EmCaloObj & em) {
     return ibest;
 }
 
+template<int NCAL, int DR2MAX, typename CO_t>
+int best_match_with_pt_ref(CO_t calo[NCAL], const TkObj & track) {
+    pt_t caloPtMin = track.hwPt - 2*(track.hwPtErr);
+    if (caloPtMin < 0) caloPtMin = 0;
+    int dptscale = (DR2MAX<<8)/std::max<int>(1,sqr(track.hwPtErr));
+    int drmin = 0, ibest = -1;
+    for (int ic = 0; ic < NCAL; ++ic) {
+            if (calo[ic].hwPt <= caloPtMin) continue;
+            int dr = dr2_int(track.hwEta, track.hwPhi, calo[ic].hwEta, calo[ic].hwPhi);
+            if (dr >= DR2MAX) continue;
+            dr += (( sqr(std::max<int>(track.hwPt-calo[ic].hwPt,0))*dptscale ) >> 8);
+            //printf("REF DQ(track %+7d %+7d  calo %3d) = %12d\n", int(track.hwEta), int(track.hwPhi), ic, dr);
+            if (ibest == -1 || dr < drmin) { drmin = dr; ibest = ic; }
+    }
+    return ibest;
+}
+
+
 template<int NCAL, int DR2MAX, bool doPtMin, typename CO_t>
 void link_ref(CO_t calo[NCAL], TkObj track[NTRACK], ap_uint<NCAL> calo_track_link_bit[NTRACK]) {
     for (int it = 0; it < NTRACK; ++it) {
@@ -74,12 +92,13 @@ void pfalgo3_calo_ref(HadCaloObj calo[NCALO], TkObj track[NTRACK], PFChargedObj 
 
     // initialize output
     for (int ipf = 0; ipf < NTRACK; ++ipf) { outch[ipf].hwPt = 0; }
-    for (int ipf = 0; ipf < NCALO; ++ipf) { outne[ipf].hwPt = 0; }
+    for (int ipf = 0; ipf < NSELCALO; ++ipf) { outne[ipf].hwPt = 0; }
 
     // for each track, find the closest calo
     for (int it = 0; it < NTRACK; ++it) {
         if (track[it].hwPt > 0) {
-            int  ibest = best_match_ref<NCALO,DR2MAX,true,HadCaloObj>(calo, track[it]);
+            //int  ibest = best_match_ref<NCALO,DR2MAX,true,HadCaloObj>(calo, track[it]);
+            int  ibest = best_match_with_pt_ref<NCALO,DR2MAX,HadCaloObj>(calo, track[it]);
             if (ibest != -1) {
                 track_good[it] = 1;
                 calo_sumtk[ibest]    += track[it].hwPt;
@@ -114,6 +133,7 @@ void pfalgo3_calo_ref(HadCaloObj calo[NCALO], TkObj track[NTRACK], PFChargedObj 
 
     // copy out neutral hadrons
     PFNeutralObj outne_all[NCALO];
+    for (int ipf = 0; ipf < NCALO; ++ipf) { outne_all[ipf].hwPt = 0; }
     for (int ic = 0; ic < NCALO; ++ic) {
         if (calo_subpt[ic] > 0) {
             outne_all[ic].hwPt  = calo_subpt[ic];
@@ -233,7 +253,8 @@ void pfalgo3_full_ref(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkOb
     // for each track, find the closest calo
     for (int it = 0; it < NTRACK; ++it) {
         if (track[it].hwPt > 0 && !isEle[it]) {
-            int  ibest = best_match_ref<NCALO,DR2MAX,true,HadCaloObj>(hadcalo_subem, track[it]);
+            int  ibest = best_match_with_pt_ref<NCALO,DR2MAX,HadCaloObj>(hadcalo_subem, track[it]);
+            //int  ibest = best_match_ref<NCALO,DR2MAX,true,HadCaloObj>(hadcalo_subem, track[it]);
             if (ibest != -1) {
                 track_good[it] = 1;
                 calo_sumtk[ibest]    += track[it].hwPt;
