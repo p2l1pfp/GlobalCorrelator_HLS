@@ -8,6 +8,7 @@
 typedef ap_uint<7> tk2em_dr_t;
 typedef ap_uint<10> tk2calo_dr_t;
 typedef ap_uint<10> em2calo_dr_t;
+typedef ap_uint<12> tk2calo_dq_t;
 
 int dr2_int(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2) {
     etaphi_t deta = (eta1-eta2);
@@ -21,6 +22,17 @@ ap_uint<NB> dr2_int_cap(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t ph
     int dr2 = deta*deta + dphi*dphi;
     return (dr2 < int(max) ? ap_uint<NB>(dr2) : max);
 }
+template<int NB, typename PTS_t>
+ap_uint<NB> dr2_dpt_int_cap(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2, pt_t pt1, pt_t pt2, PTS_t ptscale, ap_uint<NB> dr2max, ap_uint<NB> max) {
+    etaphi_t deta = (eta1-eta2);
+    etaphi_t dphi = (phi1-phi2);
+    int dr2 = deta*deta + dphi*dphi;
+    pt_t dpt = pt1 - pt2;
+    if (dpt < 0) dpt = 0;
+    int dq = dr2 + ((dpt*dpt*ptscale) >> 8);
+    return ((dr2 < int(dr2max)) && (dq < int(max))) ? ap_uint<NB>(dq) : max;
+}
+
 
 template<int DR2MAX>
 void tk2em_drvals(EmCaloObj calo[NEMCALO], TkObj track[NTRACK], tk2em_dr_t calo_track_drval[NTRACK][NCALO]) {
@@ -47,6 +59,44 @@ void tk2calo_drvals(HadCaloObj calo[NCALO], TkObj track[NTRACK], tk2calo_dr_t ca
         }
     }
 }
+
+template<int DR2MAX>
+void init_dr2max_times_pterr2_inv(int vals[512]) {
+    for (int i = 0; i < 512; ++i) {
+        vals[i] = (DR2MAX<<8)/(i?i*i:1);
+    }
+}
+template<int DR2MAX>
+int calc_dptscale(pt_t trackHwPtErr) {
+    // LUT for 1/ptErr2
+    int _dr2max_times_pterr2_inv_vals[512];
+    init_dr2max_times_pterr2_inv<DR2MAX>(_dr2max_times_pterr2_inv_vals);
+    if (trackHwPtErr < 512) {
+        return _dr2max_times_pterr2_inv_vals[trackHwPtErr];
+    } else {
+        return 0;
+    }
+}
+
+template<int DR2MAX>
+void tk2calo_drdptvals(HadCaloObj calo[NCALO], TkObj track[NTRACK], tk2calo_dq_t calo_track_drval[NTRACK][NCALO]) {
+    const tk2calo_dq_t eDR2MAX = DR2MAX;
+    const tk2calo_dq_t eDQMAX  = 5*DR2MAX; // at most we're 2 sigma away in pt, so that's a factor 4
+    for (int it = 0; it < NTRACK; ++it) {
+        pt_t caloPtMin = track[it].hwPt - 2*(track[it].hwPtErr);
+        int  dptscale  = calc_dptscale<DR2MAX>(track[it].hwPtErr);
+        if (caloPtMin < 0) caloPtMin = 0;
+        for (int icalo = 0; icalo < NCALO; ++icalo) {
+            if (calo[icalo].hwPt > caloPtMin) {
+                calo_track_drval[it][icalo] = dr2_dpt_int_cap(track[it].hwEta, track[it].hwPhi, calo[icalo].hwEta, calo[icalo].hwPhi, track[it].hwPt, calo[icalo].hwPt, dptscale, eDR2MAX, eDQMAX);
+                //if (calo_track_drval[it][icalo] < eDQMAX) printf("HWO DQ(track %+7d %+7d  calo %3d) = %12d\n", int(track[it].hwEta), int(track[it].hwPhi), icalo, int(calo_track_drval[it][icalo]));
+            } else {
+                calo_track_drval[it][icalo] = eDQMAX;
+            }
+        }
+    }
+}
+
 template<int DR2MAX>
 void em2calo_drvals(HadCaloObj hadcalo[NCALO], EmCaloObj emcalo[NEMCALO], em2calo_dr_t hadcalo_emcalo_drval[NEMCALO][NCALO]) {
     const em2calo_dr_t eDR2MAX = DR2MAX;
@@ -77,21 +127,31 @@ void pick_closest(DR_T calo_track_drval[NTK][NCA], ap_uint<NCA> calo_track_link_
         }
     }
 }
-void tk2calo_link(HadCaloObj calo[NCALO], TkObj track[NTRACK], ap_uint<NCALO> calo_track_link_bit[NTRACK]) {
+void tk2calo_link_dronly(HadCaloObj calo[NCALO], TkObj track[NTRACK], ap_uint<NCALO> calo_track_link_bit[NTRACK]) {
     const int DR2MAX = PFALGO3_DR2MAX_TK_CALO;
     tk2calo_dr_t drvals[NTRACK][NCALO];
     #pragma HLS ARRAY_PARTITION variable=drvals complete dim=0
 
     tk2calo_drvals<DR2MAX>(calo, track, drvals);
-    pick_closest<DR2MAX,NTRACK,NCALO>(drvals, calo_track_link_bit);
+    pick_closest<DR2MAX,NTRACK,NCALO,tk2calo_dr_t>(drvals, calo_track_link_bit);
 }
+void tk2calo_link_drdpt(HadCaloObj calo[NCALO], TkObj track[NTRACK], ap_uint<NCALO> calo_track_link_bit[NTRACK]) {
+    const int DR2MAX = PFALGO3_DR2MAX_TK_CALO;
+    const int DQMAX = 5*DR2MAX;
+    tk2calo_dq_t drvals[NTRACK][NCALO];
+    #pragma HLS ARRAY_PARTITION variable=drvals complete dim=0
+
+    tk2calo_drdptvals<DR2MAX>(calo, track, drvals);
+    pick_closest<DQMAX,NTRACK,NCALO,tk2calo_dq_t>(drvals, calo_track_link_bit);
+}
+
 void tk2em_link(EmCaloObj calo[NEMCALO], TkObj track[NTRACK], ap_uint<NEMCALO> calo_track_link_bit[NTRACK]) {
     const int DR2MAX = PFALGO3_DR2MAX_TK_EM;
-    tk2em_dr_t drvals[NTRACK][NCALO];
+    tk2em_dr_t drvals[NTRACK][NEMCALO];
     #pragma HLS ARRAY_PARTITION variable=drvals complete dim=0
 
     tk2em_drvals<DR2MAX>(calo, track, drvals);
-    pick_closest<DR2MAX,NTRACK,NEMCALO>(drvals, calo_track_link_bit);
+    pick_closest<DR2MAX,NTRACK,NEMCALO,tk2em_dr_t>(drvals, calo_track_link_bit);
 }
 void em2calo_link(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], ap_uint<NCALO> em_calo_link_bit[NCALO]) {
     const int DR2MAX = PFALGO3_DR2MAX_EM_CALO;
@@ -99,7 +159,7 @@ void em2calo_link(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], ap_uint<
     #pragma HLS ARRAY_PARTITION variable=drvals complete dim=0
 
     em2calo_drvals<DR2MAX>(hadcalo, emcalo, drvals);
-    pick_closest<DR2MAX,NEMCALO,NCALO>(drvals, em_calo_link_bit);
+    pick_closest<DR2MAX,NEMCALO,NCALO,em2calo_dr_t>(drvals, em_calo_link_bit);
 }
 
 
@@ -282,7 +342,8 @@ void pfalgo3_calo(HadCaloObj calo[NCALO], TkObj track[NTRACK], PFChargedObj outc
 
     ap_uint<NCALO> calo_track_link_bit[NTRACK];
     #pragma HLS ARRAY_PARTITION variable=calo_track_link_bit complete
-    tk2calo_link(calo, track, calo_track_link_bit);
+    tk2calo_link_drdpt(calo, track, calo_track_link_bit);
+    //tk2calo_link_dronly(calo, track, calo_track_link_bit);
 
     int tkerr2[NTRACK];
     #pragma HLS ARRAY_PARTITION variable=tkerr2 complete
@@ -290,7 +351,7 @@ void pfalgo3_calo(HadCaloObj calo[NCALO], TkObj track[NTRACK], PFChargedObj outc
 
     pt_t sumtk[NCALO]; int sumtkerr2[NCALO];
     #pragma HLS ARRAY_PARTITION variable=sumtk complete
-        #pragma HLS ARRAY_PARTITION variable=sumtkerr2 complete
+    #pragma HLS ARRAY_PARTITION variable=sumtkerr2 complete
 
     tk2calo_tkalgo(track, calo_track_link_bit, outch);
     tk2calo_sumtk(track, tkerr2, calo_track_link_bit, sumtk, sumtkerr2);
@@ -385,7 +446,8 @@ void pfalgo3_full(EmCaloObj calo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj trac
 
     ap_uint<NCALO> calo_track_link_bit[NTRACK];
     #pragma HLS ARRAY_PARTITION variable=calo_track_link_bit complete
-    tk2calo_link(hadcalo_sub, track, calo_track_link_bit);
+    tk2calo_link_drdpt(hadcalo_sub, track, calo_track_link_bit);
+    //tk2calo_link_dronly(hadcalo_sub, track, calo_track_link_bit);
 
     int tkerr2[NTRACK];
     #pragma HLS ARRAY_PARTITION variable=tkerr2 complete
