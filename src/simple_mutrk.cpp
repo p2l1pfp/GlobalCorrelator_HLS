@@ -5,21 +5,11 @@
 #include <cstdio>
 #endif
 
-// bool match_box(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2, etaphi_t boxSize) {
-// 	etaphi_t deta = (eta1-eta2);
-// 	etaphi_t dphi = (phi1-phi2);
-// 	return (deta <= boxSize && deta >= -boxSize && dphi <= boxSize && dphi >= -boxSize);
-// }
-// etaphi_t dr_box(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2) {
-// 	etaphi_t deta = eta1 > eta2 ? (eta1-eta2) : (eta2-eta1);
-// 	etaphi_t dphi = phi1 > phi2 ? (phi1-phi2) : (phi2-phi1);
-// 	return (deta > dphi ? deta : dphi);
-// }
-// int dr2_int(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2) {
-// 	etaphi_t deta = (eta1-eta2);
-// 	etaphi_t dphi = (phi1-phi2);
-// 	return deta*deta + dphi*dphi;
-// }
+int dr2_int(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2) {
+	etaphi_t deta = (eta1-eta2);
+	etaphi_t dphi = (phi1-phi2);
+	return deta*deta + dphi*dphi;
+}
 
 template<unsigned NB>
 ap_uint<NB> dr2_int_cap(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2, ap_uint<NB> max) {
@@ -29,15 +19,15 @@ ap_uint<NB> dr2_int_cap(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t ph
 	return (dr2 < int(max) ? ap_uint<NB>(dr2) : max);
 }
 
-#define mu2trk_dr_t ap_uint<4>
+#define mu2trk_dr_t ap_uint<12>
 void spfph_mu2trk_drvals(MuObj mu[NCALO], TkObj track[NTRACK], mu2trk_dr_t mu_track_drval[NMU][NTRACK]) {
 
 	const mu2trk_dr_t DR2MAX = 2101;
 	for (int im = 0; im < NMU; ++im) {
-		pt_t muPtMin = mu[im].hwPt - 2*(mu[im].hwPtErr);
+		pt_t tkPtMin = mu[im].hwPt - 2*(mu[im].hwPtErr);
 		for (int it = 0; it < NTRACK; ++it) {
-			if (track[it].hwPt > muPtMin) {
-				mu_track_drval[im][it] = dr2_int_cap<4>(mu[im].hwEta, mu[im].hwPhi, track[it].hwEta, track[it].hwPhi, DR2MAX);
+			if (track[it].hwPt > tkPtMin) {
+				mu_track_drval[im][it] = dr2_int_cap<12>(mu[im].hwEta, mu[im].hwPhi, track[it].hwEta, track[it].hwPhi, DR2MAX);
 			} else {
 				mu_track_drval[im][it] = DR2MAX;
 			}
@@ -45,7 +35,7 @@ void spfph_mu2trk_drvals(MuObj mu[NCALO], TkObj track[NTRACK], mu2trk_dr_t mu_tr
 	}
 }
 
-void spfph_mu2trk_linkstep(mu2trk_dr_t mu_track_drval[NMU][NTRACK], ap_uint<NMU> mu_track_link_bit[NTRACK]) {
+void spfph_mu2trk_linkstep(mu2trk_dr_t mu_track_drval[NMU][NTRACK], ap_uint<NMU> mu_track_link_bit[NTRACK], MuObj mu[NCALO], TkObj track[NTRACK]) {
 	
 	const mu2trk_dr_t DR2MAX = 2101;
 	for (int im = 0; im < NMU; ++im) {
@@ -55,7 +45,7 @@ void spfph_mu2trk_linkstep(mu2trk_dr_t mu_track_drval[NMU][NTRACK], ap_uint<NMU>
 			for (int j = 0; j < NTRACK; ++j) {
 				if (it <= j) link = link && (mu_track_drval[im][j] >= mydr);
 				else         link = link && (mu_track_drval[im][j] >  mydr);
-			}
+			}	
 			mu_track_link_bit[it][im] = link;
 		}
 	}
@@ -73,7 +63,7 @@ void spfph_mutrk_link(MuObj mu[NMU], TkObj track[NTRACK], ap_uint<NMU> mu_track_
 	#pragma HLS ARRAY_PARTITION variable=drvals complete dim=0
 
 	spfph_mu2trk_drvals(mu, track, drvals);
-	spfph_mu2trk_linkstep(drvals, mu_track_link_bit);
+	spfph_mu2trk_linkstep(drvals, mu_track_link_bit, mu, track);
 }
 
 void spfph_mualgo(MuObj mu[NMU], TkObj track[NTRACK], ap_uint<NMU> mu_track_link_bit[NTRACK], PFMuonObj pfmuout[NMU]) {
@@ -81,16 +71,17 @@ void spfph_mualgo(MuObj mu[NMU], TkObj track[NTRACK], ap_uint<NMU> mu_track_link
 	const pt_t TKPT_MAX = 80; // 20 * PT_SCALE;
 	for (int im = 0; im < NMU; ++im) {
 		bool good = false;
+		int ibest = -1;
 		for (int it = 0; it < NTRACK; ++it) {
-			if (mu_track_link_bit[it][im]) good = true;
+			if (mu_track_link_bit[it][im]){ good = true; ibest = it; }
 			track[it].hwIsMu  = true;
 		}
-		if (good) {
-			pfmuout[im].hwPt  = track[im].hwPt;
-			pfmuout[im].hwEta = track[im].hwEta;
-			pfmuout[im].hwPhi = track[im].hwPhi;
+		if (good && ibest != -1) {
+			pfmuout[im].hwPt  = track[ibest].hwPt;
+			pfmuout[im].hwEta = track[ibest].hwEta;
+			pfmuout[im].hwPhi = track[ibest].hwPhi;
 			pfmuout[im].hwId  = PID_Muon;
-			pfmuout[im].hwZ0  = track[im].hwZ0;
+			pfmuout[im].hwZ0  = track[ibest].hwZ0;
 		} else {
 			pfmuout[im].hwPt  = 0;
 			pfmuout[im].hwEta = 0;
@@ -113,18 +104,7 @@ void simple_mutrk_parallel_hwopt(MuObj mu[NMU], TkObj track[NTRACK], PFMuonObj o
 	#pragma HLS ARRAY_PARTITION variable=mu_track_link_bit complete
 
 	spfph_mutrk_link(mu, track, mu_track_link_bit);
-
-	// int  tkerr2[NTRACK];
-	// #pragma HLS ARRAY_PARTITION variable=tkerr2 complete
-	// _spfph_tkerr2(track, tkerr2);
-
-	// pt_t sumtk[NCALO]; int sumtkerr2[NCALO];
-	// #pragma HLS ARRAY_PARTITION variable=sumtk complete
- //    #pragma HLS ARRAY_PARTITION variable=sumtkerr2 complete
-
 	spfph_mualgo(mu, track, mu_track_link_bit, outmu);
-	// _spfph_sumtk(track, tkerr2, calo_track_link_bit, sumtk, sumtkerr2);
-	// _spfph_caloalgo(calo, sumtk, sumtkerr2, outne);
 }
 
 void ptsort_pfneutral_hwopt(PFNeutralObj in[NCALO], PFNeutralObj out[NSELCALO]) {
