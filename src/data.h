@@ -64,12 +64,6 @@ struct PFNeutralObj {
 	etaphi_t hwEta, hwPhi; // relative to the region center, at calo
 	particleid_t hwId;
 };
-struct PFMuonObj {
-	pt_t hwPt;
-	etaphi_t hwEta, hwPhi; // relative to the region center, at vtx(?)
-	particleid_t hwId;
-	z0_t hwZ0;
-};
 struct VtxObj {
 	pt_t  hwSumPt;
         z0_t  hwZ0;

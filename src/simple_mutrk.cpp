@@ -66,7 +66,7 @@ void spfph_mutrk_link(MuObj mu[NMU], TkObj track[NTRACK], ap_uint<NMU> mu_track_
 	spfph_mu2trk_linkstep(drvals, mu_track_link_bit);
 }
 
-void spfph_mualgo(MuObj mu[NMU], TkObj track[NTRACK], ap_uint<NMU> mu_track_link_bit[NTRACK], PFMuonObj pfmuout[NMU]) {
+void spfph_mualgo(MuObj mu[NMU], TkObj track[NTRACK], ap_uint<NMU> mu_track_link_bit[NTRACK], PFChargedObj pfmuout[NMU]) {
 	
 	const pt_t TKPT_MAX = 80; // 20 * PT_SCALE;
 	for (int im = 0; im < NMU; ++im) {
@@ -92,7 +92,7 @@ void spfph_mualgo(MuObj mu[NMU], TkObj track[NTRACK], ap_uint<NMU> mu_track_link
 	}
 }
 
-void simple_mutrk_parallel_hwopt(MuObj mu[NMU], TkObj track[NTRACK], PFMuonObj outmu[NMU]) {
+void simple_mutrk_parallel_hwopt(MuObj mu[NMU], TkObj track[NTRACK], PFChargedObj outmu[NMU]) {
 	
 	#pragma HLS ARRAY_PARTITION variable=mu complete
 	#pragma HLS ARRAY_PARTITION variable=track complete

@@ -8,8 +8,8 @@
 int dr2_int(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2) ;
 ap_uint<12> dr2_int_cap(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2, ap_uint<12> max) ;
 
-void simple_mutrk_parallel_ref(MuObj mu[NMU], TkObj track[NTRACK], PFMuonObj outmu[NMU]) ;
-void simple_mutrk_parallel_hwopt(MuObj mu[NMU], TkObj track[NTRACK], PFMuonObj outmu[NMU]) ;
+void simple_mutrk_parallel_ref(MuObj mu[NMU], TkObj track[NTRACK], PFChargedObj outmu[NMU]) ;
+void simple_mutrk_parallel_hwopt(MuObj mu[NMU], TkObj track[NTRACK], PFChargedObj outmu[NMU]) ;
 
 template<typename T, int NIn, int NOut>
 void ptsort_ref(T in[NIn], T out[NOut]) {

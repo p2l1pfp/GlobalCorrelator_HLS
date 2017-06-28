@@ -7,7 +7,7 @@
 
 template <typename T> int sqr(const T & t) { return t*t; }
 
-void simple_mutrk_parallel_ref(MuObj mu[NMU], TkObj track[NTRACK], PFMuonObj pfmuout[NMU]) {
+void simple_mutrk_parallel_ref(MuObj mu[NMU], TkObj track[NTRACK], PFChargedObj pfmuout[NMU]) {
 		
 	// const etaphi_t BOX_SIZE = 81; // ETAPHI_SCALE * 0.2 * std::sqrt(M_PI/4);
 	const pt_t     TKPT_MAX = 80; // 20 * PT_SCALE;
