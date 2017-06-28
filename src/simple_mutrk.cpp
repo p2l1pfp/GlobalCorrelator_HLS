@@ -35,7 +35,7 @@ void spfph_mu2trk_drvals(MuObj mu[NCALO], TkObj track[NTRACK], mu2trk_dr_t mu_tr
 	}
 }
 
-void spfph_mu2trk_linkstep(mu2trk_dr_t mu_track_drval[NMU][NTRACK], ap_uint<NMU> mu_track_link_bit[NTRACK], MuObj mu[NCALO], TkObj track[NTRACK]) {
+void spfph_mu2trk_linkstep(mu2trk_dr_t mu_track_drval[NMU][NTRACK], ap_uint<NMU> mu_track_link_bit[NTRACK]) {
 	
 	const mu2trk_dr_t DR2MAX = 2101;
 	for (int im = 0; im < NMU; ++im) {
@@ -63,7 +63,7 @@ void spfph_mutrk_link(MuObj mu[NMU], TkObj track[NTRACK], ap_uint<NMU> mu_track_
 	#pragma HLS ARRAY_PARTITION variable=drvals complete dim=0
 
 	spfph_mu2trk_drvals(mu, track, drvals);
-	spfph_mu2trk_linkstep(drvals, mu_track_link_bit, mu, track);
+	spfph_mu2trk_linkstep(drvals, mu_track_link_bit);
 }
 
 void spfph_mualgo(MuObj mu[NMU], TkObj track[NTRACK], ap_uint<NMU> mu_track_link_bit[NTRACK], PFMuonObj pfmuout[NMU]) {

@@ -105,7 +105,7 @@ int main() {
 		// }		
 		for (int i = 0; i < NMU; ++i) {
 			if (!pf_equals(outmupf_ref[i], outmupf[i], "PF Muon", i)) errors++;
-			if (outch_ref[i].hwPt > 0) { ntot++; nmu++; }
+			if (outmupf_ref[i].hwPt > 0) { ntot++; nmu++; }
 		}
 
 		if (errors != 0) {
