@@ -1,7 +1,12 @@
 #ifndef FASTPUPPI_NTUPLERPRODUCER_DISCRETEPFINPUTS_H
 #define FASTPUPPI_NTUPLERPRODUCER_DISCRETEPFINPUTS_H
 
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
 #include <cstdint>
+#else
+#include <stdint.h>
+#endif
+
 #include <cstdlib>
 #include <cmath>
 
@@ -15,12 +20,15 @@ namespace l1tpf_int {
       int16_t  hwPhi;   
       uint16_t hwFlags;
       bool     isEM, used;
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
       static constexpr float PT_SCALE = 4.0;     // quantize in units of 0.25 GeV (can be changed)
       static constexpr float ETAPHI_FACTOR = 4;  // size of an ecal crystal in phi in integer units (our choice)
       static constexpr float ETAPHI_SCALE = ETAPHI_FACTOR*(180./M_PI);  // M_PI/180 is the size of an ECal crystal; we make a grid that is 4 times that size
       static constexpr int16_t PHI_WRAP = 360*ETAPHI_FACTOR;            // what is 3.14 in integer
+#endif
       // sorting
       bool operator<(const CaloCluster &other) const { return hwPt > other.hwPt; }
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
       // filling from floating point
       void fill(float pt, float emPt, float ptErr, float eta, float phi, bool em, unsigned int flags) {
           hwPt  = round(pt  * CaloCluster::PT_SCALE);
@@ -40,6 +48,7 @@ namespace l1tpf_int {
       float floatPhi() const { return float(hwPhi) / CaloCluster::ETAPHI_SCALE; }
       void  setFloatPt(float pt) { hwPt  = round(pt  * CaloCluster::PT_SCALE); }
       void  setFloatEmPt(float emPt) { hwEmPt  = round(emPt  * CaloCluster::PT_SCALE); }
+#endif
   };
 
   // https://twiki.cern.ch/twiki/bin/view/CMS/L1TriggerPhase2InterfaceSpecifications
@@ -51,6 +60,7 @@ namespace l1tpf_int {
       int16_t  hwZ0;
       uint16_t hwChi2, hwStubs;
       uint16_t hwFlags;
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
       static constexpr float INVPT_SCALE   = 2E4;    // 1%/pt @ 100 GeV is 2 bits 
       static constexpr float VTX_PHI_SCALE = 1/2.5E-6; // 5 micro rad is 2 bits
       static constexpr float VTX_ETA_SCALE = 1/1E-5;   // no idea, but assume it's somewhat worse than phi
@@ -70,6 +80,7 @@ namespace l1tpf_int {
       float floatVtxPhi() const { return float(hwVtxPhi) / InputTrack::VTX_PHI_SCALE; }
       float floatDZ()     const { return float(hwZ0) / InputTrack::Z0_SCALE; }
       int intCharge()     const { return hwCharge ? +1 : -1; }
+#endif
   };
 
   struct PropagatedTrack : public InputTrack {
@@ -83,6 +94,7 @@ namespace l1tpf_int {
       bool     fromPV;
       // sorting
       bool operator<(const PropagatedTrack &other) const { return hwPt > other.hwPt; }
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
       void fillPropagated(float pt, float ptErr, float caloPtErr, float eta, float phi, unsigned int flags) {
           hwPt  = round(pt  * CaloCluster::PT_SCALE);
           hwPtErr = round(ptErr  * CaloCluster::PT_SCALE);
@@ -97,6 +109,7 @@ namespace l1tpf_int {
       float floatCaloPtErr() const { return float(hwCaloPtErr) / CaloCluster::PT_SCALE; }
       float floatEta() const { return float(hwEta) / CaloCluster::ETAPHI_SCALE; }
       float floatPhi() const { return float(hwPhi) / CaloCluster::ETAPHI_SCALE; }
+#endif
   };
 
   struct Muon {
@@ -107,6 +120,7 @@ namespace l1tpf_int {
       bool     hwCharge;
       // sorting
       bool operator<(const Muon &other) const { return hwPt > other.hwPt; }
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
       void fill(float pt, float eta, float phi, int charge, unsigned int flags) {
           // we assume we use the same discrete ieta, iphi grid for all particles 
           hwPt  = round(pt  * CaloCluster::PT_SCALE);
@@ -119,6 +133,7 @@ namespace l1tpf_int {
       float floatEta() const { return float(hwEta) / CaloCluster::ETAPHI_SCALE; }
       float floatPhi() const { return float(hwPhi) / CaloCluster::ETAPHI_SCALE; }
       int intCharge()     const { return hwCharge ? +1 : -1; }
+#endif
   };
 
   struct PFParticle {
@@ -134,9 +149,12 @@ namespace l1tpf_int {
       bool            chargedPV;
       uint16_t        hwPuppiWeight;
       uint16_t        hwStatus; // for debugging
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
       static constexpr float PUPPI_SCALE = 100;
+#endif
       // sorting
       bool operator<(const PFParticle &other) const { return hwPt > other.hwPt; }
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
       float floatPt() const { return float(hwPt) / CaloCluster::PT_SCALE; }
       float floatEta() const { return float(hwEta) / CaloCluster::ETAPHI_SCALE; }
       float floatPhi() const { return float(hwPhi) / CaloCluster::ETAPHI_SCALE; }
@@ -149,6 +167,7 @@ namespace l1tpf_int {
             hwPuppiWeight = std::round(w * PUPPI_SCALE);
       }
       void  setFloatPt(float pt) { hwPt  = round(pt  * CaloCluster::PT_SCALE); }
+#endif
   };
 
 } // namespace
