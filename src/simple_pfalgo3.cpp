@@ -466,5 +466,129 @@ void pfalgo3_full(EmCaloObj calo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj trac
     ptsort_hwopt<PFNeutralObj,NCALO,NSELCALO>(outne_all, outne);
 }
 
+void mp7wrapped_pack_in(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj track[NTRACK], MP7DataWord data[MP7_NCHANN]) {
+    #pragma HLS ARRAY_PARTITION variable=data complete
+    #pragma HLS ARRAY_PARTITION variable=emcalo complete
+    #pragma HLS ARRAY_PARTITION variable=hadcalo complete
+    #pragma HLS ARRAY_PARTITION variable=track complete
+    // pack inputs
+    assert(2*NEMCALO + 2*NTRACK + 2*NCALO <= MP7_NCHANN);
+    #define HADOFFS 2*NEMCALO
+    #define TKOFFS 2*NCALO+HADOFFS
+    for (unsigned int i = 0; i < NEMCALO; ++i) {
+        data[2*i+0] = ( emcalo[i].hwPtErr, emcalo[i].hwPt );
+        data[2*i+1] = ( emcalo[i].hwPhi,   emcalo[i].hwEta );
+    }
+    for (unsigned int i = 0; i < NCALO; ++i) {
+        data[2*i+0+HADOFFS] = ( hadcalo[i].hwEmPt, hadcalo[i].hwPt );
+        data[2*i+1+HADOFFS] = ( hadcalo[i].hwIsEM, hadcalo[i].hwPhi, hadcalo[i].hwEta );
+    }
+    for (unsigned int i = 0; i < NTRACK; ++i) {
+        data[2*i+0+TKOFFS] = ( track[i].hwPtErr, track[i].hwPt );
+        data[2*i+1+TKOFFS] = ( track[i].hwZ0, track[i].hwPhi, track[i].hwEta );
+   }
+}
+void mp7wrapped_unpack_in(MP7DataWord data[MP7_NCHANN], EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj track[NTRACK]) {
+    #pragma HLS ARRAY_PARTITION variable=data complete
+    #pragma HLS ARRAY_PARTITION variable=emcalo complete
+    #pragma HLS ARRAY_PARTITION variable=hadcalo complete
+    #pragma HLS ARRAY_PARTITION variable=track complete
+    // unpack inputs
+    assert(2*NEMCALO + 2*NTRACK + 2*NCALO <= MP7_NCHANN);
+    #define HADOFFS 2*NEMCALO
+    #define TKOFFS 2*NCALO+HADOFFS
+    for (unsigned int i = 0; i < NEMCALO; ++i) {
+        emcalo[i].hwPt    = data[2*i+0](15, 0);
+        emcalo[i].hwPtErr = data[2*i+0](31,16);
+        emcalo[i].hwEta   = data[2*i+1](8, 0);
+        emcalo[i].hwPhi   = data[2*i+1](17,9);
+    }
+    for (unsigned int i = 0; i < NCALO; ++i) {
+        hadcalo[i].hwPt   = data[2*i+0+HADOFFS](15, 0);
+        hadcalo[i].hwEmPt = data[2*i+0+HADOFFS](31,16);
+        hadcalo[i].hwEta  = data[2*i+1+HADOFFS](8, 0);
+        hadcalo[i].hwPhi  = data[2*i+1+HADOFFS](17,9);
+        hadcalo[i].hwIsEM = data[2*i+1+HADOFFS][18];
+    }
+    for (unsigned int i = 0; i < NTRACK; ++i) {
+        track[i].hwPt    = data[2*i+0+TKOFFS](15, 0);
+        track[i].hwPtErr = data[2*i+0+TKOFFS](31,16);
+        track[i].hwEta   = data[2*i+1+TKOFFS](8, 0);
+        track[i].hwPhi   = data[2*i+1+TKOFFS](17,9);
+        track[i].hwZ0    = data[2*i+1+TKOFFS](28,18);
+    }
 
+}
+void mp7wrapped_pack_out( PFChargedObj pfch[NTRACK], PFNeutralObj pfpho[NPHOTON], PFNeutralObj pfne[NSELCALO], MP7DataWord data[MP7_NCHANN]) {
+    #pragma HLS ARRAY_PARTITION variable=data complete
+    #pragma HLS ARRAY_PARTITION variable=pfch complete
+    #pragma HLS ARRAY_PARTITION variable=pfpho complete
+    #pragma HLS ARRAY_PARTITION variable=pfne complete
+    // pack outputs
+    assert(2*NTRACK + 2*NPHOTON + 2*NSELCALO <= MP7_NCHANN);
+    #define PHOOFFS 2*NTRACK
+    #define NHOFFS 2*NPHOTON+PHOOFFS
+    for (unsigned int i = 0; i < NTRACK; ++i) {
+        data[2*i+0] = ( pfch[i].hwId,  pfch[i].hwPt );
+        data[2*i+1] = ( pfch[i].hwZ0, pfch[i].hwPhi, pfch[i].hwEta );
+    }
+    for (unsigned int i = 0; i < NPHOTON; ++i) {
+        data[2*i+0+PHOOFFS] = ( pfpho[i].hwId, pfpho[i].hwPt );
+        data[2*i+1+PHOOFFS] = ( pfpho[i].hwPhi, pfpho[i].hwEta );
+    }
+    for (unsigned int i = 0; i < NSELCALO; ++i) {
+        data[2*i+0+NHOFFS] = ( pfne[i].hwId, pfne[i].hwPt );
+        data[2*i+1+NHOFFS] = ( pfne[i].hwPhi, pfne[i].hwEta );
+    }
+}
+void mp7wrapped_unpack_out( MP7DataWord data[MP7_NCHANN], PFChargedObj pfch[NTRACK], PFNeutralObj pfpho[NPHOTON], PFNeutralObj pfne[NSELCALO]) {
+    #pragma HLS ARRAY_PARTITION variable=data complete
+    #pragma HLS ARRAY_PARTITION variable=pfch complete
+    #pragma HLS ARRAY_PARTITION variable=pfpho complete
+    #pragma HLS ARRAY_PARTITION variable=pfne complete
+    // unpack outputs
+    assert(2*NTRACK + 2*NPHOTON + 2*NSELCALO <= MP7_NCHANN);
+    #define PHOOFFS 2*NTRACK
+    #define NHOFFS 2*NPHOTON+PHOOFFS
+    for (unsigned int i = 0; i < NTRACK; ++i) {
+        pfch[i].hwPt  = data[2*i+0](15, 0);
+        pfch[i].hwId  = data[2*i+0](17,16);
+        pfch[i].hwEta = data[2*i+1](8, 0);
+        pfch[i].hwPhi = data[2*i+1](17,9);
+        pfch[i].hwZ0  = data[2*i+1](28,18);
+    }
+    for (unsigned int i = 0; i < NPHOTON; ++i) {
+        pfpho[i].hwPt  = data[2*i+0+PHOOFFS](15, 0);
+        pfpho[i].hwId  = data[2*i+0+PHOOFFS](17,16);
+        pfpho[i].hwEta = data[2*i+1+PHOOFFS](8, 0);
+        pfpho[i].hwPhi = data[2*i+1+PHOOFFS](17,9);
+    }
+    for (unsigned int i = 0; i < NSELCALO; ++i) {
+        pfne[i].hwPt  = data[2*i+0+NHOFFS](15, 0);
+        pfne[i].hwId  = data[2*i+0+NHOFFS](17,16);
+        pfne[i].hwEta = data[2*i+1+NHOFFS](8, 0);
+        pfne[i].hwPhi = data[2*i+1+NHOFFS](17,9);
+    }
+}
+
+void mp7wrapped_pfalgo3_full(MP7DataWord input[MP7_NCHANN], MP7DataWord output[MP7_NCHANN]) {
+    #pragma HLS ARRAY_PARTITION variable=input complete
+    #pragma HLS ARRAY_PARTITION variable=output complete
+
+    #pragma HLS pipeline II=5
+
+    EmCaloObj emcalo[NEMCALO]; HadCaloObj hadcalo[NCALO]; TkObj track[NTRACK]; 
+    #pragma HLS ARRAY_PARTITION variable=emcalo complete
+    #pragma HLS ARRAY_PARTITION variable=hadcalo complete
+    #pragma HLS ARRAY_PARTITION variable=track complete
+
+    PFChargedObj pfch[NTRACK]; PFNeutralObj pfpho[NPHOTON]; PFNeutralObj pfne[NSELCALO];
+    #pragma HLS ARRAY_PARTITION variable=pfch complete
+    #pragma HLS ARRAY_PARTITION variable=pfpho complete
+    #pragma HLS ARRAY_PARTITION variable=pfne complete
+
+    mp7wrapped_unpack_in(input, emcalo, hadcalo, track);
+    pfalgo3_full(emcalo, hadcalo, track, pfch, pfpho, pfne);
+    mp7wrapped_pack_out(pfch, pfpho, pfne, output);
+}
 

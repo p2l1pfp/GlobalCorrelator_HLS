@@ -65,5 +65,7 @@ struct VtxObj {
 	particleid_t hwId;
 };
 
+#define MP7_NCHANN 72
+typedef ap_uint<32> MP7DataWord;
 
 #endif
