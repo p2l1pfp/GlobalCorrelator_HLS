@@ -6,7 +6,7 @@
 typedef ap_int<16> pt_t;
 typedef ap_int<9>  etaphi_t;
 typedef ap_int<5>  vtx_t;
-typedef ap_uint<2>  particleid_t;
+typedef ap_uint<4>  particleid_t;
 typedef ap_int<10> z0_t;  // 40cm / 0.1
 		
 enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=4 };
