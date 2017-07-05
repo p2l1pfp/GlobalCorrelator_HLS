@@ -113,7 +113,11 @@ class DiscretePFInputs {
 		}
 		void readTracks(TkObj track[NTRACK], z0_t & hwZPV) {
 		    	const Region &r = event_.regions[iregion_];
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
 			hwZPV = event_.z0 * l1tpf_int::InputTrack::Z0_SCALE;
+#else
+			hwZPV = event_.z0 * 20;
+#endif
 			for (unsigned int i = 0; i < std::min<unsigned>(NTRACK,r.track.size()); ++i) {
 				track[i].hwPt = r.track[i].hwPt;
 				track[i].hwPtErr = r.track[i].hwCaloPtErr;
