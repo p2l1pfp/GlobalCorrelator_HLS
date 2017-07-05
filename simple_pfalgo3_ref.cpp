@@ -302,3 +302,79 @@ void pfalgo3_full_ref(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkOb
     ptsort_ref<PFNeutralObj,NCALO,NSELCALO>(outne_all, outne);
 
 }
+
+void pfalgo3_fast_ref(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj track[NTRACK], PFChargedObj outch[NTRACK], PFNeutralObj outpho[NPHOTON], PFNeutralObj outne[NSELCALO]) {
+    // constants
+    const pt_t     TKPT_MAX = PFALGO3_TK_MAXINVPT; // 20 * PT_SCALE;
+    const int      DR2MAX   = PFALGO3_DR2MAX_TK_CALO;
+
+    for (int i = 0; i < NEMCALO; ++i) {
+        pt_t photonPt = emcalo[i].hwPt;
+        outpho[i].hwPt  = photonPt;
+        outpho[i].hwEta = photonPt ? emcalo[i].hwEta : etaphi_t(0);
+        outpho[i].hwPhi = photonPt ? emcalo[i].hwPhi : etaphi_t(0);
+        outpho[i].hwId  = photonPt ? PID_Photon : particleid_t(0);
+    }
+
+    // initialize sum track pt
+    pt_t calo_sumtk[NCALO], calo_subpt[NCALO];
+    int  calo_sumtkErr2[NCALO];
+    for (int ic = 0; ic < NCALO; ++ic) { calo_sumtk[ic] = 0;  calo_sumtkErr2[ic] = 0;}
+
+    // initialize good track bit
+    bool track_good[NTRACK];
+    for (int it = 0; it < NTRACK; ++it) { track_good[it] = (track[it].hwPt < TKPT_MAX); }
+
+    // initialize output
+    for (int ipf = 0; ipf < NTRACK; ++ipf) { outch[ipf].hwPt = 0; }
+    for (int ipf = 0; ipf < NSELCALO; ++ipf) { outne[ipf].hwPt = 0; }
+
+    // for each track, find the closest calo
+    for (int it = 0; it < NTRACK; ++it) {
+        if (track[it].hwPt > 0) {
+            //int  ibest = best_match_with_pt_ref<NCALO,DR2MAX,HadCaloObj>(hadcalo, track[it]);
+            int  ibest = best_match_ref<NCALO,DR2MAX,true,HadCaloObj>(hadcalo, track[it]);
+            if (ibest != -1) {
+                track_good[it] = 1;
+                calo_sumtk[ibest]    += track[it].hwPt;
+                calo_sumtkErr2[ibest] += sqr(track[it].hwPtErr);
+            }
+        }
+    }
+
+    for (int ic = 0; ic < NCALO; ++ic) {
+        if (calo_sumtk[ic] > 0) {
+            pt_t ptdiff = hadcalo[ic].hwPt - calo_sumtk[ic];
+            if (ptdiff > 0 && ptdiff*ptdiff > 4*calo_sumtkErr2[ic]) {
+                calo_subpt[ic] = ptdiff;
+            } else {
+                calo_subpt[ic] = 0;
+            }
+        } else {
+            calo_subpt[ic] = hadcalo[ic].hwPt;
+        }
+    }
+
+    // copy out charged hadrons
+    for (int it = 0; it < NTRACK; ++it) {
+        if (track_good[it]) {
+            outch[it].hwPt = track[it].hwPt;
+            outch[it].hwEta = track[it].hwEta;
+            outch[it].hwPhi = track[it].hwPhi;
+            outch[it].hwZ0 = track[it].hwZ0;
+            outch[it].hwId  = PID_Charged;
+        }
+    }
+
+    // copy out neutral hadrons
+    for (int ipf = 0; ipf < NSELCALO; ++ipf) { outne[ipf].hwPt = 0; }
+    for (int ic = 0; ic < NSELCALO; ++ic) {
+        if (calo_subpt[ic] > 0) {
+            outne[ic].hwPt  = calo_subpt[ic];
+            outne[ic].hwEta = hadcalo[ic].hwEta;
+            outne[ic].hwPhi = hadcalo[ic].hwPhi;
+            outne[ic].hwId  = PID_Neutral;
+        }
+    }
+
+}

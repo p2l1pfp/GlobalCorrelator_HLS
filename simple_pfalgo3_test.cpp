@@ -125,10 +125,15 @@ int main() {
         mp7wrapped_pack_out(outch_ref, outpho_ref, outne_ref, data);
         mp7wrapped_unpack_out(data, outch, outpho, outne);
 #elif defined(TESTMP7)
-        pfalgo3_full_ref(emcalo, calo, track, outch_ref, outpho_ref, outne_ref);
         MP7DataWord data_in[MP7_NCHANN], data_out[MP7_NCHANN];
         mp7wrapped_pack_in(emcalo, calo, track, data_in);
+#ifndef TESTMP7FAST
         mp7wrapped_pfalgo3_full(data_in, data_out);
+        pfalgo3_full_ref(emcalo, calo, track, outch_ref, outpho_ref, outne_ref);
+#else
+        mp7wrapped_pfalgo3_fast(data_in, data_out);
+        pfalgo3_fast_ref(emcalo, calo, track, outch_ref, outpho_ref, outne_ref);
+#endif
         mp7wrapped_unpack_out(data_out, outch, outpho, outne);
 #else
         pfalgo3_full_ref(emcalo, calo, track, outch_ref, outpho_ref, outne_ref);
