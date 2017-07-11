@@ -2,6 +2,7 @@
 #include "src/simple_pfalgo3.h"
 #include "random_inputs.h"
 #include "DiscretePFInputs_IO.h"
+#include "pattern_serializer.h"
 
 #define NTEST 500
 
@@ -90,6 +91,11 @@ int main() {
     PFChargedObj outch[NTRACK], outch_ref[NTRACK];
     PFNeutralObj outpho[NPHOTON], outpho_ref[NPHOTON];
     PFNeutralObj outne[NSELCALO], outne_ref[NSELCALO];
+#if defined(TESTMP7)
+    MP7PatternSerializer serInPatterns("mp7_input_patterns.txt"), serOutPatterns("mp7_output_patterns.txt");
+#endif
+    HumanReadablePatternSerializer serHR("human_readable_patterns.txt");
+    HumanReadablePatternSerializer debugHR("-"); // this will print on stdout, we'll use it for errors
 
     for (int test = 1; test <= NTEST; ++test) {
         for (int i = 0; i < NTRACK; ++i) {
@@ -105,126 +111,54 @@ int main() {
 
         if (!inputs.nextRegion(calo, emcalo, track, hwZPV)) break;
 
-#if defined(TESTCALO)
-        pfalgo3_calo_ref(calo, track, outch_ref, outne_ref);
-        pfalgo3_calo(calo, track, outch, outne);
-#elif defined(TESTEM)
-        bool isEle[NTRACK], isEle_ref[NTRACK];
-        pfalgo3_em_ref(emcalo, calo, track, isEle_ref, outpho_ref, calo_subem_ref);
-        pfalgo3_em(emcalo, calo, track, isEle, outpho, calo_subem);
-#elif defined(TESTMP7PACK)
-        MP7DataWord data[MP7_NCHANN];
-        HadCaloObj calo2[NCALO]; EmCaloObj emcalo2[NEMCALO]; TkObj track2[NTRACK];
-        mp7wrapped_pack_in(emcalo, calo, track, data);
-        mp7wrapped_unpack_in(data, emcalo2, calo2, track2);
-        pfalgo3_full_ref(emcalo2, calo2, track2, outch, outpho, outne);
-        pfalgo3_full_ref(emcalo, calo, track, outch_ref, outpho_ref, outne_ref);
-#elif defined(TESTMP7UNPACK)
-        MP7DataWord data[MP7_NCHANN];
-        pfalgo3_full_ref(emcalo, calo, track, outch_ref, outpho_ref, outne_ref);
-        mp7wrapped_pack_out(outch_ref, outpho_ref, outne_ref, data);
-        mp7wrapped_unpack_out(data, outch, outpho, outne);
-#elif defined(TESTMP7)
+
+#if defined(TESTMP7) // Full PF, with MP7 wrapping 
         MP7DataWord data_in[MP7_NCHANN], data_out[MP7_NCHANN];
         mp7wrapped_pack_in(emcalo, calo, track, data_in);
-#ifndef TESTMP7FAST
+
+#ifndef TESTMP7FAST // fast fake PF
         mp7wrapped_pfalgo3_full(data_in, data_out);
         pfalgo3_full_ref(emcalo, calo, track, outch_ref, outpho_ref, outne_ref);
-#else
+#else  // standard PF
         mp7wrapped_pfalgo3_fast(data_in, data_out);
         pfalgo3_fast_ref(emcalo, calo, track, outch_ref, outpho_ref, outne_ref);
 #endif
         mp7wrapped_unpack_out(data_out, outch, outpho, outne);
-#else
+        // write out patterns for MP7 board hardware or simulator test
+        serInPatterns(data_in); serOutPatterns(data_out);
+
+#else // standard PFAlgo test without MP7 packing
         pfalgo3_full_ref(emcalo, calo, track, outch_ref, outpho_ref, outne_ref);
         pfalgo3_full(emcalo, calo, track, outch, outpho, outne);
 #endif
 
+        // write out human-readable patterns
+        serHR(emcalo, calo, track, outch, outpho, outne);
+
         int errors = 0; int ntot = 0, npho = 0, nch = 0, nneu = 0;
 
-#if defined(TESTCALO) || defined(TESTFULL) || defined(TESTMP7UNPACK) || defined(TESTMP7)
         // check charged hadrons
         for (int i = 0; i < NTRACK; ++i) {
             if (!pf_equals(outch_ref[i], outch[i], "PF Charged", i)) errors++;
             if (outch_ref[i].hwPt > 0) { ntot++; nch++; }
         }
-#endif
-#if defined(TESTEM)
-        // check electron flags 
-        for (int i = 0; i < NTRACK; ++i) {
-            if (track[i].hwPt > 0 && isEle[i] != isEle_ref[i]) { 
-                printf("Electron mismatch for track %2d (hw %d, ref %d)\n", i, int(isEle[i]), int(isEle_ref[i]));
-                errors++;
-            }
-        }
-        // check EM-subtracted calo
-        for (int i = 0; i < NCALO; ++i) {
-            if (!had_equals(calo_subem_ref[i], calo_subem[i], "Calo non-EM", i)) errors++;
-        }
-#endif
-#if defined(TESTEM) || defined(TESTFULL) || defined(TESTMP7UNPACK) || defined(TESTMP7)
+
         // check photon 
         for (int i = 0; i < NPHOTON; ++i) {
             if (!pf_equals(outpho_ref[i], outpho[i], "Photon", i)) errors++;
             if (outpho_ref[i].hwPt > 0) { ntot++; npho++; }
         }
-#endif
-#if defined(TESTCALO) || defined(TESTFULL) || defined(TESTMP7UNPACK) || defined(TESTMP7)
+
         for (int i = 0; i < NSELCALO; ++i) {
             if (!pf_equals(outne_ref[i], outne[i], "PF Neutral", i)) errors++;
             if (outne_ref[i].hwPt > 0) { ntot++; nneu++; }
         }
-#endif
-#if defined(TESTMP7PACK)
-        for (int i = 0; i < NEMCALO; ++i) {
-            if (!had_equals(calo[i], calo2[i], "Calo", i)) errors++;
-        }
-        for (int i = 0; i < NCALO; ++i) {
-            if (!em_equals(emcalo[i], emcalo2[i], "EMCalo", i)) errors++;
-        }
-        for (int i = 0; i < NTRACK; ++i) {
-            if (!trk_equals(track[i], track2[i], "Track", i)) errors++;
-        }
-#endif
+
         if (errors != 0) {
             printf("Error in computing test %d (%d)\n", test, errors);
-            for (int i = 0; i < NCALO; ++i) {
-                printf("calo  %3d, hwPt % 7d   hwEmPt  % 7d    hwEta %+7d   hwPhi %+7d   hwIsEM %1d\n", i, int(calo[i].hwPt), int(calo[i].hwEmPt), int(calo[i].hwEta), int(calo[i].hwPhi), int(calo[i].hwIsEM));
-            }
-            for (int i = 0; i < NEMCALO; ++i) {
-                printf("em    %3d, hwPt % 7d   hwPtErr % 7d    hwEta %+7d   hwPhi %+7d\n", i, int(emcalo[i].hwPt), int(emcalo[i].hwPtErr), int(emcalo[i].hwEta), int(emcalo[i].hwPhi));
-            }
-            for (int i = 0; i < NTRACK; ++i) {
-                printf("track %3d, hwPt % 7d   hwPtErr % 7d    hwEta %+7d   hwPhi %+7d     hwZ0 %+7d\n", i, int(track[i].hwPt), int(track[i].hwPtErr), int(track[i].hwEta), int(track[i].hwPhi), int(track[i].hwZ0));
-            }
-#if defined(TESTEM)
-            for (int i = 0; i < NCALO; ++i) {
-                printf("no-em %3d, hwPt % 7d   hwEmPt  % 7d    hwEta %+7d   hwPhi %+7d\n", i, int(calo_subem[i].hwPt), int(calo_subem[i].hwEmPt), int(calo_subem[i].hwEta), int(calo_subem[i].hwPhi));
-            }
-#endif
-#if defined(TESTCALO) || defined(TESTFULL) || defined(TESTMP7UNPACK) || defined(TESTMP7)
-            for (int i = 0; i < NTRACK; ++i) {
-                printf("charged pf %3d, hwPt % 7d % 7d   hwEta %+7d %+7d   hwPhi %+7d %+7d   hwId %1d %1d      hwZ0 %+7d %+7d\n", i,
-                    int(outch_ref[i].hwPt), int(outch[i].hwPt), int(outch_ref[i].hwEta), int(outch[i].hwEta),
-                    int(outch_ref[i].hwPhi), int(outch[i].hwPhi), int(outch_ref[i].hwId), int(outch[i].hwId),
-                    int(outch_ref[i].hwZ0), int(outch[i].hwZ0));
-            }
-#endif
-#if defined(TESTEM) || defined(TESTFULL) || defined(TESTMP7UNPACK) || defined(TESTMP7)
-            for (int i = 0; i < NPHOTON; ++i) {
-                printf("photon  pf %3d, hwPt % 7d % 7d   hwEta %+7d %+7d   hwPhi %+7d %+7d   hwId %1d %1d\n", i,
-                    int(outpho_ref[i].hwPt), int(outpho[i].hwPt), int(outpho_ref[i].hwEta), int(outpho[i].hwEta),
-                    int(outpho_ref[i].hwPhi), int(outpho[i].hwPhi), int(outpho_ref[i].hwId), int(outpho[i].hwId));
-            }
-#endif
-#if defined(TESTCALO) || defined(TESTFULL) || defined(TESTMP7UNPACK) || defined(TESTMP7)
-            for (int i = 0; i < NSELCALO; ++i) {
-                printf("neutral pf %3d, hwPt % 7d % 7d   hwEta %+7d %+7d   hwPhi %+7d %+7d   hwId %1d %1d\n", i,
-                    int(outne_ref[i].hwPt), int(outne[i].hwPt), int(outne_ref[i].hwEta), int(outne[i].hwEta),
-                    int(outne_ref[i].hwPhi), int(outne[i].hwPhi), int(outne_ref[i].hwId), int(outne[i].hwId));
-            }
-#endif
-
+            printf("Inputs: \n"); debugHR.dump_inputs(emcalo, calo, track);
+            printf("Reference output: \n"); debugHR.dump_outputs(outch_ref, outpho_ref, outne_ref);
+            printf("Current output: \n"); debugHR.dump_outputs(outch, outpho, outne);
             return 1;
         } else {
             printf("Passed test %d (%d, %d, %d, %d)\n", test, ntot, nch, npho, nneu);
