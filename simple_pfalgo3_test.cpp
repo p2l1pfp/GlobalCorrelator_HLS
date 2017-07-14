@@ -114,16 +114,13 @@ int main() {
 
 #if defined(TESTMP7) // Full PF, with MP7 wrapping 
         MP7DataWord data_in[MP7_NCHANN], data_out[MP7_NCHANN];
-        mp7wrapped_pack_in(emcalo, calo, track, data_in);
 
-#ifndef TESTMP7FAST // fast fake PF
-        mp7wrapped_pfalgo3_full(data_in, data_out);
-        pfalgo3_full_ref(emcalo, calo, track, outch_ref, outpho_ref, outne_ref);
-#else  // standard PF
-        mp7wrapped_pfalgo3_fast(data_in, data_out);
-        pfalgo3_fast_ref(emcalo, calo, track, outch_ref, outpho_ref, outne_ref);
-#endif
+        mp7wrapped_pack_in(emcalo, calo, track, data_in);
+        MP7_TOP_FUNC(data_in, data_out);
         mp7wrapped_unpack_out(data_out, outch, outpho, outne);
+
+        MP7_REF_FUNC(emcalo, calo, track, outch_ref, outpho_ref, outne_ref);
+
         // write out patterns for MP7 board hardware or simulator test
         serInPatterns(data_in); serOutPatterns(data_out);
 
@@ -134,6 +131,10 @@ int main() {
 
         // write out human-readable patterns
         serHR(emcalo, calo, track, outch, outpho, outne);
+
+#ifdef TESTMP7
+        if (!MP7_VALIDATE) continue;
+#endif
 
         int errors = 0; int ntot = 0, npho = 0, nch = 0, nneu = 0;
 
