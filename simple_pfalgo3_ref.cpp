@@ -153,7 +153,7 @@ void pfalgo3_em_ref(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj 
 
     // initialize sum track pt
     pt_t calo_sumtk[NEMCALO];
-    for (int ic = 0; ic < NEMCALO; ++ic) {  calo_sumtk[NEMCALO] = 0; }
+    for (int ic = 0; ic < NEMCALO; ++ic) {  calo_sumtk[ic] = 0; }
     int tk2em[NTRACK]; 
     bool isEM[NEMCALO];
     // for each track, find the closest calo
@@ -247,8 +247,8 @@ void pfalgo3_full_ref(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkOb
     for (int it = 0; it < NTRACK; ++it) { track_good[it] = (track[it].hwPt < TKPT_MAX || isEle[it]); }
 
     // initialize output
-    for (int ipf = 0; ipf < NTRACK; ++ipf) { outch[ipf].hwPt = 0; }
-    for (int ipf = 0; ipf < NSELCALO; ++ipf) { outne[ipf].hwPt = 0; }
+    for (int ipf = 0; ipf < NTRACK; ++ipf) { outch[ipf].hwPt = 0; outch[ipf].hwEta = 0; outch[ipf].hwPhi = 0; outch[ipf].hwId = 0; outch[ipf].hwZ0 = 0; }
+    for (int ipf = 0; ipf < NSELCALO; ++ipf) { outne[ipf].hwPt = 0; outne[ipf].hwEta = 0; outne[ipf].hwPhi = 0; outne[ipf].hwId = 0; }
 
     // for each track, find the closest calo
     for (int it = 0; it < NTRACK; ++it) {
@@ -289,7 +289,7 @@ void pfalgo3_full_ref(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkOb
 
     // copy out neutral hadrons
     PFNeutralObj outne_all[NCALO];
-    for (int ipf = 0; ipf < NCALO; ++ipf) { outne_all[ipf].hwPt = 0; }
+    for (int ipf = 0; ipf < NCALO; ++ipf) { outne_all[ipf].hwPt = 0; outne_all[ipf].hwEta = 0; outne_all[ipf].hwPhi = 0; outne_all[ipf].hwId = 0; }
     for (int ic = 0; ic < NCALO; ++ic) {
         if (calo_subpt[ic] > 0) {
             outne_all[ic].hwPt  = calo_subpt[ic];
