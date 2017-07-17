@@ -2,7 +2,7 @@
 source config_hls_pfalgo3.tcl
 
 # open the project, don't forget to reset
-open_project -reset "project"
+open_project -reset "proj3-mp7-fast"
 
 set_top ${l1pfTopFunc}
 add_files src/simple_pfalgo3.cpp
