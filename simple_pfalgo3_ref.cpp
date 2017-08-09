@@ -153,7 +153,7 @@ void pfalgo3_em_ref(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj 
 
     // initialize sum track pt
     pt_t calo_sumtk[NEMCALO];
-    for (int ic = 0; ic < NEMCALO; ++ic) {  calo_sumtk[NEMCALO] = 0; }
+    for (int ic = 0; ic < NEMCALO; ++ic) {  calo_sumtk[ic] = 0; }
     int tk2em[NTRACK]; 
     bool isEM[NEMCALO];
     // for each track, find the closest calo
