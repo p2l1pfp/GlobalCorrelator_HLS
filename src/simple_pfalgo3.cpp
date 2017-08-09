@@ -29,7 +29,8 @@ ap_uint<NB> dr2_dpt_int_cap(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_
     int dr2 = deta*deta + dphi*dphi;
     pt_t dpt = pt1 - pt2;
     if (dpt < 0) dpt = 0;
-    int dq = dr2 + ((dpt*dpt*ptscale) >> 8);
+    ap_int<26> dpt2 = (dpt > 5792) ? ap_int<26>((1<<25)-1) : ap_int<26>(dpt*dpt);
+    int dq = dr2 + (dpt2*ptscale >> 8);
     return ((dr2 < int(dr2max)) && (dq < int(max))) ? ap_uint<NB>(dq) : max;
 }
 
@@ -63,7 +64,8 @@ void tk2calo_drvals(HadCaloObj calo[NCALO], TkObj track[NTRACK], tk2calo_dr_t ca
 template<int DR2MAX>
 void init_dr2max_times_pterr2_inv(int vals[512]) {
     for (int i = 0; i < 512; ++i) {
-        vals[i] = (DR2MAX<<8)/(i?i*i:1);
+    	int tmp = (DR2MAX<<8)/(i?i*i:1), int18_max = (1<<17)-1;
+        vals[i] = (tmp > int18_max ? int18_max : tmp);
     }
 }
 template<int DR2MAX>
@@ -82,9 +84,10 @@ template<int DR2MAX>
 void tk2calo_drdptvals(HadCaloObj calo[NCALO], TkObj track[NTRACK], tk2calo_dq_t calo_track_drval[NTRACK][NCALO]) {
     const tk2calo_dq_t eDR2MAX = DR2MAX;
     const tk2calo_dq_t eDQMAX  = 5*DR2MAX; // at most we're 2 sigma away in pt, so that's a factor 4
+    // now, DR2MAX is 10 bits, so dptscale max is at most 10+8 bits = 18 bits
     for (int it = 0; it < NTRACK; ++it) {
         pt_t caloPtMin = track[it].hwPt - 2*(track[it].hwPtErr);
-        int  dptscale  = calc_dptscale<DR2MAX>(track[it].hwPtErr);
+        ap_int<18> dptscale  = calc_dptscale<DR2MAX>(track[it].hwPtErr);
         if (caloPtMin < 0) caloPtMin = 0;
         for (int icalo = 0; icalo < NCALO; ++icalo) {
             if (calo[icalo].hwPt > caloPtMin) {
