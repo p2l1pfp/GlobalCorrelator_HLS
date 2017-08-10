@@ -1,5 +1,5 @@
 #include "src/data.h"
-#include "src/simple_pfalgo3.h"
+#include "src/simple_fullpfalgo.h"
 #include <cmath>
 #include <algorithm>
 
@@ -153,20 +153,24 @@ void pfalgo3_em_ref(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj 
 
     // initialize sum track pt
     pt_t calo_sumtk[NEMCALO];
-    for (int ic = 0; ic < NEMCALO; ++ic) {  calo_sumtk[NEMCALO] = 0; }
+    for (int ic = 0; ic < NEMCALO; ++ic) {  calo_sumtk[ic] = 0; }
     int tk2em[NTRACK]; 
     bool isEM[NEMCALO];
     // for each track, find the closest calo
     for (int it = 0; it < NTRACK; ++it) {
-        if (track[it].hwPt > 0) {
+        if (track[it].hwPt > 0 && !track[it].hwIsMu) {
             tk2em[it] = best_match_ref<NEMCALO,DR2MAX_TE,false,EmCaloObj>(emcalo, track[it]);
+            // printf("C++: tk not 0 index = %i and matched calo index = %i \n", it, int(tk2em[it]) );
             if (tk2em[it] != -1) {
                 calo_sumtk[tk2em[it]] += track[it].hwPt;
             }
         } else {
         	tk2em[it] = -1;
         }
+        // printf("C++: tk index = %i and match = %i and sumtk = %i \n", it, int(tk2em[it]), int(calo_sumtk[tk2em[it]]));        
     }
+
+    // for (int ic = 0; ic < NEMCALO; ++ic) {  printf("C++: calo_sumtk[NEMCALO] = %i \n", int(calo_sumtk[ic])); }
 
     for (int ic = 0; ic < NEMCALO; ++ic) {
         pt_t photonPt;
@@ -194,6 +198,8 @@ void pfalgo3_em_ref(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj 
         outpho[ic].hwEta = photonPt ? emcalo[ic].hwEta : etaphi_t(0);
         outpho[ic].hwPhi = photonPt ? emcalo[ic].hwPhi : etaphi_t(0);
         outpho[ic].hwId  = photonPt ? PID_Photon : particleid_t(0);
+
+        // printf("C++: emcalo index = %i and pt = %i and calo_sumtk = %i \n", ic, int(photonPt),int(calo_sumtk[ic]));
     }
 
     for (int it = 0; it < NTRACK; ++it) {
@@ -228,14 +234,59 @@ void pfalgo3_em_ref(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj 
     }
 }
 
-void pfalgo3_full_ref(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj track[NTRACK], PFChargedObj outch[NTRACK], PFNeutralObj outpho[NPHOTON], PFNeutralObj outne[NSELCALO]) {
+void pfalgo3_full_ref(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj track[NTRACK], MuObj mu[NMU], PFChargedObj outch[NTRACK], PFNeutralObj outpho[NPHOTON], PFNeutralObj outne[NSELCALO], PFChargedObj outmu[NMU]) {
+
     // constants
     const pt_t     TKPT_MAX = PFALGO3_TK_MAXINVPT; // 20 * PT_SCALE;
     const int      DR2MAX   = PFALGO3_DR2MAX_TK_CALO;
+    const int      DR2MAX_TM = PFALGO3_DR2MAX_TK_MU;
 
+    ////////////////////////////////////////////////////
+    // TK-MU Linking
+
+    // initialize good track bit
+    // bool mu_good[NMU];
+    // for (int im = 0; im < NMU; ++im) { mu_good[im] = (mu[im].hwPt < TKPT_MAX); }
+
+    // initialize output
+    for (int ipf = 0; ipf < NMU; ++ipf) { outmu[ipf].hwPt = 0; }
+
+    // for each muon, find the closest track
+    for (int im = 0; im < NMU; ++im) {
+        if (mu[im].hwPt > 0) {
+            pt_t tkPtMin = mu[im].hwPt - 2*(mu[im].hwPtErr);
+            int  drmin = DR2MAX_TM, ibest = -1;
+            for (int it = 0; it < NTRACK; ++it) {
+                if (track[it].hwPt <= tkPtMin) continue;
+                int dr = dr2_int(mu[im].hwEta, mu[im].hwPhi, track[it].hwEta, track[it].hwPhi);
+                if (dr < drmin) { drmin = dr; ibest = it; }
+            }
+            if (ibest != -1) {
+                outmu[im].hwPt = track[ibest].hwPt;
+                outmu[im].hwEta = track[ibest].hwEta;
+                outmu[im].hwPhi = track[ibest].hwPhi;
+                outmu[im].hwId  = PID_Muon;
+                outmu[im].hwZ0 = track[ibest].hwZ0;      
+                track[ibest].hwIsMu = true;         
+            }
+            else{
+                outmu[im].hwPt  = 0;
+                outmu[im].hwEta = 0;
+                outmu[im].hwPhi = 0;
+                outmu[im].hwId  = 0;
+                outmu[im].hwZ0  = 0;              
+            }
+        }
+    }
+
+    ////////////////////////////////////////////////////
+    // TK-EM Linking
     bool isEle[NTRACK];
     HadCaloObj hadcalo_subem[NCALO];
     pfalgo3_em_ref(emcalo, hadcalo, track, isEle, outpho, hadcalo_subem);
+
+    ////////////////////////////////////////////////////
+    // TK-HAD Linking
 
     // initialize sum track pt
     pt_t calo_sumtk[NCALO], calo_subpt[NCALO];
@@ -252,7 +303,7 @@ void pfalgo3_full_ref(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkOb
 
     // for each track, find the closest calo
     for (int it = 0; it < NTRACK; ++it) {
-        if (track[it].hwPt > 0 && !isEle[it]) {
+        if (track[it].hwPt > 0 && !isEle[it] && !track[it].hwIsMu) {
             int  ibest = best_match_with_pt_ref<NCALO,DR2MAX,HadCaloObj>(hadcalo_subem, track[it]);
             //int  ibest = best_match_ref<NCALO,DR2MAX,true,HadCaloObj>(hadcalo_subem, track[it]);
             if (ibest != -1) {

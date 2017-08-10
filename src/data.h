@@ -37,7 +37,7 @@ struct CaloObj {
 };
 struct HadCaloObj : public CaloObj {
 	pt_t hwEmPt;
-        bool hwIsEM;
+   	bool hwIsEM;
 };
 struct EmCaloObj {
 	pt_t hwPt, hwPtErr;
@@ -66,8 +66,8 @@ struct PFNeutralObj {
 };
 struct VtxObj {
 	pt_t  hwSumPt;
-        z0_t  hwZ0;
-        vtx_t mult;
+	z0_t  hwZ0;
+	vtx_t mult;
 	particleid_t hwId;
 };
 
