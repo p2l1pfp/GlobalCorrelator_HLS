@@ -344,7 +344,7 @@ void em2calo_sub(HadCaloObj calo[NCALO], pt_t sumem[NCALO], HadCaloObj calo_out[
 //-------------------------------------------------------
 
 #define mu2trk_dr_t ap_uint<12>
-void spfph_mu2trk_drvals(MuObj mu[NCALO], TkObj track[NTRACK], mu2trk_dr_t mu_track_drval[NMU][NTRACK]) {
+void spfph_mu2trk_drvals(MuObj mu[NMU], TkObj track[NTRACK], mu2trk_dr_t mu_track_drval[NMU][NTRACK]) {
 
     const mu2trk_dr_t DR2MAX = 2101;
     for (int im = 0; im < NMU; ++im) {
