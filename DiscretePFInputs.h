@@ -100,7 +100,7 @@ namespace l1tpf_int {
   };
 
   struct Muon {
-      int16_t hwPt;   
+      int16_t  hwPt;   
       int16_t  hwEta;   // at calo
       int16_t  hwPhi;   // at calo
       uint16_t hwFlags;
