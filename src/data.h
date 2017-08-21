@@ -19,10 +19,10 @@ enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=
 #define VTXPTMAX  200
 
 // PF
-#define NTRACK 12
-#define NCALO 12
+#define NTRACK 15
+#define NCALO 15
 #define NMU 4
-#define NEMCALO 12
+#define NEMCALO 15
 #define NPHOTON NEMCALO
 #define NSELCALO 10
 #define NTRACKNOMU 12
@@ -47,7 +47,6 @@ struct TkObj {
 	pt_t hwPt, hwPtErr;
 	etaphi_t hwEta, hwPhi; // relative to the region center, at calo
 	z0_t hwZ0;
-	bool hwIsMu;
 };
 struct MuObj {
 	pt_t hwPt, hwPtErr;

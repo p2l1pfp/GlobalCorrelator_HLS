@@ -349,8 +349,6 @@ void spfph_mutrk_link(MuObj mu[NMU], TkObj track[NTRACK], ap_uint<NMU> mu_track_
     #pragma HLS ARRAY_PARTITION variable=track complete
     #pragma HLS ARRAY_PARTITION variable=mu_track_link_bit complete dim=0
 
-    #pragma HLS pipeline II=5
-
     mu2trk_dr_t drvals[NMU][NTRACK];
     #pragma HLS ARRAY_PARTITION variable=drvals complete dim=0
 
@@ -401,7 +399,7 @@ void pfalgo3_full(EmCaloObj calo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj trac
     #pragma HLS ARRAY_PARTITION variable=outne complete
     #pragma HLS ARRAY_PARTITION variable=outmu complete
 
-    #pragma HLS pipeline II=5
+    #pragma HLS pipeline II=6
 
     // ---------------------------------------------------------------
     // TK-MU Linking
