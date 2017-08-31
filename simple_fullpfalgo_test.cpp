@@ -76,7 +76,7 @@ int main() {
 
         // initialize TP objects
         for (int i = 0; i < NTRACK; ++i) {
-            track[i].hwPt = 0; track[i].hwPtErr = 0; track[i].hwEta = 0; track[i].hwPhi = 0; track[i].hwZ0 = 0; track[i].hwIsMu = false;
+            track[i].hwPt = 0; track[i].hwPtErr = 0; track[i].hwEta = 0; track[i].hwPhi = 0; track[i].hwZ0 = 0; 
         }
         for (int i = 0; i < NCALO; ++i) {
             calo[i].hwPt = 0; calo[i].hwEmPt = 0; calo[i].hwEta = 0; calo[i].hwPhi = 0; calo[i].hwIsEM = 0; 

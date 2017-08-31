@@ -5,7 +5,7 @@
 ############################################################
 
 # open the project, don't forget to reset
-open_project -reset proj_fullpfalgo
+open_project -reset proj_fullpfalgo_15151504_240MHz_II6
 #set_top pfalgo3_calo
 #set_top pfalgo3_em
 set_top pfalgo3_full
@@ -24,12 +24,13 @@ open_solution -reset "solution1"
 #set_part {xc7vx690tffg1927-2}
 #set_part {xcku5p-sfvb784-3-e}
 set_part {xcku115-flvf1924-2-i}
-create_clock -period 5 -name default
+create_clock -period 4.16667 -name default
+set_clock_uncertainty 1.0
 #source "./nb1/solution1/directives.tcl"
 
 # do stuff
 csim_design
-#csynth_design
+csynth_design
 #cosim_design -trace_level all
 #export_design -format ip_catalog
 

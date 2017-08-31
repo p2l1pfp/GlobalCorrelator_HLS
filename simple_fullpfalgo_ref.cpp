@@ -146,7 +146,7 @@ void pfalgo3_calo_ref(HadCaloObj calo[NCALO], TkObj track[NTRACK], PFChargedObj 
     ptsort_ref<PFNeutralObj,NCALO,NSELCALO>(outne_all, outne);
 }
 
-void pfalgo3_em_ref(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj track[NTRACK], bool isEle[NTRACK], PFNeutralObj outpho[NPHOTON], HadCaloObj hadcalo_out[NCALO]) {
+void pfalgo3_em_ref(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj track[NTRACK], bool isEle[NTRACK], bool isMu[NTRACK], PFNeutralObj outpho[NPHOTON], HadCaloObj hadcalo_out[NCALO]) {
     // constants
     const int DR2MAX_TE = PFALGO3_DR2MAX_TK_EM;
     const int DR2MAX_EH = PFALGO3_DR2MAX_EM_CALO;
@@ -158,7 +158,7 @@ void pfalgo3_em_ref(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj 
     bool isEM[NEMCALO];
     // for each track, find the closest calo
     for (int it = 0; it < NTRACK; ++it) {
-        if (track[it].hwPt > 0 && !track[it].hwIsMu) {
+        if (track[it].hwPt > 0 && !isMu[it]) {
             tk2em[it] = best_match_ref<NEMCALO,DR2MAX_TE,false,EmCaloObj>(emcalo, track[it]);
             // printf("C++: tk not 0 index = %i and matched calo index = %i \n", it, int(tk2em[it]) );
             if (tk2em[it] != -1) {
@@ -251,6 +251,8 @@ void pfalgo3_full_ref(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkOb
     // initialize output
     for (int ipf = 0; ipf < NMU; ++ipf) { outmu[ipf].hwPt = 0; }
 
+    bool isMu[NTRACK];
+    for (int it = 0; it < NTRACK; ++it) { isMu[it] = 0; } // initialize
     // for each muon, find the closest track
     for (int im = 0; im < NMU; ++im) {
         if (mu[im].hwPt > 0) {
@@ -267,7 +269,7 @@ void pfalgo3_full_ref(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkOb
                 outmu[im].hwPhi = track[ibest].hwPhi;
                 outmu[im].hwId  = PID_Muon;
                 outmu[im].hwZ0 = track[ibest].hwZ0;      
-                track[ibest].hwIsMu = true;         
+                isMu[ibest] = 1;
             }
             else{
                 outmu[im].hwPt  = 0;
@@ -283,7 +285,7 @@ void pfalgo3_full_ref(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkOb
     // TK-EM Linking
     bool isEle[NTRACK];
     HadCaloObj hadcalo_subem[NCALO];
-    pfalgo3_em_ref(emcalo, hadcalo, track, isEle, outpho, hadcalo_subem);
+    pfalgo3_em_ref(emcalo, hadcalo, track, isEle, isMu, outpho, hadcalo_subem);
 
     ////////////////////////////////////////////////////
     // TK-HAD Linking
@@ -295,7 +297,7 @@ void pfalgo3_full_ref(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkOb
 
     // initialize good track bit
     bool track_good[NTRACK];
-    for (int it = 0; it < NTRACK; ++it) { track_good[it] = (track[it].hwPt < TKPT_MAX || isEle[it]); }
+    for (int it = 0; it < NTRACK; ++it) { track_good[it] = (track[it].hwPt < TKPT_MAX || isEle[it] || isMu[it]); }
 
     // initialize output
     for (int ipf = 0; ipf < NTRACK; ++ipf) { outch[ipf].hwPt = 0; }
@@ -303,7 +305,7 @@ void pfalgo3_full_ref(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkOb
 
     // for each track, find the closest calo
     for (int it = 0; it < NTRACK; ++it) {
-        if (track[it].hwPt > 0 && !isEle[it] && !track[it].hwIsMu) {
+        if (track[it].hwPt > 0 && !isEle[it] && !isMu[it]) {
             int  ibest = best_match_with_pt_ref<NCALO,DR2MAX,HadCaloObj>(hadcalo_subem, track[it]);
             //int  ibest = best_match_ref<NCALO,DR2MAX,true,HadCaloObj>(hadcalo_subem, track[it]);
             if (ibest != -1) {
