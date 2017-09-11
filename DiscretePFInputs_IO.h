@@ -6,44 +6,7 @@
 #include <cassert>
 #include "src/data.h"
 
-struct Region {
-	float etaCenter, etaMin, etaMax, phiCenter, phiHalfWidth, etaExtra, phiExtra;
-	
-	std::vector<l1tpf_int::CaloCluster> calo, emcalo;
-	std::vector<l1tpf_int::PropagatedTrack> track;
-	std::vector<l1tpf_int::Muon> muon;
-	
-	void readFromFile(FILE *file) {
-	    fread(&etaCenter, sizeof(float), 1, file);
-	    fread(&etaMin,    sizeof(float), 1, file);
-	    fread(&etaMax,    sizeof(float), 1, file);
-	    fread(&phiCenter, sizeof(float), 1, file);
-	    fread(&phiHalfWidth, sizeof(float), 1, file);
-	    fread(&etaExtra, sizeof(float), 1, file);
-	    fread(&phiExtra, sizeof(float), 1, file);
-
-	    uint32_t number; uint32_t size;
-	    fread(&number, sizeof(uint32_t), 1, file);
-	    fread(&size,   sizeof(uint32_t), 1, file);
-	    calo.resize(number); assert(size == sizeof(l1tpf_int::CaloCluster));
-	    fread(&calo[0], size, number, file);
-
-	    fread(&number, sizeof(uint32_t), 1, file);
-	    fread(&size,   sizeof(uint32_t), 1, file);
-	    emcalo.resize(number); assert(size == sizeof(l1tpf_int::CaloCluster));
-	    fread(&emcalo[0], size, number, file);
-
-	    fread(&number, sizeof(uint32_t), 1, file);
-	    fread(&size,   sizeof(uint32_t), 1, file);
-	    track.resize(number); assert(size == sizeof(l1tpf_int::PropagatedTrack));
-	    fread(&track[0], size, number, file);
-
-	    fread(&number, sizeof(uint32_t), 1, file);
-	    fread(&size,   sizeof(uint32_t), 1, file);
-	    muon.resize(number); assert(size == sizeof(l1tpf_int::Muon));
-	    fread(&muon[0], size, number, file);
-	}
-};
+typedef l1tpf_int::InputRegion Region;
 
 struct Event {
 	uint32_t run, lumi; uint64_t event;
@@ -52,16 +15,11 @@ struct Event {
 	std::vector<Region> regions;
 	
 	Event() : run(0), lumi(0), event(0), z0(0.), alphaCMed(0.), alphaCRms(0.), alphaFMed(0.), alphaFRms(0.), regions() {}
-	void readFromFile(FILE *fRegionDump) {
-		fread(&run, sizeof(uint32_t), 1, fRegionDump);
+	bool readFromFile(FILE *fRegionDump) {
+		if (!fread(&run, sizeof(uint32_t), 1, fRegionDump)) return false;
 		fread(&lumi, sizeof(uint32_t), 1, fRegionDump);
 		fread(&event, sizeof(uint64_t), 1, fRegionDump);
-		uint32_t nregions;
-		fread(&nregions, sizeof(uint32_t), 1, fRegionDump);
-		regions.resize(nregions);
-		for (unsigned int i = 0; i < nregions; ++i) {
-			regions[i].readFromFile(fRegionDump);
-		}
+		l1tpf_int::readManyFromFile(regions, fRegionDump); 
 		fread(&z0, sizeof(float), 1, fRegionDump);
 		fread(&alphaCMed, sizeof(float), 1, fRegionDump);
 		fread(&alphaCRms, sizeof(float), 1, fRegionDump);
@@ -99,7 +57,7 @@ class DiscretePFInputs {
 			while(true) {
 				if (event_.event == 0 || iregion_ == event_.regions.size()) {
 					if (feof(file_)) return false;
-					event_.readFromFile(file_);
+					if (!event_.readFromFile(file_)) return false;
 					printf("Beginning of run %u, lumi %u, event %lu \n", event_.run, event_.lumi, event_.event);
 					iregion_ = 0;
 				}
