@@ -582,26 +582,26 @@ void mp7wrapped_unpack_out( MP7DataWord data[MP7_NCHANN], PFChargedObj pfch[NTRA
     #define MUOFFS 2*NSELCALO+NHOFFS
     for (unsigned int i = 0; i < NTRACK; ++i) {
         pfch[i].hwPt  = data[2*i+0](15, 0);
-        pfch[i].hwId  = data[2*i+0](17,16);
+        pfch[i].hwId  = data[2*i+0](18,16);
         pfch[i].hwEta = data[2*i+1](8, 0);
         pfch[i].hwPhi = data[2*i+1](17,9);
         pfch[i].hwZ0  = data[2*i+1](28,18);
     }
     for (unsigned int i = 0; i < NPHOTON; ++i) {
         pfpho[i].hwPt  = data[2*i+0+PHOOFFS](15, 0);
-        pfpho[i].hwId  = data[2*i+0+PHOOFFS](17,16);
+        pfpho[i].hwId  = data[2*i+0+PHOOFFS](18,16);
         pfpho[i].hwEta = data[2*i+1+PHOOFFS](8, 0);
         pfpho[i].hwPhi = data[2*i+1+PHOOFFS](17,9);
     }
     for (unsigned int i = 0; i < NSELCALO; ++i) {
         pfne[i].hwPt  = data[2*i+0+NHOFFS](15, 0);
-        pfne[i].hwId  = data[2*i+0+NHOFFS](17,16);
+        pfne[i].hwId  = data[2*i+0+NHOFFS](18,16);
         pfne[i].hwEta = data[2*i+1+NHOFFS](8, 0);
         pfne[i].hwPhi = data[2*i+1+NHOFFS](17,9);
     }
     for (unsigned int i = 0; i < NMU; ++i) {
         pfmu[i].hwPt  = data[2*i+0+MUOFFS](15, 0);
-        pfmu[i].hwId  = data[2*i+0+MUOFFS](17,16);
+        pfmu[i].hwId  = data[2*i+0+MUOFFS](18,16);
         pfmu[i].hwEta = data[2*i+1+MUOFFS](8, 0);
         pfmu[i].hwPhi = data[2*i+1+MUOFFS](17,9);
         pfmu[i].hwZ0  = data[2*i+1+MUOFFS](28,18);
