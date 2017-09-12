@@ -7,7 +7,7 @@
 # open the project, don't forget to reset
 open_project -reset proj_fullpfalgo_15151504_240MHz_II6
 set_top pfalgo3_full
-add_files src/simple_fullpfalgo.cpp
+add_files firmware/simple_fullpfalgo.cpp
 add_files -tb simple_fullpfalgo_test.cpp
 add_files -tb simple_fullpfalgo_ref.cpp
 add_files -tb pattern_serializer.cpp

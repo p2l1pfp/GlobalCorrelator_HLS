@@ -4,7 +4,7 @@
 #include "DiscretePFInputs.h"
 #include <vector>
 #include <cassert>
-#include "src/data.h"
+#include "firmware/data.h"
 #include "DiscretePF2Firmware.h"
 
 typedef l1tpf_int::InputRegion Region;

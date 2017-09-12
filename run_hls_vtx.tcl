@@ -7,7 +7,7 @@
 # open the project, don't forget to reset
 open_project -reset proj1
 set_top simple_vtx_hwopt
-add_files src/simple_vtx.cpp
+add_files firmware/simple_vtx.cpp
 add_files -tb simple_vtx_test.cpp 
 add_files -tb simple_vtx_ref.cpp
 

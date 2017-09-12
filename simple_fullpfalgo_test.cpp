@@ -1,5 +1,5 @@
 #include <cstdio>
-#include "src/simple_fullpfalgo.h"
+#include "firmware/simple_fullpfalgo.h"
 #include "random_inputs.h"
 #include "DiscretePFInputs_IO.h"
 #include "pattern_serializer.h"

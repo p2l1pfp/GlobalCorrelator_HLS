@@ -22,31 +22,4 @@ void mp7wrapped_pfalgo3_full(MP7DataWord input[MP7_NCHANN], MP7DataWord output[M
 #define PFALGO3_DR2MAX_TK_EM   84
 #define PFALGO3_TK_MAXINVPT    80
 
-template<typename T, int NIn, int NOut>
-void ptsort_hwopt(T in[NIn], T out[NOut]) {
-    T tmp[NOut];
-    #pragma HLS ARRAY_PARTITION variable=tmp complete
-
-    for (int iout = 0; iout < NOut; ++iout) {
-        #pragma HLS unroll
-        tmp[iout].hwPt = 0;
-    }
-
-    for (int it = 0; it < NIn; ++it) {
-        for (int iout = NOut-1; iout >= 0; --iout) {
-            if (tmp[iout].hwPt <= in[it].hwPt) {
-                if (iout == 0 || tmp[iout-1].hwPt > in[it].hwPt) {
-                    tmp[iout] = in[it];
-                } else {
-                    tmp[iout] = tmp[iout-1];
-                }
-            }
-        }
-
-    }
-    for (int iout = 0; iout < NOut; ++iout) {
-        out[iout] = tmp[iout];
-    }
-
-}
 #endif

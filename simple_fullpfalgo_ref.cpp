@@ -1,5 +1,5 @@
-#include "src/data.h"
-#include "src/simple_fullpfalgo.h"
+#include "firmware/data.h"
+#include "firmware/simple_fullpfalgo.h"
 #include <cmath>
 #include <algorithm>
 
@@ -61,7 +61,6 @@ void ptsort_ref(T in[NIn], T out[NOut]) {
     for (int iout = 0; iout < NOut; ++iout) {
         out[iout].hwPt = 0;
     }
-    int nout = 0;
     for (int it = 0; it < NIn; ++it) {
         for (int iout = 0; iout < NOut; ++iout) {
             if (in[it].hwPt >= out[iout].hwPt) {

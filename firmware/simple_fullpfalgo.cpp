@@ -35,6 +35,35 @@ ap_uint<NB> dr2_dpt_int_cap(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_
     return ((dr2 < int(dr2max)) && (dq < int(max))) ? ap_uint<NB>(dq) : max;
 }
 
+template<typename T, int NIn, int NOut>
+void ptsort_hwopt(T in[NIn], T out[NOut]) {
+    T tmp[NOut];
+    #pragma HLS ARRAY_PARTITION variable=tmp complete
+
+    for (int iout = 0; iout < NOut; ++iout) {
+        #pragma HLS unroll
+        tmp[iout].hwPt = 0;
+    }
+
+    for (int it = 0; it < NIn; ++it) {
+        for (int iout = NOut-1; iout >= 0; --iout) {
+            if (tmp[iout].hwPt <= in[it].hwPt) {
+                if (iout == 0 || tmp[iout-1].hwPt > in[it].hwPt) {
+                    tmp[iout] = in[it];
+                } else {
+                    tmp[iout] = tmp[iout-1];
+                }
+            }
+        }
+
+    }
+    for (int iout = 0; iout < NOut; ++iout) {
+        out[iout] = tmp[iout];
+    }
+
+}
+
+
 
 template<int DR2MAX>
 void tk2em_drvals(EmCaloObj calo[NEMCALO], TkObj track[NTRACK], tk2em_dr_t calo_track_drval[NTRACK][NCALO], bool isMu[NTRACK]) {
