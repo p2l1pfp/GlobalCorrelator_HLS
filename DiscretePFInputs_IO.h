@@ -5,6 +5,7 @@
 #include <vector>
 #include <cassert>
 #include "src/data.h"
+#include "DiscretePF2Firmware.h"
 
 typedef l1tpf_int::InputRegion Region;
 
@@ -35,10 +36,18 @@ class DiscretePFInputs {
 		bool nextRegion(HadCaloObj calo[NCALO], EmCaloObj emcalo[NEMCALO], TkObj track[NTRACK], MuObj mu[NMU], z0_t & hwZPV) {
 			if (!nextRegion()) return false;
 		    	const Region &r = event_.regions[iregion_];
-			readHadCalo(calo);
-			readEmCalo(emcalo);
-			readTracks(track, hwZPV);
-			readMuons(mu);
+
+                        dpf2fw::convert<NTRACK>(r.track, track);
+                        dpf2fw::convert<NCALO>(r.calo, calo);
+                        dpf2fw::convert<NEMCALO>(r.emcalo, emcalo);
+                        dpf2fw::convert<NMU>(r.muon, mu);
+
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
+			hwZPV = event_.z0 * l1tpf_int::InputTrack::Z0_SCALE;
+#else
+			hwZPV = event_.z0 * 20;
+#endif
+
 			printf("Read region %u with %lu tracks, %lu em calo, %lu had calo, %lu muons\n", iregion_, r.track.size(), r.emcalo.size(), r.calo.size(), r.muon.size());
 			iregion_++;
 			return true;
@@ -59,57 +68,6 @@ class DiscretePFInputs {
 					continue; // use only regions in the barrel for now
 				}
 				return true;
-			}
-		}
-		void readTracks(TkObj track[NTRACK], z0_t & hwZPV) {
-		    	const Region &r = event_.regions[iregion_];
-#ifdef __GXX_EXPERIMENTAL_CXX0X__
-			hwZPV = event_.z0 * l1tpf_int::InputTrack::Z0_SCALE;
-#else
-			hwZPV = event_.z0 * 20;
-#endif
-			for (unsigned int i = 0; i < std::min<unsigned>(NTRACK,r.track.size()); ++i) {
-				track[i].hwPt = r.track[i].hwPt;
-				track[i].hwPtErr = r.track[i].hwCaloPtErr;
-				track[i].hwEta = r.track[i].hwEta; // @calo
-				track[i].hwPhi = r.track[i].hwPhi; // @calo
-				track[i].hwZ0 = r.track[i].hwZ0;
-			}
-		}
-		void readOldCalo(CaloObj calo[NCALO]) {
-		    	const Region &r = event_.regions[iregion_];
-			for (unsigned int i = 0; i < std::min<unsigned>(NCALO, r.calo.size()); ++i) {
-				calo[i].hwPt = r.calo[i].hwPt;
-				calo[i].hwEta = r.calo[i].hwEta;
-				calo[i].hwPhi = r.calo[i].hwPhi;
-			}
-		}
-		void readHadCalo(HadCaloObj calo[NCALO]) {
-		    	const Region &r = event_.regions[iregion_];
-			for (unsigned int i = 0; i < std::min<unsigned>(NCALO, r.calo.size()); ++i) {
-				calo[i].hwPt = r.calo[i].hwPt;
-				calo[i].hwEmPt = r.calo[i].hwEmPt;
-				calo[i].hwEta = r.calo[i].hwEta;
-				calo[i].hwPhi = r.calo[i].hwPhi;
-				calo[i].hwIsEM = r.calo[i].isEM;
-			}
-		}
-		void readEmCalo(EmCaloObj calo[NEMCALO]) {
-			const Region &r = event_.regions[iregion_];
-			for (unsigned int i = 0; i < std::min<unsigned>(NEMCALO, r.emcalo.size()); ++i) {
-			    calo[i].hwPt = r.emcalo[i].hwPt;
-			    calo[i].hwPtErr = r.emcalo[i].hwPtErr;
-			    calo[i].hwEta = r.emcalo[i].hwEta;
-			    calo[i].hwPhi = r.emcalo[i].hwPhi;
-			}
-		}
-		void readMuons(MuObj mu[NMU]) {
-		    	const Region &r = event_.regions[iregion_];
-			for (unsigned int i = 0; i < std::min<unsigned>(NMU,r.muon.size()); ++i) {
-				mu[i].hwPt = r.muon[i].hwPt;
-				mu[i].hwPtErr = 0; // does not exist in input
-				mu[i].hwEta = r.muon[i].hwEta; // @calo
-				mu[i].hwPhi = r.muon[i].hwPhi; // @calo
 			}
 		}
 

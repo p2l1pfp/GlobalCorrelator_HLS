@@ -295,7 +295,7 @@ namespace l1tpf_int {
     float etaCenter, etaMin, etaMax, phiCenter, phiHalfWidth;
     float etaExtra, phiExtra;
     std::vector<CaloCluster>      calo;
-    std::vector<CaloCluster>      emcalo; // not used in the default implementation
+    std::vector<CaloCluster>      emcalo;
     std::vector<PropagatedTrack>  track;
     std::vector<Muon>             muon;
 
