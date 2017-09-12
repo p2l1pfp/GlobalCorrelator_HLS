@@ -19,13 +19,21 @@ enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=
 #define VTXPTMAX  200
 
 // PF
-#define NTRACK 15
-#define NCALO 15
-#define NMU 4
-#define NEMCALO 15
-#define NPHOTON NEMCALO
-#define NSELCALO 10
-#define NTRACKNOMU 12
+#ifdef TESTMP7  // reduced input size to fit in a board
+   #define NTRACK 7
+   #define NCALO 5
+   #define NMU 2
+   #define NEMCALO 5
+   #define NPHOTON NEMCALO
+   #define NSELCALO 4
+#else
+   #define NTRACK 15
+   #define NCALO 15
+   #define NMU 4
+   #define NEMCALO 15
+   #define NPHOTON NEMCALO
+   #define NSELCALO 10
+#endif
 
 // PUPPI & CHS
 #define NPVTRACK 7

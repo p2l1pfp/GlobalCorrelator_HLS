@@ -32,22 +32,14 @@ class DiscretePFInputs {
 	public:
 		DiscretePFInputs(const char *fileName) : file_(fopen(fileName,"rb")), iregion_(0) {}
 		~DiscretePFInputs() { fclose(file_); }
-		bool nextRegion(CaloObj calo[NCALO], TkObj track[NTRACK], z0_t & hwZPV) {
-			if (!nextRegion()) return false;
-		    	const Region &r = event_.regions[iregion_];
-			readOldCalo(calo);
-			readTracks(track, hwZPV);
-			printf("Read region %u with %lu tracks and %lu calo\n", iregion_, r.track.size(), r.calo.size());
-			iregion_++;
-			return true;
-		}
-		bool nextRegion(HadCaloObj calo[NCALO], EmCaloObj emcalo[NEMCALO], TkObj track[NTRACK], z0_t & hwZPV) {
+		bool nextRegion(HadCaloObj calo[NCALO], EmCaloObj emcalo[NEMCALO], TkObj track[NTRACK], MuObj mu[NMU], z0_t & hwZPV) {
 			if (!nextRegion()) return false;
 		    	const Region &r = event_.regions[iregion_];
 			readHadCalo(calo);
 			readEmCalo(emcalo);
 			readTracks(track, hwZPV);
-			printf("Read region %u with %lu tracks, %lu em calo and %lu had calo\n", iregion_, r.track.size(), r.emcalo.size(), r.calo.size());
+			readMuons(mu);
+			printf("Read region %u with %lu tracks, %lu em calo, %lu had calo, %lu muons\n", iregion_, r.track.size(), r.emcalo.size(), r.calo.size(), r.muon.size());
 			iregion_++;
 			return true;
 		}
@@ -111,6 +103,16 @@ class DiscretePFInputs {
 			    calo[i].hwPhi = r.emcalo[i].hwPhi;
 			}
 		}
+		void readMuons(MuObj mu[NMU]) {
+		    	const Region &r = event_.regions[iregion_];
+			for (unsigned int i = 0; i < std::min<unsigned>(NMU,r.muon.size()); ++i) {
+				mu[i].hwPt = r.muon[i].hwPt;
+				mu[i].hwPtErr = 0; // does not exist in input
+				mu[i].hwEta = r.muon[i].hwEta; // @calo
+				mu[i].hwPhi = r.muon[i].hwPhi; // @calo
+			}
+		}
+
 		FILE *file_;
 		Event event_;
 		unsigned int iregion_;

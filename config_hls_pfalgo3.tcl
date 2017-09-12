@@ -1,5 +1,5 @@
 ### Define which function to use
-set l1pfAlgo "pfalgo3_fast"
+set l1pfAlgo "pfalgo3_full"
 
 # PF implementation, with MP7 data wrapper around it
 set l1pfTopFunc mp7wrapped_${l1pfAlgo}
@@ -11,4 +11,4 @@ set l1pfRefFunc ${l1pfAlgo}_ref
 set l1pfValidate 1
 
 ## version of the IP Core output
-set l1pfIPVersion 1.3
+set l1pfIPVersion 2.0
