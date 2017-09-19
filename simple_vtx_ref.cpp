@@ -1,5 +1,5 @@
-#include "src/data.h"
-#include "src/simple_vtx.h"
+#include "firmware/data.h"
+#include "firmware/simple_vtx.h"
 #include <cmath>
 #include <cassert>
 #ifndef __SYNTHESIS__

@@ -1,5 +1,5 @@
 #include <cstdio>
-#include "src/simple_vtx.h"
+#include "firmware/simple_vtx.h"
 
 #define NTEST 50
 #define NPV   15
