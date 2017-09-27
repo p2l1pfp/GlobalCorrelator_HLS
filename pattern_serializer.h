@@ -14,15 +14,29 @@ class MP7PatternSerializer {
               at clock = 1,      channel[ nchann ... 2*nchann-1 ] = second nchann words of region (or event) 2
               at clock = 1,      channel .....
               at clock = nmux-1, channel[ 0      ...   nchann-1 ] = last nchann words of region (or event) 1
+
+            if nempty > 0, put more N frames of empty events in the pattern file in between each good event.
+            e.g. nempty = 1, nmux = 1 will give
+                  | event 1 ......    |
+                  | zeros             |
+                  | event 2 ......    |
+                  | zeros             |
+            while nempty = 1, nmux = 2 will give
+                  | event 1 (part 1)...   zero .... |
+                  | event 1 (part 2)...   zero .... |
+                  | event 2 (part 1)...   zero .... |
+                  | event 2 (part 2)...   zero .... |
+
+
         */
-        MP7PatternSerializer(const std::string &fname, unsigned int nmux=1, const std::string &boardName = "Board MP7_L1PF") ;
+        MP7PatternSerializer(const std::string &fname, unsigned int nmux=1, unsigned int nempty=0, const std::string &boardName = "Board MP7_L1PF") ;
         ~MP7PatternSerializer() ;
         
         void operator()(const MP7DataWord event[MP7_NCHANN]) ;
         
     protected:
         const std::string fname_;
-        const unsigned int nmux_, nchann_;
+        const unsigned int nmux_, nchann_, nempty_;
         FILE *file_;
         unsigned int ipattern_;
         class Pattern {

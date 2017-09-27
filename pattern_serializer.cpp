@@ -1,8 +1,8 @@
 #include "pattern_serializer.h"
 #include <cassert>
 
-MP7PatternSerializer::MP7PatternSerializer(const std::string &fname, unsigned int nmux, const std::string &boardName) :
-    fname_(fname), nmux_(nmux), nchann_(MP7_NCHANN/nmux), file_(nullptr), ipattern_(0) 
+MP7PatternSerializer::MP7PatternSerializer(const std::string &fname, unsigned int nmux, unsigned int nempty, const std::string &boardName) :
+    fname_(fname), nmux_(nmux), nchann_(MP7_NCHANN/nmux), nempty_(nempty), file_(nullptr), ipattern_(0) 
 {
     if (!fname.empty()) {
         file_ = fopen(fname.c_str(), "w");
@@ -32,6 +32,15 @@ void MP7PatternSerializer::operator()(const MP7DataWord event[MP7_NCHANN])
     if (nmux_ == 1) print(ipattern_, event);
     else push(event);
     ipattern_++;
+    if (nempty_ > 0) {
+        MP7DataWord zero_event[MP7_NCHANN];
+        for (unsigned int j = 0; j < MP7_NCHANN; ++j) zero_event[j] = 0;
+        for (unsigned int iempty = 0; iempty < nempty_; ++iempty) {
+            if (nmux_ == 1) print(ipattern_, zero_event);
+            else push(zero_event);
+            ipattern_++;
+        }
+    }
 }
 template<typename T> void MP7PatternSerializer::print(unsigned int iframe, const T & event) 
 //void MP7PatternSerializer::print(const MP7DataWord event[MP7_NCHANN]) 

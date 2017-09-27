@@ -71,7 +71,9 @@ int main() {
     PFNeutralObj outne[NSELCALO], outne_ref[NSELCALO];
     PFChargedObj outmupf[NMU], outmupf_ref[NMU];
 #if defined(TESTMP7)
-    MP7PatternSerializer serInPatterns("mp7_input_patterns.txt"), serOutPatterns("mp7_output_patterns.txt");
+    MP7PatternSerializer serInPatterns( "mp7_input_patterns.txt", HLS_pipeline_II,HLS_pipeline_II-1); // mux each event into HLS_pipeline_II frames
+    MP7PatternSerializer serOutPatterns("mp7_output_patterns.txt",HLS_pipeline_II,HLS_pipeline_II-1); // assume only one PF core running per chip,
+                                                                                                      // fill the rest of the lines with empty events for now
 #endif
     HumanReadablePatternSerializer serHR("human_readable_patterns.txt");
     HumanReadablePatternSerializer debugHR("-"); // this will print on stdout, we'll use it for errors
