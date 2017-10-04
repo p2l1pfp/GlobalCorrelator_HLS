@@ -4,7 +4,7 @@
 #include "DiscretePFInputs_IO.h"
 #include "pattern_serializer.h"
 
-#define NTEST 100
+#define NTEST 500
 
 bool had_equals(const HadCaloObj &out_ref, const HadCaloObj &out, const char *what, int idx) {
     bool ret;
@@ -71,7 +71,13 @@ int main() {
     PFNeutralObj outne[NSELCALO], outne_ref[NSELCALO];
     PFChargedObj outmupf[NMU], outmupf_ref[NMU];
 #if defined(TESTMP7)
-    MP7PatternSerializer serInPatterns("mp7_input_patterns.txt"), serOutPatterns("mp7_output_patterns.txt");
+    MP7PatternSerializer serInPatterns( "mp7_input_patterns.txt", HLS_pipeline_II,HLS_pipeline_II-1); // mux each event into HLS_pipeline_II frames
+    MP7PatternSerializer serOutPatterns("mp7_output_patterns.txt",HLS_pipeline_II,HLS_pipeline_II-1); // assume only one PF core running per chip,
+    MP7PatternSerializer serInPatterns2( "mp7_input_patterns_magic.txt", HLS_pipeline_II,-HLS_pipeline_II+1); // mux each event into HLS_pipeline_II frames
+    MP7PatternSerializer serOutPatterns2("mp7_output_patterns_magic.txt",HLS_pipeline_II,-HLS_pipeline_II+1); // assume only one PF core running per chip,
+    MP7PatternSerializer serInPatterns3( "mp7_input_patterns_nomux.txt");  // 
+    MP7PatternSerializer serOutPatterns3("mp7_output_patterns_nomux.txt"); // ,
+                                                                                                      // fill the rest of the lines with empty events for now
 #endif
     HumanReadablePatternSerializer serHR("human_readable_patterns.txt");
     HumanReadablePatternSerializer debugHR("-"); // this will print on stdout, we'll use it for errors
@@ -109,6 +115,8 @@ int main() {
 
         // write out patterns for MP7 board hardware or simulator test
         serInPatterns(data_in); serOutPatterns(data_out);
+        serInPatterns2(data_in); serOutPatterns2(data_out);
+        serInPatterns3(data_in); serOutPatterns3(data_out);
 
 #else // standard PFAlgo test without MP7 packing
         pfalgo3_full_ref(emcalo, calo, track, mu, outch_ref, outpho_ref, outne_ref, outmupf_ref);

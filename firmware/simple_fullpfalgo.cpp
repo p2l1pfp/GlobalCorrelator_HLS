@@ -427,7 +427,7 @@ void pfalgo3_full(EmCaloObj calo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj trac
     #pragma HLS ARRAY_PARTITION variable=outne complete
     #pragma HLS ARRAY_PARTITION variable=outmu complete
 
-    #pragma HLS pipeline II=6
+    #pragma HLS pipeline II=HLS_pipeline_II
 
     // ---------------------------------------------------------------
     // TK-MU Linking
@@ -643,7 +643,7 @@ void mp7wrapped_pfalgo3_full(MP7DataWord input[MP7_NCHANN], MP7DataWord output[M
     #pragma HLS ARRAY_PARTITION variable=output complete
     #pragma HLS INTERFACE ap_none port=output
 
-    #pragma HLS pipeline II=6
+    #pragma HLS pipeline II=HLS_pipeline_II
 
     EmCaloObj emcalo[NEMCALO]; HadCaloObj hadcalo[NCALO]; TkObj track[NTRACK]; MuObj mu[NMU];
     #pragma HLS ARRAY_PARTITION variable=emcalo complete
