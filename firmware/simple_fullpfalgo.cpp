@@ -579,7 +579,7 @@ void mp7wrapped_pack_out( PFChargedObj pfch[NTRACK], PFNeutralObj pfpho[NPHOTON]
     assert(2*NTRACK + 2*NPHOTON + 2*NSELCALO + 2*NMU <= MP7_NCHANN);
     #define PHOOFFS 2*NTRACK
     #define NHOFFS 2*NPHOTON+PHOOFFS
-    #define MUOFFS 2*NSELCALO+NHOFFS
+    #define PFMUOFFS 2*NSELCALO+NHOFFS
     for (unsigned int i = 0; i < NTRACK; ++i) {
         data[2*i+0] = ( pfch[i].hwId,  pfch[i].hwPt );
         data[2*i+1] = ( pfch[i].hwZ0, pfch[i].hwPhi, pfch[i].hwEta );
@@ -593,8 +593,8 @@ void mp7wrapped_pack_out( PFChargedObj pfch[NTRACK], PFNeutralObj pfpho[NPHOTON]
         data[2*i+1+NHOFFS] = ( pfne[i].hwPhi, pfne[i].hwEta );
     }
     for (unsigned int i = 0; i < NMU; ++i) {
-        data[2*i+0+MUOFFS] = ( pfmu[i].hwId, pfmu[i].hwPt );
-        data[2*i+1+MUOFFS] = ( pfmu[i].hwZ0, pfmu[i].hwPhi, pfmu[i].hwEta );
+        data[2*i+0+PFMUOFFS] = ( pfmu[i].hwId, pfmu[i].hwPt );
+        data[2*i+1+PFMUOFFS] = ( pfmu[i].hwZ0, pfmu[i].hwPhi, pfmu[i].hwEta );
     }
 
 }
@@ -608,7 +608,7 @@ void mp7wrapped_unpack_out( MP7DataWord data[MP7_NCHANN], PFChargedObj pfch[NTRA
     assert(2*NTRACK + 2*NPHOTON + 2*NSELCALO + 2*NMU <= MP7_NCHANN);
     #define PHOOFFS 2*NTRACK
     #define NHOFFS 2*NPHOTON+PHOOFFS
-    #define MUOFFS 2*NSELCALO+NHOFFS
+    #define PFMUOFFS 2*NSELCALO+NHOFFS
     for (unsigned int i = 0; i < NTRACK; ++i) {
         pfch[i].hwPt  = data[2*i+0](15, 0);
         pfch[i].hwId  = data[2*i+0](18,16);
@@ -629,11 +629,11 @@ void mp7wrapped_unpack_out( MP7DataWord data[MP7_NCHANN], PFChargedObj pfch[NTRA
         pfne[i].hwPhi = data[2*i+1+NHOFFS](17,9);
     }
     for (unsigned int i = 0; i < NMU; ++i) {
-        pfmu[i].hwPt  = data[2*i+0+MUOFFS](15, 0);
-        pfmu[i].hwId  = data[2*i+0+MUOFFS](18,16);
-        pfmu[i].hwEta = data[2*i+1+MUOFFS](8, 0);
-        pfmu[i].hwPhi = data[2*i+1+MUOFFS](17,9);
-        pfmu[i].hwZ0  = data[2*i+1+MUOFFS](28,18);
+        pfmu[i].hwPt  = data[2*i+0+PFMUOFFS](15, 0);
+        pfmu[i].hwId  = data[2*i+0+PFMUOFFS](18,16);
+        pfmu[i].hwEta = data[2*i+1+PFMUOFFS](8, 0);
+        pfmu[i].hwPhi = data[2*i+1+PFMUOFFS](17,9);
+        pfmu[i].hwZ0  = data[2*i+1+PFMUOFFS](28,18);
     }
 
 }
