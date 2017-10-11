@@ -77,6 +77,8 @@ int main() {
     MP7PatternSerializer serOutPatterns2("mp7_output_patterns_magic.txt",HLS_pipeline_II,-HLS_pipeline_II+1); // assume only one PF core running per chip,
     MP7PatternSerializer serInPatterns3( "mp7_input_patterns_nomux.txt");  // 
     MP7PatternSerializer serOutPatterns3("mp7_output_patterns_nomux.txt"); // ,
+    CTP7PatternSerializer serInPatterns4( "ctp7_input_patterns_nomux.txt",CTP7_NCHANN_IN);  // 
+    CTP7PatternSerializer serOutPatterns4("ctp7_output_patterns_nomux.txt",CTP7_NCHANN_OUT); // ,
                                                                                                       // fill the rest of the lines with empty events for now
 #endif
     HumanReadablePatternSerializer serHR("human_readable_patterns.txt");
@@ -106,17 +108,23 @@ int main() {
 
 #if defined(TESTMP7) // Full PF, with MP7 wrapping 
         MP7DataWord data_in[MP7_NCHANN], data_out[MP7_NCHANN];
-
+        // initialize
+        for (int i = 0; i < MP7_NCHANN; ++i) {
+            data_in[i] = 0;
+            data_out[i] = 0;
+        }
         mp7wrapped_pack_in(emcalo, calo, track, mu, data_in);
         MP7_TOP_FUNC(data_in, data_out);
         mp7wrapped_unpack_out(data_out, outch, outpho, outne, outmupf);
-
+		// for (int ii = 0; ii < 72; ++ii){ std::cout << ii << ", " << data_in[ii] << std::endl; }
+		
         MP7_REF_FUNC(emcalo, calo, track, mu, outch_ref, outpho_ref, outne_ref, outmupf_ref);
 
         // write out patterns for MP7 board hardware or simulator test
         serInPatterns(data_in); serOutPatterns(data_out);
         serInPatterns2(data_in); serOutPatterns2(data_out);
         serInPatterns3(data_in); serOutPatterns3(data_out);
+        serInPatterns4(data_in,CTP7_NCHANN_IN); serOutPatterns4(data_in,CTP7_NCHANN_OUT);
 
 #else // standard PFAlgo test without MP7 packing
         pfalgo3_full_ref(emcalo, calo, track, mu, outch_ref, outpho_ref, outne_ref, outmupf_ref);
