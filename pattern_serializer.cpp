@@ -189,7 +189,7 @@ void CTP7PatternSerializer::operator()(const MP7DataWord event[MP7_NCHANN], unsi
     // std::cout << "pattern = " << ipattern_ << std::endl;
     if (!file_) return;
     if (ipattern_ > 1023) return; // total depth of ctp7 memory
-    // if (nmux_ == 1) print(ipattern_, event, nchann);
+    if (nmux_ == 1) print(ipattern_, event, nchann);
     // else push(event);
     // if (nempty_ > 0) {
     //     MP7DataWord zero_event[MP7_NCHANN];
