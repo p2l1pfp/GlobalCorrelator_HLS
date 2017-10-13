@@ -163,10 +163,9 @@ CTP7PatternSerializer::CTP7PatternSerializer(const std::string &fname, unsigned 
     if (!fname.empty()) {
         file_ = fopen(fname.c_str(), "w");
         fprintf(file_, "========================================================================================================================\n");
-        std::string header_string = "Input ";
-        for (int i = 0; i < nchann_max; ++i) header_string += "LINK_"+std::to_string(i)+" ";
-        header_string += "\n";
-        fprintf(file_, header_string.c_str() );
+        fprintf(file_, "Input ");
+        for (int i = 0; i < nchann_max; ++i) fprintf(file_, "LINK_%i ", i);
+        fprintf(file_, "\n");
         fprintf(file_, "========================================================================================================================\n");
     }
     // if (nmux_ > 1) {
@@ -187,10 +186,10 @@ CTP7PatternSerializer::~CTP7PatternSerializer()
 
 void CTP7PatternSerializer::operator()(const MP7DataWord event[MP7_NCHANN], unsigned int nchann)
 {
-    std::cout << "pattern = " << ipattern_ << std::endl;
+    // std::cout << "pattern = " << ipattern_ << std::endl;
     if (!file_) return;
     if (ipattern_ > 1023) return; // total depth of ctp7 memory
-    if (nmux_ == 1) print(ipattern_, event, nchann);
+    // if (nmux_ == 1) print(ipattern_, event, nchann);
     // else push(event);
     // if (nempty_ > 0) {
     //     MP7DataWord zero_event[MP7_NCHANN];
