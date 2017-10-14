@@ -163,8 +163,9 @@ CTP7PatternSerializer::CTP7PatternSerializer(const std::string &fname, unsigned 
     if (!fname.empty()) {
         file_ = fopen(fname.c_str(), "w");
         fprintf(file_, "========================================================================================================================\n");
-        fprintf(file_, "Input ");
-        for (int i = 0; i < nchann_max; ++i) fprintf(file_, "LINK_%i ", i);
+        if (nchann_max > 50) fprintf(file_, "Input ");
+        else fprintf(file_, "Output ");
+        for (int i = 0; i < nchann_max; ++i) fprintf(file_, "LINK_%02i ", i);
         fprintf(file_, "\n");
         fprintf(file_, "========================================================================================================================\n");
     }
@@ -212,8 +213,8 @@ template<typename T> void CTP7PatternSerializer::print(unsigned int iframe, cons
     if (ipattern_ > 1023) return;
     fprintf(file_, "0x%05x", iframe);
     for (unsigned int i = 0; i < nchann; ++i) {
-        if (event[i] == 0) fprintf(file_, " 0v%08x", unsigned(event[i]));
-        else fprintf(file_, " 0v%08x", unsigned(event[i]));
+        if (event[i] == 0) fprintf(file_, " 0x%08x", unsigned(event[i]));
+        else fprintf(file_, " 0x%08x", unsigned(event[i]));
     }
     fprintf(file_, "\n");
     ipattern_++;
@@ -225,7 +226,7 @@ template<typename T> void CTP7PatternSerializer::print(unsigned int iframe, cons
         ipattern_++;
         iframe++;
         fprintf(file_, "0x%05x", iframe);
-        for (unsigned int i = 0; i < nchann; ++i) { fprintf(file_, " 0v00000000");}
+        for (unsigned int i = 0; i < nchann; ++i) { fprintf(file_, " 0x00000000");}
         fprintf(file_, "\n");
     }
 

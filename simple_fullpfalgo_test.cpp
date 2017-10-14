@@ -124,7 +124,7 @@ int main() {
         serInPatterns(data_in); serOutPatterns(data_out);
         serInPatterns2(data_in); serOutPatterns2(data_out);
         serInPatterns3(data_in); serOutPatterns3(data_out);
-        serInPatterns4(data_in,CTP7_NCHANN_IN); serOutPatterns4(data_in,CTP7_NCHANN_OUT);
+        serInPatterns4(data_in,CTP7_NCHANN_IN); serOutPatterns4(data_out,CTP7_NCHANN_OUT);
 
 #else // standard PFAlgo test without MP7 packing
         pfalgo3_full_ref(emcalo, calo, track, mu, outch_ref, outpho_ref, outne_ref, outmupf_ref);

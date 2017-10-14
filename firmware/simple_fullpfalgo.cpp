@@ -661,5 +661,6 @@ void mp7wrapped_pfalgo3_full(MP7DataWord input[MP7_NCHANN], MP7DataWord output[M
     mp7wrapped_unpack_in(input, emcalo, hadcalo, track, mu);
     pfalgo3_full(emcalo, hadcalo, track, mu, pfch, pfpho, pfne, pfmu);
     mp7wrapped_pack_out(pfch, pfpho, pfne, pfmu, output);
+
 }
 
