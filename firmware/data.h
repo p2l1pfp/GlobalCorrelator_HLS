@@ -47,19 +47,36 @@ struct HadCaloObj : public CaloObj {
 	pt_t hwEmPt;
    	bool hwIsEM;
 };
+inline void clear(HadCaloObj & c) {
+    c.hwPt = 0; c.hwEta = 0; c.hwPhi = 0; c.hwEmPt = 0; c.hwIsEM = 0; 
+}
+
 struct EmCaloObj {
 	pt_t hwPt, hwPtErr;
 	etaphi_t hwEta, hwPhi; // relative to the region center, at calo
 };
+inline void clear(EmCaloObj & c) {
+    c.hwPt = 0; c.hwPtErr = 0; c.hwEta = 0; c.hwPhi = 0; 
+}
+
 struct TkObj {
 	pt_t hwPt, hwPtErr;
 	etaphi_t hwEta, hwPhi; // relative to the region center, at calo
 	z0_t hwZ0;
 };
+inline void clear(TkObj & c) {
+    c.hwPt = 0; c.hwPtErr = 0; c.hwEta = 0; c.hwPhi = 0; c.hwZ0 = 0; 
+}
+
 struct MuObj {
 	pt_t hwPt, hwPtErr;
 	etaphi_t hwEta, hwPhi; // relative to the region center, at vtx(?)
 };
+inline void clear(MuObj & c) {
+    c.hwPt = 0; c.hwPtErr = 0; c.hwEta = 0; c.hwPhi = 0; 
+}
+
+
 struct PFChargedObj {
 	pt_t hwPt;
 	etaphi_t hwEta, hwPhi; // relative to the region center, at calo

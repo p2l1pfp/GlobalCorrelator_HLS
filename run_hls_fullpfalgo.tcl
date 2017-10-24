@@ -11,6 +11,7 @@ add_files firmware/simple_fullpfalgo.cpp "-DHLS_pipeline_II=6"
 add_files -tb simple_fullpfalgo_test.cpp
 add_files -tb simple_fullpfalgo_ref.cpp
 add_files -tb pattern_serializer.cpp
+add_files -tb test_utils.cpp
 add_files -tb DiscretePFInputs.h -cflags "-std=c++0x"
 add_files -tb DiscretePFInputs_IO.h -cflags "-std=c++0x"
 add_files -tb data/regions_TTbar_PU140.dump
