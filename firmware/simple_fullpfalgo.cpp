@@ -544,28 +544,28 @@ void mp7wrapped_unpack_in(MP7DataWord data[MP7_NCHANN], EmCaloObj emcalo[NEMCALO
     for (unsigned int i = 0; i < NEMCALO; ++i) {
         emcalo[i].hwPt    = data[2*i+0](15, 0);
         emcalo[i].hwPtErr = data[2*i+0](31,16);
-        emcalo[i].hwEta   = data[2*i+1](8, 0);
-        emcalo[i].hwPhi   = data[2*i+1](17,9);
+        emcalo[i].hwEta   = data[2*i+1](9,  0);
+        emcalo[i].hwPhi   = data[2*i+1](19,10);
     }
     for (unsigned int i = 0; i < NCALO; ++i) {
         hadcalo[i].hwPt   = data[2*i+0+HADOFFS](15, 0);
         hadcalo[i].hwEmPt = data[2*i+0+HADOFFS](31,16);
-        hadcalo[i].hwEta  = data[2*i+1+HADOFFS](8, 0);
-        hadcalo[i].hwPhi  = data[2*i+1+HADOFFS](17,9);
-        hadcalo[i].hwIsEM = data[2*i+1+HADOFFS][18];
+        hadcalo[i].hwEta  = data[2*i+1+HADOFFS](9, 0);
+        hadcalo[i].hwPhi  = data[2*i+1+HADOFFS](19,10);
+        hadcalo[i].hwIsEM = data[2*i+1+HADOFFS][20];
     }
     for (unsigned int i = 0; i < NTRACK; ++i) {
         track[i].hwPt    = data[2*i+0+TKOFFS](15, 0);
         track[i].hwPtErr = data[2*i+0+TKOFFS](31,16);
-        track[i].hwEta   = data[2*i+1+TKOFFS](8, 0);
-        track[i].hwPhi   = data[2*i+1+TKOFFS](17,9);
-        track[i].hwZ0    = data[2*i+1+TKOFFS](28,18);
+        track[i].hwEta   = data[2*i+1+TKOFFS](9, 0);
+        track[i].hwPhi   = data[2*i+1+TKOFFS](19,10);
+        track[i].hwZ0    = data[2*i+1+TKOFFS](29,20);
     }
     for (unsigned int i = 0; i < NMU; ++i) {
         mu[i].hwPt    = data[2*i+0+MUOFFS](15, 0);
         mu[i].hwPtErr = data[2*i+0+MUOFFS](31,16);
-        mu[i].hwEta   = data[2*i+1+MUOFFS](8, 0);
-        mu[i].hwPhi   = data[2*i+1+MUOFFS](17,9);
+        mu[i].hwEta   = data[2*i+1+MUOFFS](9, 0);
+        mu[i].hwPhi   = data[2*i+1+MUOFFS](19,10);
     }
 }
 
@@ -612,28 +612,28 @@ void mp7wrapped_unpack_out( MP7DataWord data[MP7_NCHANN], PFChargedObj pfch[NTRA
     for (unsigned int i = 0; i < NTRACK; ++i) {
         pfch[i].hwPt  = data[2*i+0](15, 0);
         pfch[i].hwId  = data[2*i+0](18,16);
-        pfch[i].hwEta = data[2*i+1](8, 0);
-        pfch[i].hwPhi = data[2*i+1](17,9);
-        pfch[i].hwZ0  = data[2*i+1](28,18);
+        pfch[i].hwEta = data[2*i+1](9, 0);
+        pfch[i].hwPhi = data[2*i+1](19,10);
+        pfch[i].hwZ0  = data[2*i+1](29,20);
     }
     for (unsigned int i = 0; i < NPHOTON; ++i) {
         pfpho[i].hwPt  = data[2*i+0+PHOOFFS](15, 0);
         pfpho[i].hwId  = data[2*i+0+PHOOFFS](18,16);
-        pfpho[i].hwEta = data[2*i+1+PHOOFFS](8, 0);
-        pfpho[i].hwPhi = data[2*i+1+PHOOFFS](17,9);
+        pfpho[i].hwEta = data[2*i+1+PHOOFFS](9, 0);
+        pfpho[i].hwPhi = data[2*i+1+PHOOFFS](19,10);
     }
     for (unsigned int i = 0; i < NSELCALO; ++i) {
         pfne[i].hwPt  = data[2*i+0+NHOFFS](15, 0);
         pfne[i].hwId  = data[2*i+0+NHOFFS](18,16);
-        pfne[i].hwEta = data[2*i+1+NHOFFS](8, 0);
-        pfne[i].hwPhi = data[2*i+1+NHOFFS](17,9);
+        pfne[i].hwEta = data[2*i+1+NHOFFS](9, 0);
+        pfne[i].hwPhi = data[2*i+1+NHOFFS](19,10);
     }
     for (unsigned int i = 0; i < NMU; ++i) {
         pfmu[i].hwPt  = data[2*i+0+PFMUOFFS](15, 0);
         pfmu[i].hwId  = data[2*i+0+PFMUOFFS](18,16);
-        pfmu[i].hwEta = data[2*i+1+PFMUOFFS](8, 0);
-        pfmu[i].hwPhi = data[2*i+1+PFMUOFFS](17,9);
-        pfmu[i].hwZ0  = data[2*i+1+PFMUOFFS](28,18);
+        pfmu[i].hwEta = data[2*i+1+PFMUOFFS](9, 0);
+        pfmu[i].hwPhi = data[2*i+1+PFMUOFFS](19,10);
+        pfmu[i].hwZ0  = data[2*i+1+PFMUOFFS](29,20);
     }
 
 }
