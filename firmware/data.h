@@ -4,7 +4,7 @@
 #include "ap_int.h"
 
 typedef ap_int<16> pt_t;
-typedef ap_int<9>  etaphi_t;
+typedef ap_int<10>  etaphi_t;
 typedef ap_int<5>  vtx_t;
 typedef ap_uint<3>  particleid_t;
 typedef ap_int<10> z0_t;  // 40cm / 0.1
