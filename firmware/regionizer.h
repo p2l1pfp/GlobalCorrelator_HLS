@@ -5,7 +5,7 @@
 #include "hls_stream.h"
 
 #define N_IN_SECTORS 12
-#define N_CLOCKS_SECTOR 18 // number of clock cycles per sector
+#define N_CLOCKS 36 // number of clock cycles per sector
 
 #define N_OUT_REGIONS_ETA 3
 #define N_OUT_REGIONS_PHI 6

@@ -59,22 +59,22 @@ int main() {
             if (!fill_stream<NCALO_PER_SECTOR>(calo_fibers_ref[is], calo_in[is], "calo ref stream", is)) return 3;
         }
         // dump inputs
-        for (unsigned int ic = 0; ic < N_CLOCKS_SECTOR; ++ic) {
-            for (unsigned int id = 0; id < 2; ++id) { // takes 2 clocks to send one input; so we just duplicate the lines for now
-                fprintf(f_in,"Frame %04d : %2d %2d", ++frame_in, test, ic);
-                for (int is = 0; is < N_IN_SECTORS; ++is) {
-                    if (ic < NCALO_PER_SECTOR && !id) dump_o(f_in, calo_in[is][ic]);
-                    else                              dump_z(f_in, calo_in[is][0]);
-                }
-                fprintf(f_in,"\n");
+        for (unsigned int ic = 0; ic < N_CLOCKS; ++ic) {
+            // takes 2 clocks to send one input; so we just duplicate the lines for now
+            int iobj = ic/2; bool send = (ic % 2 == 0);
+            fprintf(f_in,"Frame %04d : %2d %2d", ++frame_in, test, iobj);
+            for (int is = 0; is < N_IN_SECTORS; ++is) {
+                if (iobj < NCALO_PER_SECTOR && send) dump_o(f_in, calo_in[is][iobj]);
+                else                                 dump_z(f_in, calo_in[is][0]);
             }
+            fprintf(f_in,"\n");
         }
 
         // run ref
         regionize_hadcalo(calo_fibers, calo_regions);
         regionize_hadcalo_ref(calo_fibers_ref, calo_regions_ref);
 
-        for (unsigned int ic = 0; ic < N_CLOCKS_SECTOR; ++ic) {
+        for (unsigned int ic = 0; ic < N_CLOCKS; ++ic) {
             fprintf(f_out,"Frame %04d :", ++frame_out);
             for (int i = 0; i < NCALO; ++i) {
                 if (ic < N_OUT_REGIONS) dump_o(f_out, calo_regions[ic][i]);
