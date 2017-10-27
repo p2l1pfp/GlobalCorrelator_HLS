@@ -109,18 +109,33 @@ void HumanReadablePatternSerializer::operator()(const EmCaloObj emcalo[NEMCALO],
     ipattern_++;
 }
 
-void HumanReadablePatternSerializer::dump_inputs(const EmCaloObj emcalo[NEMCALO], const HadCaloObj hadcalo[NCALO], const TkObj track[NTRACK], const MuObj mu[NMU]) 
-{
-    for (int i = 0; i < NCALO; ++i) {
+void HumanReadablePatternSerializer::dump_inputs(const EmCaloObj emcalo[NEMCALO], const HadCaloObj hadcalo[NCALO], const TkObj track[NTRACK], const MuObj mu[NMU]) {
+    dump_hadcalo(hadcalo);
+    dump_emcalo(emcalo);
+    dump_track(track);
+    dump_mu(mu);
+}
+
+void HumanReadablePatternSerializer::dump_hadcalo(const HadCaloObj hadcalo[NCALO], unsigned int N) {
+    for (int i = 0; i < N; ++i) {
         fprintf(file_, "   calo  %3d, hwPt % 7d   hwEmPt  % 7d    hwEta %+7d   hwPhi %+7d   hwIsEM %1d\n", i, int(hadcalo[i].hwPt), int(hadcalo[i].hwEmPt), int(hadcalo[i].hwEta), int(hadcalo[i].hwPhi), int(hadcalo[i].hwIsEM));
     }
-    for (int i = 0; i < NEMCALO; ++i) {
+    if (file_ == stdout) fflush(file_);
+}
+void HumanReadablePatternSerializer::dump_emcalo(const EmCaloObj emcalo[NEMCALO], unsigned int N) {
+    for (int i = 0; i < N; ++i) {
         fprintf(file_, "   em    %3d, hwPt % 7d   hwPtErr % 7d    hwEta %+7d   hwPhi %+7d\n", i, int(emcalo[i].hwPt), int(emcalo[i].hwPtErr), int(emcalo[i].hwEta), int(emcalo[i].hwPhi));
     }
-    for (int i = 0; i < NTRACK; ++i) {
+    if (file_ == stdout) fflush(file_);
+}
+void HumanReadablePatternSerializer::dump_track(const TkObj track[NTRACK], unsigned int N) {
+    for (int i = 0; i < N; ++i) {
         fprintf(file_, "   track %3d, hwPt % 7d   hwPtErr % 7d    hwEta %+7d   hwPhi %+7d     hwZ0 %+7d\n", i, int(track[i].hwPt), int(track[i].hwPtErr), int(track[i].hwEta), int(track[i].hwPhi), int(track[i].hwZ0));
     }
-    for (int i = 0; i < NMU; ++i) {
+    if (file_ == stdout) fflush(file_);
+}
+void HumanReadablePatternSerializer::dump_mu(const MuObj mu[NMU], unsigned int N) {
+    for (int i = 0; i < N; ++i) {
         fprintf(file_, "   muon  %3d, hwPt % 7d   hwPtErr % 7d    hwEta %+7d   hwPhi %+7d\n", i, int(mu[i].hwPt), int(mu[i].hwPtErr), int(mu[i].hwEta), int(mu[i].hwPhi));
     }
     if (file_ == stdout) fflush(file_);
