@@ -45,6 +45,15 @@ int main() {
     FILE *f_in  = fopen("dump_in.txt","w");
     FILE *f_out = fopen("dump_out.txt","w");
     int frame_in = 0, frame_out = 0;
+
+#ifdef MP7
+    HadCaloObj calo_in_transposed[NCALO_PER_SECTOR][N_IN_SECTORS];
+    MP7PatternSerializer serMP7_in( "mp7_input.txt",2,1);  
+    MP7PatternSerializer serMP7_out("mp7_output.txt",1,0); 
+    MP7DataWord mp7_in[MP7_NCHANN];
+    MP7DataWord mp7_out[MP7_NCHANN];
+#endif
+
     // -----------------------------------------
     // run multiple tests
     for (int test = 1; test <= NTEST; ++test) {
@@ -70,6 +79,17 @@ int main() {
             }
             fprintf(f_in,"\n");
         }
+#ifdef MP7
+        for (int is = 0; is < N_IN_SECTORS; ++is) { for (int io = 0; io < NCALO_PER_SECTOR; ++io) {
+            calo_in_transposed[io][is] = calo_in[is][io];
+        } }
+        for (unsigned int ic = 0; ic < N_CLOCKS/2; ++ic) {
+            for (unsigned int i = 0; i < MP7_NCHANN; ++i) mp7_in[i] = 0; // clear
+            if (ic < NCALO_PER_SECTOR) mp7_pack<N_IN_SECTORS,0>(calo_in_transposed[ic], mp7_in);
+            serMP7_in(mp7_in);  
+        }
+#endif
+
 
         // run ref
         regionize_hadcalo(calo_fibers, calo_regions);
@@ -78,11 +98,20 @@ int main() {
         for (unsigned int ic = 0; ic < N_CLOCKS; ++ic) {
             fprintf(f_out,"Frame %04d :", ++frame_out);
             for (int i = 0; i < NCALO; ++i) {
-                if (ic < N_OUT_REGIONS) dump_o(f_out, calo_regions[ic][i]);
-                else                    dump_z(f_out, calo_regions[0 ][i]);
+                if (ic/2 < N_OUT_REGIONS) dump_o(f_out, calo_regions[ic/2][i]);
+                else                      dump_z(f_out, calo_regions[0 ][i]);
             }
             fprintf(f_out,"       %d\n", 1);
         }
+
+#ifdef MP7
+        for (unsigned int ic = 0; ic < N_CLOCKS; ++ic) {
+            for (unsigned int i = 0; i < MP7_NCHANN; ++i) mp7_out[i] = 0; // clear
+            if (ic/2 < N_OUT_REGIONS) mp7_pack<NCALO,0>(calo_regions[ic/2], mp7_out);
+            serMP7_out(mp7_out);  
+        }
+#endif
+
  
         // -----------------------------------------
         // validation against the reference algorithm
