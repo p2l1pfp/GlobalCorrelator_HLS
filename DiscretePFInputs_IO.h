@@ -33,6 +33,7 @@ class DiscretePFInputs {
 	public:
 		DiscretePFInputs(const char *fileName) : file_(fopen(fileName,"rb")), iregion_(0) {}
 		~DiscretePFInputs() { fclose(file_); }
+                // for region-by-region approach
 		bool nextRegion(HadCaloObj calo[NCALO], EmCaloObj emcalo[NEMCALO], TkObj track[NTRACK], MuObj mu[NMU], z0_t & hwZPV) {
 			if (!nextRegion()) return false;
 		    	const Region &r = event_.regions[iregion_];
@@ -52,6 +53,13 @@ class DiscretePFInputs {
 			iregion_++;
 			return true;
 		}
+                // for full event approach (don't mix with the above)
+		bool nextEvent() {
+                    if (feof(file_)) return false;
+                    if (!event_.readFromFile(file_)) return false;
+                    return true;
+                }
+                const Event & event() { return event_; }
 
 	private:
 		bool nextRegion() {
