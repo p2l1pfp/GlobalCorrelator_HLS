@@ -31,9 +31,10 @@ int main() {
     MP7PatternSerializer serOutPatterns2("mp7_output_patterns_magic.txt",HLS_pipeline_II,-HLS_pipeline_II+1); // assume only one PF core running per chip,
     MP7PatternSerializer serInPatterns3( "mp7_input_patterns_nomux.txt");  // 
     MP7PatternSerializer serOutPatterns3("mp7_output_patterns_nomux.txt"); // ,
+#endif
+#if defined(TESTCTP7)
     CTP7PatternSerializer serInPatterns4( "ctp7_input_patterns_nomux.txt",CTP7_NCHANN_IN);  // 
-    CTP7PatternSerializer serOutPatterns4("ctp7_output_patterns_nomux.txt",CTP7_NCHANN_OUT); // ,
-                                                                                                      // fill the rest of the lines with empty events for now
+    CTP7PatternSerializer serOutPatterns4("ctp7_output_patterns_nomux.txt",CTP7_NCHANN_OUT); // fill the rest of the lines with empty events for now
 #endif
     HumanReadablePatternSerializer serHR("human_readable_patterns.txt");
     HumanReadablePatternSerializer debugHR("-"); // this will print on stdout, we'll use it for errors
@@ -80,18 +81,32 @@ int main() {
         serInPatterns3(data_in); serOutPatterns3(data_out);
         serInPatterns4(data_in,CTP7_NCHANN_IN); serOutPatterns4(data_out,CTP7_NCHANN_OUT);
 
+#elif defined(TESTCTP7) // Full PF, with CTP7 wrapping
+        MP7DataWord data_in[CTP7_NCHANN_IN], data_out[CTP7_NCHANN_OUT];
+        // initialize
+        for (int i = 0; i < CTP7_NCHANN_IN; ++i) { data_in[i] = 0; }
+        for (int i = 0; i < CTP7_NCHANN_OUT; ++i) { data_out[i] = 0; }
+        mp7wrapped_pack_in(emcalo, calo, track, mu, data_in);
+        MP7_TOP_FUNC(data_in, data_out);
+        mp7wrapped_unpack_out(data_out, outch, outpho, outne, outmupf);
+    
+        MP7_REF_FUNC(emcalo, calo, track, mu, outch_ref, outpho_ref, outne_ref, outmupf_ref);
+        // write out patterns for CTP7 board hardware or simulator test
+        serInPatterns4(data_in,CTP7_NCHANN_IN); serOutPatterns4(data_out,CTP7_NCHANN_OUT);       
+
 #else // standard PFAlgo test without MP7 packing
         pfalgo3_full_ref(emcalo, calo, track, mu, outch_ref, outpho_ref, outne_ref, outmupf_ref);
         pfalgo3_full(emcalo, calo, track, mu, outch, outpho, outne, outmupf);
 #endif
-
         // write out human-readable patterns
         serHR(emcalo, calo, track, mu, outch, outpho, outne, outmupf);
 
 #ifdef TESTMP7
         if (!MP7_VALIDATE) continue;
 #endif
-
+#ifdef TESTCTP7
+        if (!CTP7_VALIDATE) continue;
+#endif
 
         // -----------------------------------------
         // validation against the reference algorithm

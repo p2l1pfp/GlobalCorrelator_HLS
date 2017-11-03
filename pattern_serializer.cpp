@@ -81,6 +81,9 @@ void MP7PatternSerializer::zero() {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 HumanReadablePatternSerializer::HumanReadablePatternSerializer(const std::string &fname) :
     fname_(fname), file_(nullptr), ipattern_(0) 
 {
@@ -92,9 +95,6 @@ HumanReadablePatternSerializer::HumanReadablePatternSerializer(const std::string
         }
     }
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 HumanReadablePatternSerializer::~HumanReadablePatternSerializer() 
 {
@@ -178,17 +178,12 @@ CTP7PatternSerializer::CTP7PatternSerializer(const std::string &fname, unsigned 
     if (!fname.empty()) {
         file_ = fopen(fname.c_str(), "w");
         fprintf(file_, "========================================================================================================================\n");
-        if (nchann_max > 50) fprintf(file_, "Input ");
+        if (nchann_max > 50) fprintf(file_, "Input "); // hard-coded for CTP7 number if inputs and outputs
         else fprintf(file_, "Output ");
         for (int i = 0; i < nchann_max; ++i) fprintf(file_, "LINK_%02i ", i);
         fprintf(file_, "\n");
         fprintf(file_, "========================================================================================================================\n");
     }
-    // if (nmux_ > 1) {
-    //     assert(MP7_NCHANN % nmux_ == 0);
-    //     buffer_.resize(nmux_);
-    //     zero();
-    // }
 }
 
 CTP7PatternSerializer::~CTP7PatternSerializer() 
@@ -202,26 +197,11 @@ CTP7PatternSerializer::~CTP7PatternSerializer()
 
 void CTP7PatternSerializer::operator()(const MP7DataWord event[MP7_NCHANN], unsigned int nchann)
 {
-    // std::cout << "pattern = " << ipattern_ << std::endl;
     if (!file_) return;
     if (ipattern_ > 1023) return; // total depth of ctp7 memory
-    if (nmux_ == 1) print(ipattern_, event, nchann);
-    // else push(event);
-    // if (nempty_ > 0) {
-    //     MP7DataWord zero_event[MP7_NCHANN];
-    //     for (unsigned int j = 0; j < MP7_NCHANN; ++j) zero_event[j] = 0;
-    //     for (unsigned int iempty = 0; iempty < nempty_; ++iempty) {
-    //         if (fillmagic_) {
-    //             for (unsigned int j = 0; j < MP7_NCHANN; ++j) zero_event[j] = ((ipattern_ << 16) & 0xFFFF0000) | ((iempty << 8) & 0xFF00) | (j & 0xFF);
-    //         }
-    //         if (nmux_ == 1) print(ipattern_, zero_event);
-    //         else push(zero_event);
-    //         ipattern_++;
-    //     }
-    // }
+    if (nmux_ == 1) print(ipattern_, event, nchann); // nmux is always 1
 }
 template<typename T> void CTP7PatternSerializer::print(unsigned int iframe, const T & event, unsigned int nchann) 
-//void MP7PatternSerializer::print(const MP7DataWord event[MP7_NCHANN]) 
 {
 
     std::cout << "ipattern = " << ipattern_ << std::endl;
@@ -234,7 +214,7 @@ template<typename T> void CTP7PatternSerializer::print(unsigned int iframe, cons
     fprintf(file_, "\n");
     ipattern_++;
 
-    // because it runs at 240 MHz, make some empties
+    // because it runs at 240 MHz, make some empties, right now code skips every 5 events
     for (unsigned int j = 0; j < 5; ++j) {
         std::cout << "ipattern = " << ipattern_ << std::endl;
         if (ipattern_ > 1023) return;
@@ -246,28 +226,6 @@ template<typename T> void CTP7PatternSerializer::print(unsigned int iframe, cons
     }
 
 }
-// void CTP7PatternSerializer::push(const MP7DataWord event[MP7_NCHANN])
-// {
-//     int imux = (ipattern_ % nmux_), offs = imux * nchann_;
-//     for (unsigned int ic = 0, i = 0; ic < nchann_; ++ic) {
-//         for (unsigned int im = 0; im < nmux_; ++im, ++i) {
-//             buffer_[im][offs+ic] = event[i];
-//         }
-//     }
-//     if (imux == nmux_-1) flush();
-// }
-// void CTP7PatternSerializer::flush() {
-//     for (unsigned int im = 0, iframe = ipattern_ - nmux_ + 1; im < nmux_; ++im, ++iframe) {
-//         print(iframe, buffer_[im]);
-//     }
-//     zero();
-// }
-// void CTP7PatternSerializer::zero() {
-//     for (unsigned int i = 0; i < nmux_; ++i) {
-//         for (unsigned int j = 0; j < MP7_NCHANN; ++j) {
-//             buffer_[i][j] = 0;
-//         }
-//     }
-// }
+
 
   
