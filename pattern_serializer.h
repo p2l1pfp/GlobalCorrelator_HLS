@@ -92,7 +92,7 @@ class HumanReadablePatternSerializer {
 class CTP7PatternSerializer {
     
     public:
-        CTP7PatternSerializer(const std::string &fname, unsigned int nchann_max, unsigned int nmux=1, int nempty=0, const std::string &boardName = "Board_CTP7_L1PF") ;
+        CTP7PatternSerializer(const std::string &fname, unsigned int nchann_max, bool isInput, unsigned int nmux=1, int nempty=0, const std::string &boardName = "Board_CTP7_L1PF") ;
         ~CTP7PatternSerializer() ;
         
         void operator()(const MP7DataWord event[MP7_NCHANN], unsigned int nchann);
@@ -104,6 +104,7 @@ class CTP7PatternSerializer {
         const bool fillmagic_;
         FILE *file_;
         unsigned int ipattern_;
+        bool isInput_;
         class Pattern {
             public:
                 Pattern() {}

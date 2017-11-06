@@ -33,8 +33,8 @@ int main() {
     MP7PatternSerializer serOutPatterns3("mp7_output_patterns_nomux.txt"); // ,
 #endif
 #if defined(TESTCTP7)
-    CTP7PatternSerializer serInPatterns4( "ctp7_input_patterns_nomux.txt",CTP7_NCHANN_IN);  // 
-    CTP7PatternSerializer serOutPatterns4("ctp7_output_patterns_nomux.txt",CTP7_NCHANN_OUT); // fill the rest of the lines with empty events for now
+    CTP7PatternSerializer serInPatterns4( "ctp7_input_patterns_nomux.txt",CTP7_NCHANN_IN, true);  // 
+    CTP7PatternSerializer serOutPatterns4("ctp7_output_patterns_nomux.txt",CTP7_NCHANN_OUT, false); // fill the rest of the lines with empty events for now
 #endif
     HumanReadablePatternSerializer serHR("human_readable_patterns.txt");
     HumanReadablePatternSerializer debugHR("-"); // this will print on stdout, we'll use it for errors
@@ -79,7 +79,6 @@ int main() {
         serInPatterns(data_in); serOutPatterns(data_out);
         serInPatterns2(data_in); serOutPatterns2(data_out);
         serInPatterns3(data_in); serOutPatterns3(data_out);
-        serInPatterns4(data_in,CTP7_NCHANN_IN); serOutPatterns4(data_out,CTP7_NCHANN_OUT);
 
 #elif defined(TESTCTP7) // Full PF, with CTP7 wrapping
         MP7DataWord data_in[CTP7_NCHANN_IN], data_out[CTP7_NCHANN_OUT];

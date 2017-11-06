@@ -1,8 +1,7 @@
 #include "pattern_serializer.h"
 #include <cassert>
 #include <string>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdlib>
 
 MP7PatternSerializer::MP7PatternSerializer(const std::string &fname, unsigned int nmux, int nempty, const std::string &boardName) :
     fname_(fname), nmux_(nmux), nchann_(MP7_NCHANN/nmux), nempty_(std::abs(nempty)), fillmagic_(nempty<0), file_(nullptr), ipattern_(0) 
@@ -172,13 +171,13 @@ void HumanReadablePatternSerializer::dump_outputs(const PFChargedObj outch[NTRAC
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-CTP7PatternSerializer::CTP7PatternSerializer(const std::string &fname, unsigned int nchann_max, unsigned int nmux, int nempty, const std::string &boardName) :
-    fname_(fname), nmux_(nmux), nchann_(MP7_NCHANN/nmux), nempty_(std::abs(nempty)), fillmagic_(nempty<0), file_(nullptr), ipattern_(0) 
+CTP7PatternSerializer::CTP7PatternSerializer(const std::string &fname, unsigned int nchann_max, bool isInput, unsigned int nmux, int nempty, const std::string &boardName) :
+    fname_(fname), isInput_(isInput), nmux_(nmux), nchann_(MP7_NCHANN/nmux), nempty_(std::abs(nempty)), fillmagic_(nempty<0), file_(nullptr), ipattern_(0) 
 {
     if (!fname.empty()) {
         file_ = fopen(fname.c_str(), "w");
         fprintf(file_, "========================================================================================================================\n");
-        if (nchann_max > 50) fprintf(file_, "Input "); // hard-coded for CTP7 number if inputs and outputs
+        if (isInput_) fprintf(file_, "Input "); // hard-coded for CTP7 number if inputs and outputs
         else fprintf(file_, "Output ");
         for (int i = 0; i < nchann_max; ++i) fprintf(file_, "LINK_%02i ", i);
         fprintf(file_, "\n");
