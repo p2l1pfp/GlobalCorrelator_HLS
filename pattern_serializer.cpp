@@ -1,5 +1,7 @@
 #include "pattern_serializer.h"
 #include <cassert>
+#include <string>
+#include <cstdlib>
 
 MP7PatternSerializer::MP7PatternSerializer(const std::string &fname, unsigned int nmux, int nempty, const std::string &boardName) :
     fname_(fname), nmux_(nmux), nchann_(MP7_NCHANN/nmux), nempty_(std::abs(nempty)), fillmagic_(nempty<0), file_(nullptr), ipattern_(0) 
@@ -77,6 +79,9 @@ void MP7PatternSerializer::zero() {
         }
     }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 HumanReadablePatternSerializer::HumanReadablePatternSerializer(const std::string &fname) :
     fname_(fname), file_(nullptr), ipattern_(0) 
@@ -161,4 +166,65 @@ void HumanReadablePatternSerializer::dump_outputs(const PFChargedObj outch[NTRAC
     }
     if (file_ == stdout) fflush(file_);
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+CTP7PatternSerializer::CTP7PatternSerializer(const std::string &fname, unsigned int nchann_max, bool isInput, unsigned int nmux, int nempty, const std::string &boardName) :
+    fname_(fname), isInput_(isInput), nmux_(nmux), nchann_(MP7_NCHANN/nmux), nempty_(std::abs(nempty)), fillmagic_(nempty<0), file_(nullptr), ipattern_(0) 
+{
+    if (!fname.empty()) {
+        file_ = fopen(fname.c_str(), "w");
+        fprintf(file_, "========================================================================================================================\n");
+        if (isInput_) fprintf(file_, "Input "); // hard-coded for CTP7 number if inputs and outputs
+        else fprintf(file_, "Output ");
+        for (int i = 0; i < nchann_max; ++i) fprintf(file_, "LINK_%02i ", i);
+        fprintf(file_, "\n");
+        fprintf(file_, "========================================================================================================================\n");
+    }
+}
+
+CTP7PatternSerializer::~CTP7PatternSerializer() 
+{
+    if (file_) {
+        // if (nmux_ > 1 && (ipattern_ % nmux_ != 0)) flush();
+        fclose(file_); file_ = nullptr;
+        printf("Saved %u CTP7 patterns to %s.\n", ipattern_, fname_.c_str());
+    }
+}
+
+void CTP7PatternSerializer::operator()(const MP7DataWord event[MP7_NCHANN], unsigned int nchann)
+{
+    if (!file_) return;
+    if (ipattern_ > 1023) return; // total depth of ctp7 memory
+    if (nmux_ == 1) print(ipattern_, event, nchann); // nmux is always 1
+}
+template<typename T> void CTP7PatternSerializer::print(unsigned int iframe, const T & event, unsigned int nchann) 
+{
+
+    std::cout << "ipattern = " << ipattern_ << std::endl;
+    if (ipattern_ > 1023) return;
+    fprintf(file_, "0x%05x", iframe);
+    for (unsigned int i = 0; i < nchann; ++i) {
+        if (event[i] == 0) fprintf(file_, " 0x%08x", unsigned(event[i]));
+        else fprintf(file_, " 0x%08x", unsigned(event[i]));
+    }
+    fprintf(file_, "\n");
+    ipattern_++;
+
+    // because it runs at 240 MHz, make some empties, right now code skips every 5 events
+    for (unsigned int j = 0; j < 5; ++j) {
+        std::cout << "ipattern = " << ipattern_ << std::endl;
+        if (ipattern_ > 1023) return;
+        ipattern_++;
+        iframe++;
+        fprintf(file_, "0x%05x", iframe);
+        for (unsigned int i = 0; i < nchann; ++i) { fprintf(file_, " 0x00000000");}
+        fprintf(file_, "\n");
+    }
+
+}
+
+
   
