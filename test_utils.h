@@ -1,5 +1,6 @@
 #include "firmware/data.h"
 
+bool track_equals(const TkObj &out_ref, const TkObj &out, const char *what, int idx) ;
 bool had_equals(const HadCaloObj &out_ref, const HadCaloObj &out, const char *what, int idx) ;
 bool pf_equals(const PFChargedObj &out_ref, const PFChargedObj &out, const char *what, int idx) ;
 bool pf_equals(const PFNeutralObj &out_ref, const PFNeutralObj &out, const char *what, int idx) ;

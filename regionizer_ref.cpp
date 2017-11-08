@@ -46,8 +46,8 @@ void merge_sectors_ref(T list1[N_OBJ_PER_SECTOR_PER_ETA], etaphi_t phiShift1, T 
     }
 }
 
-template<typename T, int N_OBJ_PER_SECTOR, int N_OBJ_PER_SECTOR_PER_ETA, int N_OBJ_PER_REGION> 
-void regionize_ref(hls::stream<T> instream[N_IN_SECTORS], T regions[N_OUT_REGIONS][N_OBJ_PER_REGION]) {
+template<typename T, int N_OBJ_PER_SECTOR, int N_OBJ_PER_SECTOR_PER_ETA, int N_OBJ_PER_REGION, int N_FIBERS_PER_SECTOR=1> 
+void regionize_ref(hls::stream<T> instream[N_FIBERS_PER_SECTOR*N_IN_SECTORS], T regions[N_OUT_REGIONS][N_OBJ_PER_REGION]) {
 
     // define and clear work area for deserializers 
     static T obj_sector_eta[N_IN_SECTORS][N_OUT_REGIONS_ETA][N_OBJ_PER_SECTOR_PER_ETA];
@@ -59,13 +59,15 @@ void regionize_ref(hls::stream<T> instream[N_IN_SECTORS], T regions[N_OUT_REGION
         }
     }
     // steam the data in
-    for (unsigned int io = 0; io < N_OBJ_PER_SECTOR; ++io) {
+    for (unsigned int io = 0; io < N_OBJ_PER_SECTOR/N_FIBERS_PER_SECTOR; ++io) {
         for (unsigned int is = 0; is < N_IN_SECTORS; ++is) {
-            T in = instream[is].read();
-            //if (in.hwPt > 0) printf("Object %d in sector %d, ieta %+3d (eta %+.3f) bounds [%+3d,%+3d]; [%+3d,%+3d]; [%+3d,%+3d]\n", io, is, int(in.hwEta), in.hwEta*0.25/_ETA_025, ETA_MIN[0], ETA_MAX[0], ETA_MIN[1], ETA_MAX[1], ETA_MIN[2], ETA_MAX[2]);
-            for (unsigned int ie = 0; ie < N_OUT_REGIONS_ETA; ++ie) {
-                push_in_sector_ref<T,N_OBJ_PER_SECTOR_PER_ETA>(in, obj_sector_eta[is][ie], ETA_MIN[ie], ETA_MAX[ie], ETA_SHIFT[ie]);
-                //if (in.hwPt > 0) printf("   now sector %d eta %d (found %u)\n", is, ie, count_nonzero(obj_sector_eta[is][ie], NCALO_PER_SECTOR_PER_ETA));
+            for (unsigned int f = 0; f < N_FIBERS_PER_SECTOR; ++f) {
+                T in = instream[N_FIBERS_PER_SECTOR*is+f].read();
+                //if (in.hwPt > 0) printf("Object %d in sector %d, ieta %+3d (eta %+.3f) bounds [%+3d,%+3d]; [%+3d,%+3d]; [%+3d,%+3d]\n", io, is, int(in.hwEta), in.hwEta*0.25/_ETA_025, ETA_MIN[0], ETA_MAX[0], ETA_MIN[1], ETA_MAX[1], ETA_MIN[2], ETA_MAX[2]);
+                for (unsigned int ie = 0; ie < N_OUT_REGIONS_ETA; ++ie) {
+                    push_in_sector_ref<T,N_OBJ_PER_SECTOR_PER_ETA>(in, obj_sector_eta[is][ie], ETA_MIN[ie], ETA_MAX[ie], ETA_SHIFT[ie]);
+                    //if (in.hwPt > 0) printf("   now sector %d eta %d (found %u)\n", is, ie, count_nonzero(obj_sector_eta[is][ie], NCALO_PER_SECTOR_PER_ETA));
+                }
             }
         }
     }
@@ -100,4 +102,6 @@ void regionize_hadcalo_ref(hls::stream<HadCaloObj> fibers[N_IN_SECTORS], HadCalo
    regionize_ref<HadCaloObj,NCALO_PER_SECTOR,NCALO_PER_SECTOR_PER_ETA,NCALO>(fibers, regions); 
 }
 
-
+void regionize_track_ref(hls::stream<TkObj> fibers[2*N_IN_SECTORS], TkObj regions[N_OUT_REGIONS][NTRACK]) {
+   regionize_ref<TkObj,NTRACK_PER_SECTOR,NTRACK_PER_SECTOR_PER_ETA,NTRACK,2>(fibers, regions); 
+}
