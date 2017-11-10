@@ -67,7 +67,7 @@ void ptsort_hwopt(T in[NIn], T out[NOut]) {
 
 
 template<int DR2MAX>
-void tk2em_drvals(EmCaloObj calo[NEMCALO], TkObj track[NTRACK], tk2em_dr_t calo_track_drval[NTRACK][NCALO], bool isMu[NTRACK]) {
+void tk2em_drvals(EmCaloObj calo[NEMCALO], TkObj track[NTRACK], tk2em_dr_t calo_track_drval[NTRACK][NEMCALO], bool isMu[NTRACK]) {
     const tk2em_dr_t eDR2MAX = DR2MAX;
     for (int it = 0; it < NTRACK; ++it) {
         for (int icalo = 0; icalo < NEMCALO; ++icalo) {
