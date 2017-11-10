@@ -101,7 +101,9 @@ void regionize_ref(hls::stream<T> instream[N_FIBERS_PER_SECTOR*N_IN_SECTORS], T 
 void regionize_hadcalo_ref(hls::stream<HadCaloObj> fibers[N_IN_SECTORS], HadCaloObj regions[N_OUT_REGIONS][NCALO]) {
    regionize_ref<HadCaloObj,NCALO_PER_SECTOR,NCALO_PER_SECTOR_PER_ETA,NCALO>(fibers, regions); 
 }
-
+void regionize_emcalo_ref(hls::stream<EmCaloObj> fibers[N_IN_SECTORS], EmCaloObj regions[N_OUT_REGIONS][NEMCALO]) {
+   regionize_ref<EmCaloObj,NEMCALO_PER_SECTOR,NEMCALO_PER_SECTOR_PER_ETA,NEMCALO>(fibers, regions); 
+}
 void regionize_track_ref(hls::stream<TkObj> fibers[2*N_IN_SECTORS], TkObj regions[N_OUT_REGIONS][NTRACK]) {
    regionize_ref<TkObj,NTRACK_PER_SECTOR,NTRACK_PER_SECTOR_PER_ETA,NTRACK,2>(fibers, regions); 
 }

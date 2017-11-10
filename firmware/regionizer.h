@@ -34,13 +34,16 @@ const int PHI_FID_SIZE = 2*_PHI_PIO6;
 
 #define NCALO_PER_SECTOR 15
 #define NCALO_PER_SECTOR_PER_ETA 8
+#define NEMCALO_PER_SECTOR 12
+#define NEMCALO_PER_SECTOR_PER_ETA 9
 // note: NTRACK_PER_SECTOR **MUST** be an even number
 #define NTRACK_PER_SECTOR 20
 #define NTRACK_PER_SECTOR_PER_ETA 10
 
 void regionize_hadcalo(hls::stream<HadCaloObj> fibers[N_IN_SECTORS], HadCaloObj regions[N_OUT_REGIONS][NCALO]) ;
 void regionize_hadcalo_ref(hls::stream<HadCaloObj> fibers[N_IN_SECTORS], HadCaloObj regions[N_OUT_REGIONS][NCALO]) ;
-
+void regionize_emcalo(hls::stream<EmCaloObj> fibers[N_IN_SECTORS], EmCaloObj regions[N_OUT_REGIONS][NEMCALO]) ;
+void regionize_emcalo_ref(hls::stream<EmCaloObj> fibers[N_IN_SECTORS], EmCaloObj regions[N_OUT_REGIONS][NEMCALO]) ;
 void regionize_track(hls::stream<TkObj> fibers[2*N_IN_SECTORS], TkObj regions[N_OUT_REGIONS][NTRACK]) ;
 void regionize_track_ref(hls::stream<TkObj> fibers[2*N_IN_SECTORS], TkObj regions[N_OUT_REGIONS][NTRACK]) ;
 #endif
