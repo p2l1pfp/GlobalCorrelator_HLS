@@ -7,6 +7,8 @@
 #define N_IN_SECTORS 12
 #define N_CLOCKS 36 // number of clock cycles per sector
 
+#define N_MUON_SECTORS 4
+
 #define N_OUT_REGIONS_ETA 3
 #define N_OUT_REGIONS_PHI 6
 #define N_OUT_REGIONS (N_OUT_REGIONS_ETA*N_OUT_REGIONS_PHI)
@@ -46,4 +48,7 @@ void regionize_emcalo(hls::stream<EmCaloObj> fibers[N_IN_SECTORS], EmCaloObj reg
 void regionize_emcalo_ref(hls::stream<EmCaloObj> fibers[N_IN_SECTORS], EmCaloObj regions[N_OUT_REGIONS][NEMCALO]) ;
 void regionize_track(hls::stream<TkObj> fibers[2*N_IN_SECTORS], TkObj regions[N_OUT_REGIONS][NTRACK]) ;
 void regionize_track_ref(hls::stream<TkObj> fibers[2*N_IN_SECTORS], TkObj regions[N_OUT_REGIONS][NTRACK]) ;
+void regionize_muon(hls::stream<MuObj> fibers[N_MUON_SECTORS], MuObj regions[N_OUT_REGIONS][NMU]) ;
+void regionize_muon_ref(hls::stream<MuObj> fibers[N_MUON_SECTORS], MuObj regions[N_OUT_REGIONS][NMU]) ;
+void merge_muon_in(MuObj in_cmssw[N_IN_SECTORS][NMU], MuObj out_fibers[N_MUON_SECTORS][NMU]);
 #endif

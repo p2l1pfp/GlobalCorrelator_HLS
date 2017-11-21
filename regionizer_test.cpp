@@ -6,7 +6,7 @@
 #include "pattern_serializer.h"
 #include "test_utils.h"
 
-#define NTEST 5
+#define NTEST 50
 
 template<unsigned int N, typename T>
 bool fill_stream(hls::stream<T> & stream, T data[N], int step=1, int offset=0, const char *name="unknown", int isector=-999) {
@@ -36,6 +36,13 @@ void dump_o(FILE *f, const TkObj & obj) {
 }
 void dump_z(FILE *f, const TkObj &) { // the second argument is only to resolve overloading
     TkObj dummy; clear(dummy); dump_o(f,dummy);
+}
+void dump_o(FILE *f, const MuObj & obj) { 
+    // NOTE: no leading + on positive numbers, VHDL doesn't like it
+    fprintf(f, "       %4d % 4d % 4d %4d", int(obj.hwPt), int(obj.hwEta), int(obj.hwPhi), int(obj.hwPtErr)); 
+}
+void dump_z(FILE *f, const MuObj &) { // the second argument is only to resolve overloading
+    MuObj dummy; clear(dummy); dump_o(f,dummy);
 }
 
 int main() {
@@ -76,6 +83,13 @@ int main() {
     TkObj track_regions[N_OUT_REGIONS][NTRACK]; 
     TkObj track_regions_ref[N_OUT_REGIONS][NTRACK]; 
 
+    MuObj mu_in_cmssw[N_IN_SECTORS][NMU]; // 12-fold 
+    MuObj mu_in[N_MUON_SECTORS][NMU]; // 4-fold
+    hls::stream<MuObj> mu_fibers[N_MUON_SECTORS]; 
+    hls::stream<MuObj> mu_fibers_ref[N_MUON_SECTORS];
+    MuObj mu_regions[N_OUT_REGIONS][NMU]; 
+    MuObj mu_regions_ref[N_OUT_REGIONS][NMU]; 
+
 
     FILE *f_in  = fopen("dump_in.txt","w");
     FILE *f_out = fopen("dump_out.txt","w");
@@ -85,12 +99,15 @@ int main() {
     HadCaloObj calo_in_transposed[NCALO_PER_SECTOR][N_IN_SECTORS];
     EmCaloObj emcalo_in_transposed[NEMCALO_PER_SECTOR][N_IN_SECTORS];
     TkObj track_in_transposed[NTRACK_PER_SECTOR/2][2*N_IN_SECTORS];
+    MuObj mu_in_transposed[NMU][N_MUON_SECTORS];
     MP7PatternSerializer serMP7_in( "mp7_input.txt",2,1);  
     MP7PatternSerializer serMP7_in_calo( "mp7_input_calo.txt",2,1);  
     MP7PatternSerializer serMP7_in_track( "mp7_input_track.txt",2,1);  
+    MP7PatternSerializer serMP7_in_mu( "mp7_input_mu.txt",2,1);  
     MP7PatternSerializer serMP7_out("mp7_output.txt",2,1); 
     MP7PatternSerializer serMP7_out_calo("mp7_output_calo.txt",2,1); 
     MP7PatternSerializer serMP7_out_track("mp7_output_track.txt",2,1); 
+    MP7PatternSerializer serMP7_out_mu("mp7_output_mu.txt",2,1); 
     MP7PatternSerializer serMP7_out_calo_nomux("mp7_output_calo_nomux.txt",1,0); 
     MP7PatternSerializer serMP7_out_track_nomux("mp7_output_track_nomux.txt",1,0); 
     MP7DataWord mp7_in[MP7_NCHANN];
@@ -115,12 +132,20 @@ int main() {
             dpf2fw::convert<NEMCALO_PER_SECTOR>(r.emcalo, emcalo_in[is]); 
             if (!fill_stream<NEMCALO_PER_SECTOR>(emcalo_fibers[is], emcalo_in[is], 1, 0, "emcalo stream", is)) return 3;
             if (!fill_stream<NEMCALO_PER_SECTOR>(emcalo_fibers_ref[is], emcalo_in[is], 1, 0, "emcalo ref stream", is)) return 3;
-             // TRACK
+            // TRACK
             dpf2fw::convert<NTRACK_PER_SECTOR>(r.track, track_in[is]); 
             for (unsigned int i = 0; i < 2; ++i) {
                 if (!fill_stream<NTRACK_PER_SECTOR>(track_fibers[2*is+i],     track_in[is], 2, i, "track stream ",    2*is+i)) return 3;
                 if (!fill_stream<NTRACK_PER_SECTOR>(track_fibers_ref[2*is+i], track_in[is], 2, i, "track ref stream", 2*is+i)) return 3;
             }
+            // MUON (12-fold CMSSW input)
+            dpf2fw::convert<NMU>(r.muon, mu_in_cmssw[is]); 
+        }
+        // MUONS need a dedicate handling to fake a 4-fold readout instead of a 12-fold
+        merge_muon_in(mu_in_cmssw, mu_in); // 12-fold to 4-fold
+        for (int is = 0; is < N_MUON_SECTORS; ++is) {
+            if (!fill_stream<NMU>(mu_fibers[is], mu_in[is], 1, 0, "mu stream", is)) return 3;
+            if (!fill_stream<NMU>(mu_fibers_ref[is], mu_in[is], 1, 0, "mu ref stream", is)) return 3;
         }
         // dump inputs
         for (unsigned int ic = 0; ic < N_CLOCKS; ++ic) {
@@ -142,19 +167,29 @@ int main() {
                 if (iobj+1 < NTRACK_PER_SECTOR/2 && send) dump_o(f_in, track_in[is][iobj+1]);
                 else                                      dump_z(f_in, track_in[is][0]);
             }
+            iobj = ic/2; 
+            for (int is = 0; is < N_MUON_SECTORS; ++is) {
+                if (iobj < NMU && send) dump_o(f_in, mu_in[is][iobj]);
+                else                    dump_z(f_in, mu_in[is][0]);
+            }
             fprintf(f_in,"\n");
         }
 #ifdef MP7
-        for (int is = 0; is < N_IN_SECTORS; ++is) { for (int io = 0; io < NCALO_PER_SECTOR; ++io) {
-            calo_in_transposed[io][is] = calo_in[is][io];
-            emcalo_in_transposed[io][is] = emcalo_in[is][io];
-            track_in_transposed[io/2][2*is+(io%2)] = track_in[is][io];
-        } }
+        for (int is = 0; is < N_IN_SECTORS; ++is) { 
+            for (int io = 0; io < NCALO_PER_SECTOR; ++io) calo_in_transposed[io][is] = calo_in[is][io];
+            for (int io = 0; io < NEMCALO_PER_SECTOR; ++io) emcalo_in_transposed[io][is] = emcalo_in[is][io];
+            for (int io = 0; io < NTRACK_PER_SECTOR; ++io) track_in_transposed[io/2][2*is+(io%2)] = track_in[is][io];
+        } 
+        for (int is = 0; is < N_MUON_SECTORS; ++is) {
+            for (int io = 0; io < NMU; ++io) mu_in_transposed[io][is] = mu_in[is][io];
+        }
+        
         for (unsigned int ic = 0; ic < N_CLOCKS/2; ++ic) {
             for (unsigned int i = 0; i < MP7_NCHANN; ++i) mp7_in[i] = 0; // clear
             if (ic < NCALO_PER_SECTOR) mp7_pack<N_IN_SECTORS,0>(calo_in_transposed[ic], mp7_in);
             if (ic < NEMCALO_PER_SECTOR) mp7_pack<N_IN_SECTORS,2*N_IN_SECTORS>(emcalo_in_transposed[ic], mp7_in);
             if (ic < NTRACK_PER_SECTOR/2) mp7_pack<2*N_IN_SECTORS,4*N_IN_SECTORS>(track_in_transposed[ic], mp7_in);
+            if (ic < NMU) mp7_pack<N_MUON_SECTORS,8*N_IN_SECTORS>(mu_in_transposed[ic], mp7_in);
             serMP7_in(mp7_in);  
             // also make calo-only and track-only dumps for development
             for (unsigned int i = 0; i < MP7_NCHANN; ++i) mp7_in[i] = 0; // clear
@@ -163,7 +198,9 @@ int main() {
             for (unsigned int i = 0; i < MP7_NCHANN; ++i) mp7_in[i] = 0; // clear
             if (ic < NTRACK_PER_SECTOR/2) mp7_pack<2*N_IN_SECTORS,0>(track_in_transposed[ic], mp7_in);
             serMP7_in_track(mp7_in);  
-
+            for (unsigned int i = 0; i < MP7_NCHANN; ++i) mp7_in[i] = 0; // clear
+            if (ic < NMU) mp7_pack<N_MUON_SECTORS,0>(mu_in_transposed[ic], mp7_in);
+            serMP7_in_mu(mp7_in);  
         }
 #endif
 
@@ -174,6 +211,8 @@ int main() {
         regionize_emcalo_ref(emcalo_fibers_ref, emcalo_regions_ref);
         regionize_track_ref(track_fibers, track_regions); // FIXME: I know both are _ref
         regionize_track_ref(track_fibers_ref, track_regions_ref);
+        regionize_muon_ref(mu_fibers, mu_regions);
+        regionize_muon_ref(mu_fibers_ref, mu_regions_ref);
 
         for (unsigned int ic = 0; ic < N_CLOCKS; ++ic) {
             fprintf(f_out,"Frame %04d :", ++frame_out);
@@ -189,6 +228,10 @@ int main() {
                 if (ic/2 < N_OUT_REGIONS) dump_o(f_out, track_regions[ic/2][i]);
                 else                      dump_z(f_out, track_regions[0 ][i]);
             }
+            for (int i = 0; i < NMU; ++i) {
+                if (ic/2 < N_OUT_REGIONS) dump_o(f_out, mu_regions[ic/2][i]);
+                else                      dump_z(f_out, mu_regions[0 ][i]);
+            }
             fprintf(f_out,"       %d\n", 1);
         }
 
@@ -198,6 +241,7 @@ int main() {
             if (ic < N_OUT_REGIONS) mp7_pack<NCALO,0>(calo_regions[ic], mp7_out);
             if (ic < N_OUT_REGIONS) mp7_pack<NEMCALO,2*NCALO>(emcalo_regions[ic], mp7_out);
             if (ic < N_OUT_REGIONS) mp7_pack<NTRACK,2*(NCALO+NEMCALO)>(track_regions[ic], mp7_out);
+            if (ic < N_OUT_REGIONS) mp7_pack<NMU,2*(NCALO+NEMCALO+NTRACK)>(mu_regions[ic], mp7_out);
             serMP7_out(mp7_out);  
             // also make calo-only and track-only dumps for development
             for (unsigned int i = 0; i < MP7_NCHANN; ++i) mp7_out[i] = 0; // clear
@@ -206,6 +250,9 @@ int main() {
             for (unsigned int i = 0; i < MP7_NCHANN; ++i) mp7_out[i] = 0; // clear
             if (ic < N_OUT_REGIONS) mp7_pack<NTRACK,0>(track_regions[ic], mp7_out);
             serMP7_out_track(mp7_out); serMP7_out_track_nomux(mp7_out); serMP7_out_track_nomux(mp7_out);  // no-mux must be done twice
+            for (unsigned int i = 0; i < MP7_NCHANN; ++i) mp7_out[i] = 0; // clear
+            if (ic < N_OUT_REGIONS) mp7_pack<NMU,0>(mu_regions[ic], mp7_out);
+            serMP7_out_mu(mp7_out); 
         }
 #endif
 
@@ -223,48 +270,11 @@ int main() {
             for (int i = 0; i < NTRACK; ++i) {
                 if (!track_equals(track_regions_ref[ir][i], track_regions[ir][i], "regionized track", ir*100+i)) { errors++; break; }
             }
-        }
- 
-        int n_expected[N_OUT_REGIONS];
-        for (int ir = 0; ir < N_OUT_REGIONS; ++ir) { n_expected[ir] = 0; }
-        for (int io = 0; io < NCALO_PER_SECTOR; ++io) {
-            for (int is = 0; is < N_IN_SECTORS; ++is) {
-                int phi0s = (1 + 2*is - 12)*_PHI_PIO6/2; // pi/12 + is*pi/6 - pi
-                if (calo_in[is][io].hwPt == 0) continue;
-                for (unsigned int ie = 0; ie < N_OUT_REGIONS_ETA; ++ie) {
-                    if (!(ETA_MIN[ie] <= int(calo_in[is][io].hwEta) && int(calo_in[is][io].hwEta) <= ETA_MAX[ie])) continue;
-                    for (int ip = 0; ip < N_OUT_REGIONS_PHI; ++ip) {
-                        unsigned int ir = N_OUT_REGIONS_PHI*ie + ip;
-                        int phi0r = (3 + 4*ip - 12)*_PHI_PIO6/2; // pi/4 + ip*pi/3 - pi // NOTE the offset is chosen so that the boundaries of the region, including the padding, align with the sectors borders
-                        int dphi = int(calo_in[is][io].hwPhi) + phi0s - phi0r; 
-                        while (dphi >  6*_PHI_PIO6) dphi -= 12*_PHI_PIO6;
-                        while (dphi < -6*_PHI_PIO6) dphi += 12*_PHI_PIO6;
-                        bool by_cabling = false;
-                        for (unsigned int ic = 0; ic < 3; ++ic) if (IN_SECTOR_OF_REGION[ip][ic] == is) by_cabling = true;
-                        bool by_dphi = (std::abs(dphi) <= 3*_PHI_PIO6/2);
-                        if (by_cabling) n_expected[ir]++;
-                        if (by_cabling != by_dphi) {
-                            printf("LOGIC ERROR in phi mapping for region %d (iphi %d) : by cabling %d, by dphi %d\n", ir, ip, by_cabling, by_dphi); 
-                            printf("object local  iphi in sector: %+6d\n", int(calo_in[is][io].hwPhi)); 
-                            printf("object global iphi:           %+6d\n", int(calo_in[is][io].hwPhi) + phi0s); 
-                            printf("region global iphi:           %+6d\n", phi0r); 
-                            printf("                pi:           %+6d\n", 6*_PHI_PIO6); 
-                            printf("              2*pi:           %+6d\n", 12*_PHI_PIO6); 
-                            printf("raw     local dphi in region: %+6d\n", int(calo_in[is][io].hwPhi) + phi0s - phi0r); 
-                            printf("wrapped local dphi in region: %+6d\n", dphi); 
-                            printf("region half size  :           %+6d\n", 3*_PHI_PIO6/2); 
-                            printf("object global phi * PI/12:  %+.3f   [-12 to 12 range]\n", (int(calo_in[is][io].hwPhi) + phi0s)/float(_PHI_PIO6/2)); 
-                            return 37;
-                        }
-                        //if (by_cabling) printf("Object %d in sector %d, ieta %+3d (eta %+.3f) extected in region %d (eta %d phi %d)\n", io, is, int(calo_in[is][io].hwEta), calo_in[is][io].hwEta*0.25/_ETA_025, ir, ie, ip);
-                    }
-                }
+            for (int i = 0; i < NMU; ++i) {
+                if (!mu_equals(mu_regions_ref[ir][i], mu_regions[ir][i], "regionized muon", ir*100+i)) { errors++; break; }
             }
         }
-        for (int ir = 0; ir < N_OUT_REGIONS; ++ir) { 
-            if (std::min<int>(n_expected[ir],NCALO) != count_nonzero(calo_regions_ref[ir], NCALO)) errors++; 
-        }
-
+ 
         if (errors != 0) {
             printf("Error in computing test %d (%d)\n", test, errors);
             for (int is = 0; is < N_IN_SECTORS; ++is) {
@@ -272,7 +282,7 @@ int main() {
                 debug.dump_hadcalo(calo_in[is], NCALO_PER_SECTOR);
             }
             for (int ir = 0; ir < N_OUT_REGIONS; ++ir) {
-                printf("OUTPUT REGION %d (ETA %d PHI %d) (REF; EXPECTED: %u; FOUND %u): \n", ir, ir / N_OUT_REGIONS_PHI, ir % N_OUT_REGIONS_PHI, n_expected[ir], count_nonzero(calo_regions_ref[ir], NCALO));
+                printf("OUTPUT REGION %d (ETA %d PHI %d) (REF; FOUND %u): \n", ir, ir / N_OUT_REGIONS_PHI, ir % N_OUT_REGIONS_PHI, count_nonzero(calo_regions_ref[ir], NCALO));
                 debug.dump_hadcalo(calo_regions_ref[ir], NCALO);
                 printf("OUTPUT REGION %d (TEST): \n", ir);
                 debug.dump_hadcalo(calo_regions[ir], NCALO);
