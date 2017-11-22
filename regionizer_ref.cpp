@@ -170,40 +170,41 @@ void regionize_muon_ref(hls::stream<MuObj> instream[N_MUON_SECTORS], MuObj regio
     for (unsigned int ie = 0; ie < N_OUT_REGIONS_ETA; ++ie) {
         for (unsigned int ip = 0; ip < N_OUT_REGIONS_PHI; ++ip) {
             unsigned int ir = N_OUT_REGIONS_PHI*ie + ip;
+            unsigned int is = 2*ip;
             switch (ip % 3) {
                 case 0:
                     for (unsigned int io = 0; io < NMU; ++io) {
-                        regions[ir][io] = obj_sector_eta[ip/3][ie][io];
+                        regions[ir][io] = obj_sector_eta[is/3][ie][io];
                     }
                     break;
                 case 1:
                     for (unsigned int io = 0; io < NMU; ++io) {
-                        MuObj mu = obj_sector_eta[ip/3][ie][io];
-                        if (mu.hwPhi > PHI_SHIFT[2]/2) {
-                            mu.hwPhi += PHI_SHIFT[0];
+                        MuObj mu = obj_sector_eta[is/3][ie][io];
+                        if (mu.hwPhi > PHI_SEC_SIZE/2) {
+                            mu.hwPhi -= 2*PHI_SEC_SIZE;
                             push_in<MuObj,NMU>(mu, regions[ir]);
                         }
                     }
                     for (unsigned int io = 0; io < NMU; ++io) {
-                        MuObj mu = obj_sector_eta[(ip/3+1) % N_MUON_SECTORS][ie][io];
-                        if (mu.hwPhi < PHI_SHIFT[2]/2) {
-                            mu.hwPhi += PHI_SHIFT[2];
+                        MuObj mu = obj_sector_eta[(is/3+1) % N_MUON_SECTORS][ie][io];
+                        if (mu.hwPhi <= PHI_SEC_SIZE/2) {
+                            mu.hwPhi += PHI_SEC_SIZE;
                             push_in<MuObj,NMU>(mu, regions[ir]);
                         }
                     }
                     break;
                 case 2:
                     for (unsigned int io = 0; io < NMU; ++io) {
-                        MuObj mu = obj_sector_eta[ip/3][ie][io];
-                        if (mu.hwPhi > PHI_SHIFT[0]/2) {
-                            mu.hwPhi += PHI_SHIFT[0];
+                        MuObj mu = obj_sector_eta[is/3][ie][io];
+                        if (mu.hwPhi > -PHI_SEC_SIZE/2) {
+                            mu.hwPhi -= PHI_SEC_SIZE;
                             push_in<MuObj,NMU>(mu, regions[ir]);
                         }
                     }
                     for (unsigned int io = 0; io < NMU; ++io) {
-                        MuObj mu = obj_sector_eta[(ip/3+1) % N_MUON_SECTORS][ie][io];
-                        if (mu.hwPhi < PHI_SHIFT[0]/2) {
-                            mu.hwPhi += PHI_SHIFT[2];
+                        MuObj mu = obj_sector_eta[(is/3+1) % N_MUON_SECTORS][ie][io];
+                        if (mu.hwPhi <= -PHI_SEC_SIZE/2) {
+                            mu.hwPhi += 2*PHI_SEC_SIZE;
                             push_in<MuObj,NMU>(mu, regions[ir]);
                         }
                     }

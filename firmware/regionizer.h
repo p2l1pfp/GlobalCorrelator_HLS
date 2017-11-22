@@ -29,8 +29,9 @@ const int ETA_SHIFT[N_OUT_REGIONS_ETA] = { +3*_ETA_025, 0, -3*_ETA_025 };
 const int IN_SECTOR_OF_REGION[N_OUT_REGIONS_PHI][N_SECTORS_PER_PHI_REGION] = {  
                 { 0, 1, 2 }, { 2, 3, 4 }, {4, 5, 6}, { 6, 7, 8 }, {8, 9, 10}, { 10, 11, 0 } 
             };
+const int PHI_SEC_SIZE = _PHI_PIO6;
 // by how much I have to shift sector N to make it consistent with the region phi
-const int PHI_SHIFT[N_SECTORS_PER_PHI_REGION] = { -_PHI_PIO6, 0, _PHI_PIO6 };
+const int PHI_SHIFT[N_SECTORS_PER_PHI_REGION] = { -PHI_SEC_SIZE, 0, PHI_SEC_SIZE };
 // fiducial size of a region in eta and phi
 const int PHI_FID_SIZE = 2*_PHI_PIO6;  
 

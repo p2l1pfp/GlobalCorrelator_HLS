@@ -140,10 +140,14 @@ int main() {
             }
             // MUON (12-fold CMSSW input)
             dpf2fw::convert<NMU>(r.muon, mu_in_cmssw[is]); 
+            //for (int i = 0; i < NMU; ++i) if (mu_in_cmssw[is][i].hwPt > 0) printf("Muon 12-fold %2d/%d of hwPt %6d local phi %+6d  global phi %+8d  sector %+6.4f\n", is, i,
+            //    int(mu_in_cmssw[is][i].hwPt), int(mu_in_cmssw[is][i].hwPhi), int(mu_in_cmssw[is][i].hwPhi) + is * _PHI_PIO6 + _PHI_PIO6/2, (int(mu_in_cmssw[is][i].hwPhi) + is * _PHI_PIO6 + _PHI_PIO6/2)/float(_PHI_PIO6));
         }
         // MUONS need a dedicate handling to fake a 4-fold readout instead of a 12-fold
         merge_muon_in(mu_in_cmssw, mu_in); // 12-fold to 4-fold
         for (int is = 0; is < N_MUON_SECTORS; ++is) {
+            //for (int i = 0; i < NMU; ++i) if (mu_in[is][i].hwPt > 0) printf("Muon  4-fold %2d/%d of hwPt %6d local phi %+6d  global phi %+8d\n", is, i,
+            //    int(mu_in[is][i].hwPt), int(mu_in[is][i].hwPhi), int(mu_in[is][i].hwPhi) + is * 3*_PHI_PIO6 + 3*_PHI_PIO6/2);
             if (!fill_stream<NMU>(mu_fibers[is], mu_in[is], 1, 0, "mu stream", is)) return 3;
             if (!fill_stream<NMU>(mu_fibers_ref[is], mu_in[is], 1, 0, "mu ref stream", is)) return 3;
         }
@@ -233,6 +237,8 @@ int main() {
                 else                      dump_z(f_out, mu_regions[0 ][i]);
             }
             fprintf(f_out,"       %d\n", 1);
+            //for (int i = 0; i < NMU; ++i) if (mu_regions[ic][i].hwPt > 0 && ic < N_OUT_REGIONS) printf("Muon  regio  %2d/%d of hwPt %6d local phi %+6d\n", ic, i,
+            //    int(mu_regions[ic][i].hwPt), int(mu_regions[ic][i].hwPhi));
         }
 
 #ifdef MP7
