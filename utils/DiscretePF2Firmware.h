@@ -3,7 +3,7 @@
 
 /// NOTE: this include is not standalone, since the path to DiscretePFInputs is different in CMSSW & Vivado_HLS
 
-#include "firmware/data.h"
+#include "../firmware/data.h"
 #include <vector>
 
 namespace dpf2fw {

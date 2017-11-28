@@ -1,10 +1,10 @@
 #ifndef FASTPUPPI_NTUPLERPRODUCER_DISCRETEPFINPUTS_IO_H
 #define FASTPUPPI_NTUPLERPRODUCER_DISCRETEPFINPUTS_IO_H
 
-#include "DiscretePFInputs.h"
 #include <vector>
 #include <cassert>
-#include "firmware/data.h"
+#include "../firmware/data.h"
+#include "../DiscretePFInputs.h"
 #include "DiscretePF2Firmware.h"
 
 typedef l1tpf_int::InputRegion Region;
