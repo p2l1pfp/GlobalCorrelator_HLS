@@ -63,6 +63,9 @@ class MP7PatternSerializer {
     
 };
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 class HumanReadablePatternSerializer {
     public:
         HumanReadablePatternSerializer(const std::string &fname) ;
@@ -82,3 +85,42 @@ class HumanReadablePatternSerializer {
         unsigned int ipattern_;
     
 };
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class CTP7PatternSerializer {
+    
+    public:
+        CTP7PatternSerializer(const std::string &fname, unsigned int nchann_max, bool isInput, unsigned int nmux=1, int nempty=0, const std::string &boardName = "Board_CTP7_L1PF") ;
+        ~CTP7PatternSerializer() ;
+        
+        void operator()(const MP7DataWord event[MP7_NCHANN], unsigned int nchann);
+        
+    protected:
+        
+        const std::string fname_;
+        const unsigned int nmux_, nchann_, nempty_;
+        const bool fillmagic_;
+        FILE *file_;
+        unsigned int ipattern_;
+        bool isInput_;
+        class Pattern {
+            public:
+                Pattern() {}
+                Pattern(const Pattern & other) { for (unsigned int i = 0; i < MP7_NCHANN; ++i) words[i] = other.words[i]; }
+                MP7DataWord & operator[](int i) { return words[i]; }
+                const MP7DataWord & operator[](int i) const { return words[i]; }
+                void operator=(const Pattern & other) { for (unsigned int i = 0; i < MP7_NCHANN; ++i) words[i] = other.words[i]; }
+            private:
+                MP7DataWord words[MP7_NCHANN];
+        };
+        std::vector<Pattern> buffer_; // for muxing; holds the next patterns in output format. will fill nmux events, first, then print them all out
+
+        template<typename T> void print(unsigned int iframe, const T & event, unsigned int nchann);
+        // void push(const MP7DataWord event[MP7_NCHANN]);
+        // void flush();
+        // void zero();
+    
+};
+
