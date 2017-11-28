@@ -1,5 +1,5 @@
 #include "firmware/regionizer.h"
-#include "test_utils.h"
+#include "../utils/test_utils.h"
 
 template<typename T, int N_OBJ> 
 void push_in(const T & in, T out[N_OBJ]) {

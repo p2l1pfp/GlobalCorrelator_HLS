@@ -1,7 +1,7 @@
 #ifndef REGIONIZER_H
 #define REGIONIZER_H
 
-#include "data.h"
+#include "../../firmware/data.h"
 #include "hls_stream.h"
 
 #define N_IN_SECTORS 12

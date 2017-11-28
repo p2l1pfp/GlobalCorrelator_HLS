@@ -10,10 +10,10 @@ set_top merge_hadcalo
 add_files firmware/regionizer.cpp -cflags "-DHLS_pipeline_II=1"
 add_files -tb regionizer_test.cpp -cflags "-DMP7"
 add_files -tb regionizer_ref.cpp
-add_files -tb pattern_serializer.cpp
-add_files -tb test_utils.cpp
-add_files -tb DiscretePFInputs.h -cflags "-std=c++0x"
-add_files -tb DiscretePFInputs_IO.h -cflags "-std=c++0x"
+add_files -tb ../utils/pattern_serializer.cpp
+add_files -tb ../utils/test_utils.cpp
+add_files -tb ../DiscretePFInputs.h -cflags "-std=c++0x"
+add_files -tb ../utils/DiscretePFInputs_IO.h -cflags "-std=c++0x"
 add_files -tb data/barrel_sectors_1x12_TTbar_PU140.dump
 
 # reset the solution

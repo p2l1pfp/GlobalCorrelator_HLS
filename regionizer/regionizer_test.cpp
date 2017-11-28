@@ -1,10 +1,10 @@
 #include <cstdio>
 #include "firmware/regionizer.h"
-#include "firmware/mp7pf_encoding.h"
-#include "random_inputs.h"
-#include "DiscretePFInputs_IO.h"
-#include "pattern_serializer.h"
-#include "test_utils.h"
+#include "../firmware/mp7pf_encoding.h"
+#include "../utils/random_inputs.h"
+#include "../utils/DiscretePFInputs_IO.h"
+#include "../utils/pattern_serializer.h"
+#include "../utils/test_utils.h"
 
 #define NTEST 50
 
