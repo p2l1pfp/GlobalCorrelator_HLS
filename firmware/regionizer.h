@@ -36,12 +36,12 @@ const int PHI_SHIFT[N_SECTORS_PER_PHI_REGION] = { -PHI_SEC_SIZE, 0, PHI_SEC_SIZE
 const int PHI_FID_SIZE = 2*_PHI_PIO6;  
 
 #define NCALO_PER_SECTOR 15
-#define NCALO_PER_SECTOR_PER_ETA 8
+#define NCALO_PER_SECTOR_PER_ETA 7
 #define NEMCALO_PER_SECTOR 12
-#define NEMCALO_PER_SECTOR_PER_ETA 9
+#define NEMCALO_PER_SECTOR_PER_ETA 7
 // note: NTRACK_PER_SECTOR **MUST** be an even number
 #define NTRACK_PER_SECTOR 20
-#define NTRACK_PER_SECTOR_PER_ETA 10
+#define NTRACK_PER_SECTOR_PER_ETA 9
 
 void regionize_hadcalo(hls::stream<HadCaloObj> fibers[N_IN_SECTORS], HadCaloObj regions[N_OUT_REGIONS][NCALO]) ;
 void regionize_hadcalo_ref(hls::stream<HadCaloObj> fibers[N_IN_SECTORS], HadCaloObj regions[N_OUT_REGIONS][NCALO]) ;
