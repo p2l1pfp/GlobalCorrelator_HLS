@@ -13,6 +13,7 @@
 
 #include <cassert>
 #include <cstdlib>
+#include <cstdio>
 #include <cmath>
 #include <vector>
 
