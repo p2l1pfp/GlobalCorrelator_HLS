@@ -246,9 +246,11 @@ void em2calo_sumem(EmCaloObj emcalo[NEMCALO], bool isEM[NEMCALO], ap_uint<NCALO>
 }
 
 void tk2calo_tkalgo(TkObj track[NTRACK], bool isEle[NTRACK], bool isMu[NTRACK], ap_uint<NCALO> calo_track_link_bit[NTRACK], PFChargedObj pfout[NTRACK]) {
-    const pt_t TKPT_MAX = PFALGO3_TK_MAXINVPT; // 20 * PT_SCALE;
+    const pt_t TKPT_MAX_LOOSE = PFALGO3_TK_MAXINVPT_LOOSE; // 20 * PT_SCALE;
+    const pt_t TKPT_MAX_TIGHT = PFALGO3_TK_MAXINVPT_TIGHT; // 20 * PT_SCALE;
     for (int it = 0; it < NTRACK; ++it) {
-        bool good = isMu[it] || isEle[it] || (track[it].hwPt < TKPT_MAX) || calo_track_link_bit[it].or_reduce();
+        bool goodByPt = track[it].hwPt < (track[it].hwTightQuality ? TKPT_MAX_TIGHT : TKPT_MAX_LOOSE);
+        bool good = isMu[it] || isEle[it] || goodByPt || calo_track_link_bit[it].or_reduce();
         if (good) {
             pfout[it].hwPt  = track[it].hwPt;
             pfout[it].hwEta = track[it].hwEta;

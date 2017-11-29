@@ -15,6 +15,7 @@ namespace dpf2fw {
         out.hwEta = in.hwEta; // @calo
         out.hwPhi = in.hwPhi; // @calo
         out.hwZ0 = in.hwZ0;
+        out.hwTightQuality = (in.hwStubs >= 6 && in.hwChi2 < 500);
     }
     void convert(const l1tpf_int::CaloCluster & in, HadCaloObj & out) {
         out.hwPt = in.hwPt;
