@@ -290,7 +290,7 @@ void pfalgo3_full_ref(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkOb
     for (int ic = 0; ic < NCALO; ++ic) {
         if (calo_sumtk[ic] > 0) {
             pt_t ptdiff = hadcalo_subem[ic].hwPt - calo_sumtk[ic];
-            int sigmamult = 4*calo_sumtkErr2[ic]; 
+            int sigmamult = (calo_sumtkErr2[ic] + (calo_sumtkErr2[ic] >> 1)); // this multiplies by 1.5 = sqrt(1.5)^2 ~ (1.2)^2
             if (g_debug_ && (hadcalo_subem[ic].hwPt > 0)) {
                 l1tpf_int::CaloCluster floatcalo; fw2dpf::convert(hadcalo_subem[ic], floatcalo); 
                 printf("FW  \t calo'  %3d pt %7d [ %7.2f ] eta %+7d [ %+5.2f ] has a sum track pt %7d, difference %7d +- %.2f \n",

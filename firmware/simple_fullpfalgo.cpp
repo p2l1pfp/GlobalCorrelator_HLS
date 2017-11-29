@@ -206,7 +206,7 @@ void em2calo_link(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], ap_uint<
 
 void tk2calo_tkerr2(TkObj track[NTRACK], int tkerr2[NTRACK]) {
     for (int it = 0; it < NTRACK; ++it) {
-        tkerr2[it] = (track[it].hwPtErr * track[it].hwPtErr) << 2; // we will want (2*error)^2
+        tkerr2[it] = (track[it].hwPtErr * track[it].hwPtErr);
     }
 }
 void tk2calo_sumtk(TkObj track[NTRACK], bool isEle[NTRACK], bool isMu[NTRACK], int tkerr2[NTRACK], ap_uint<NCALO> calo_track_link_bit[NTRACK], pt_t sumtk[NCALO], int sumtkerr2[NCALO]) {
@@ -270,7 +270,7 @@ void tk2calo_caloalgo(HadCaloObj calo[NCALO], pt_t sumtk[NCALO], int sumtkerr2[N
             calopt = calo[icalo].hwPt;
         } else {
             pt_t ptdiff = calo[icalo].hwPt - sumtk[icalo];
-            if (ptdiff > 0 && (ptdiff*ptdiff) > sumtkerr2[icalo]) {
+            if (ptdiff > 0 && (ptdiff*ptdiff) > (sumtkerr2[icalo] + (sumtkerr2[icalo] >> 1))) {
                 calopt = ptdiff;
             } else {
                 calopt = 0;
