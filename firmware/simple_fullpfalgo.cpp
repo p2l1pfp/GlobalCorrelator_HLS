@@ -232,13 +232,17 @@ void tk2em_sumtk(TkObj track[NTRACK], ap_uint<NEMCALO> calo_track_link_bit[NTRAC
     }
 }
 
-void em2calo_sumem(EmCaloObj emcalo[NEMCALO], bool isEM[NEMCALO], ap_uint<NCALO> em_had_link_bit[NTRACK], pt_t sumem[NEMCALO]) {
+void em2calo_sumem(EmCaloObj emcalo[NEMCALO], bool isEM[NEMCALO], ap_uint<NCALO> em_had_link_bit[NTRACK], pt_t sumem[NEMCALO], bool keepcalo[NCALO]) {
     for (int icalo = 0; icalo < NCALO; ++icalo) {
-        pt_t sum = 0;
+        pt_t sum = 0; bool keep = false;
         for (int iem = 0; iem < NEMCALO; ++iem) {
-            if (isEM[iem] && em_had_link_bit[iem][icalo]) { sum += emcalo[iem].hwPt; }
+            if (em_had_link_bit[iem][icalo]) { 
+                if (isEM[iem]) sum += emcalo[iem].hwPt; 
+                else keep = false;
+            }
         }
         sumem[icalo] = sum;
+        keepcalo[icalo] = keep;
     }
 }
 
@@ -320,12 +324,12 @@ void tk2em_photons(EmCaloObj calo[NEMCALO], pt_t photonPt[NEMCALO], PFNeutralObj
     }
 }
 
-void em2calo_sub(HadCaloObj calo[NCALO], pt_t sumem[NCALO], HadCaloObj calo_out[NCALO]) {
+void em2calo_sub(HadCaloObj calo[NCALO], pt_t sumem[NCALO], bool keepcalo[NCALO], HadCaloObj calo_out[NCALO]) {
     for (int icalo = 0; icalo < NCALO; ++icalo) {
         pt_t ptsub = calo[icalo].hwPt   - sumem[icalo];
         pt_t emsub = calo[icalo].hwEmPt - sumem[icalo];
         if ((ptsub < (calo[icalo].hwPt >> 4)) || 
-                (calo[icalo].hwIsEM && (emsub < (calo[icalo].hwEmPt>>3)))) {
+                (calo[icalo].hwIsEM && (emsub < (calo[icalo].hwEmPt>>3)) && !keepcalo[icalo])) {
             calo_out[icalo].hwPt   = 0;
             calo_out[icalo].hwEmPt = 0;
             calo_out[icalo].hwEta  = 0;
@@ -467,14 +471,15 @@ void pfalgo3_full(EmCaloObj calo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj trac
     #pragma HLS ARRAY_PARTITION variable=em_calo_link_bit complete
     em2calo_link(calo, hadcalo, em_calo_link_bit);
 
+    bool keepcalo[NCALO];
     pt_t sumem[NCALO]; 
     #pragma HLS ARRAY_PARTITION variable=sumem complete
-    em2calo_sumem(calo, isEM, em_calo_link_bit, sumem);
+    em2calo_sumem(calo, isEM, em_calo_link_bit, sumem, keepcalo);
 
     HadCaloObj hadcalo_sub[NCALO];
     #pragma HLS ARRAY_PARTITION variable=hadcalo_sub complete
 
-    em2calo_sub(hadcalo, sumem, hadcalo_sub);
+    em2calo_sub(hadcalo, sumem, keepcalo, hadcalo_sub);
 
     // ---------------------------------------------------------------
     // TK-HAD Linking

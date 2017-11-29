@@ -156,10 +156,11 @@ void pfalgo3_em_ref(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj 
     
     for (int ih = 0; ih < NCALO; ++ih) {
         hadcalo_out[ih] = hadcalo[ih];
-        pt_t sub = 0;
+        pt_t sub = 0; bool keep = false;
         for (int ic = 0; ic < NEMCALO; ++ic) {
-            if (isEM[ic] && (em2calo[ic] == ih)) {
-                sub += emcalo[ic].hwPt;
+            if (em2calo[ic] == ih) {
+                if (isEM[ic]) sub += emcalo[ic].hwPt;
+                else keep = true;
             }
         }
         pt_t emdiff  = hadcalo[ih].hwEmPt - sub;
@@ -173,7 +174,7 @@ void pfalgo3_em_ref(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj 
             hadcalo_out[ih].hwPt = 0;   // kill
             hadcalo_out[ih].hwEmPt = 0; // kill
             if (g_debug_ && (hadcalo[ih].hwPt > 0)) printf("FW  \t calo   %3d pt %7d --> discarded (zero pt)\n", ih, int(hadcalo[ih].hwPt));
-        } else if ((hadcalo[ih].hwIsEM && emdiff < ( hadcalo[ih].hwEmPt >> 3 ))) {
+        } else if ((hadcalo[ih].hwIsEM && emdiff < ( hadcalo[ih].hwEmPt >> 3 )) && !keep) {
             hadcalo_out[ih].hwPt = 0;   // kill
             hadcalo_out[ih].hwEmPt = 0; // kill
             if (g_debug_ && (hadcalo[ih].hwPt > 0)) printf("FW  \t calo   %3d pt %7d --> discarded (zero em)\n", ih, int(hadcalo[ih].hwPt));
