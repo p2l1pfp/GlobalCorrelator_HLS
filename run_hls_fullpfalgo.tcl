@@ -5,9 +5,9 @@
 ############################################################
 
 # open the project, don't forget to reset
-open_project -reset proj_fullpfalgo_15151504_240MHz_II6
+open_project -reset proj_fullpfalgo_15151504_240MHz_II2
 set_top pfalgo3_full
-add_files firmware/simple_fullpfalgo.cpp  -cflags "-DHLS_pipeline_II=6"
+add_files firmware/simple_fullpfalgo.cpp  -cflags "-DHLS_pipeline_II=2"
 add_files -tb simple_fullpfalgo_test.cpp
 add_files -tb simple_fullpfalgo_ref.cpp
 add_files -tb utils/pattern_serializer.cpp

@@ -10,7 +10,6 @@ typedef ap_uint<7> tk2em_dr_t;
 typedef ap_uint<10> tk2calo_dr_t;
 typedef ap_uint<10> em2calo_dr_t;
 typedef ap_uint<12> tk2calo_dq_t;
-typedef ap_uint<12> mu2trk_dr_t;
 
 int dr2_int(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2) {
     etaphi_t deta = (eta1-eta2);
@@ -349,29 +348,28 @@ void em2calo_sub(HadCaloObj calo[NCALO], pt_t sumem[NCALO], bool keepcalo[NCALO]
 // TK-MU Algos
 //-------------------------------------------------------
 
-void spfph_mu2trk_drvals(MuObj mu[NMU], TkObj track[NTRACK], mu2trk_dr_t mu_track_drval[NMU][NTRACK]) {
-    const mu2trk_dr_t DR2MAX = PFALGO3_DR2MAX_TK_MU;
+void spfph_mu2trk_dptvals(MuObj mu[NMU], TkObj track[NTRACK], pt_t mu_track_dptval[NMU][NTRACK]) {
+    const ap_uint<12> DR2MAX = PFALGO3_DR2MAX_TK_MU;
     for (int im = 0; im < NMU; ++im) {
-        pt_t tkPtMin = mu[im].hwPt - 2*(mu[im].hwPtErr);
         for (int it = 0; it < NTRACK; ++it) {
-            if (track[it].hwPt > tkPtMin) {
-                mu_track_drval[im][it] = dr2_int_cap<12>(mu[im].hwEta, mu[im].hwPhi, track[it].hwEta, track[it].hwPhi, DR2MAX);
+            pt_t dpt = mu[im].hwPt - track[it].hwPt;
+            if (dr2_int_cap<12>(mu[im].hwEta, mu[im].hwPhi, track[it].hwEta, track[it].hwPhi, DR2MAX) < DR2MAX) {
+                mu_track_dptval[im][it] = (dpt > 0 ? dpt : pt_t(-dpt));
             } else {
-                mu_track_drval[im][it] = DR2MAX;
+                mu_track_dptval[im][it] = mu[im].hwPt >> 1;
             }
         }
     }
 }
 
-void spfph_mu2trk_linkstep(mu2trk_dr_t mu_track_drval[NMU][NTRACK], ap_uint<NMU> mu_track_link_bit[NTRACK]) {
-    const mu2trk_dr_t DR2MAX = PFALGO3_DR2MAX_TK_MU;
+void spfph_mu2trk_linkstep(MuObj mu[NMU], pt_t mu_track_dptval[NMU][NTRACK], ap_uint<NMU> mu_track_link_bit[NTRACK]) {
     for (int im = 0; im < NMU; ++im) {
         for (int it = 0; it < NTRACK; ++it) {
-            mu2trk_dr_t mydr = mu_track_drval[im][it];
-            bool link = (mydr != DR2MAX);
+            pt_t mydpt = mu_track_dptval[im][it];
+            bool link = (mydpt < (mu[im].hwPt >> 1));
             for (int j = 0; j < NTRACK; ++j) {
-                if (it <= j) link = link && (mu_track_drval[im][j] >= mydr);
-                else         link = link && (mu_track_drval[im][j] >  mydr);
+                if (it <= j) link = link && (mu_track_dptval[im][j] >= mydpt);
+                else         link = link && (mu_track_dptval[im][j] >  mydpt);
             }   
             mu_track_link_bit[it][im] = link;
         }
@@ -384,11 +382,11 @@ void spfph_mutrk_link(MuObj mu[NMU], TkObj track[NTRACK], ap_uint<NMU> mu_track_
     #pragma HLS ARRAY_PARTITION variable=track complete
     #pragma HLS ARRAY_PARTITION variable=mu_track_link_bit complete dim=0
 
-    mu2trk_dr_t drvals[NMU][NTRACK];
-    #pragma HLS ARRAY_PARTITION variable=drvals complete dim=0
+    pt_t dptvals[NMU][NTRACK];
+    #pragma HLS ARRAY_PARTITION variable=dptvals complete dim=0
 
-    spfph_mu2trk_drvals(mu, track, drvals);
-    spfph_mu2trk_linkstep(drvals, mu_track_link_bit);
+    spfph_mu2trk_dptvals(mu, track, dptvals);
+    spfph_mu2trk_linkstep(mu, dptvals, mu_track_link_bit);
 }
 
 void spfph_mualgo(MuObj mu[NMU], TkObj track[NTRACK], ap_uint<NMU> mu_track_link_bit[NTRACK], PFChargedObj pfmuout[NMU], bool isMu[NTRACK]) {
