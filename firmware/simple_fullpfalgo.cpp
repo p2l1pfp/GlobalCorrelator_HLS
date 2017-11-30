@@ -1,4 +1,5 @@
 #include "simple_fullpfalgo.h"
+#include "mp7pf_encoding.h"
 #include <cmath>
 #include <cassert>
 #ifndef __SYNTHESIS__
@@ -66,7 +67,7 @@ void ptsort_hwopt(T in[NIn], T out[NOut]) {
 
 
 template<int DR2MAX>
-void tk2em_drvals(EmCaloObj calo[NEMCALO], TkObj track[NTRACK], tk2em_dr_t calo_track_drval[NTRACK][NCALO], bool isMu[NTRACK]) {
+void tk2em_drvals(EmCaloObj calo[NEMCALO], TkObj track[NTRACK], tk2em_dr_t calo_track_drval[NTRACK][NEMCALO], bool isMu[NTRACK]) {
     const tk2em_dr_t eDR2MAX = DR2MAX;
     for (int it = 0; it < NTRACK; ++it) {
         for (int icalo = 0; icalo < NEMCALO; ++icalo) {
@@ -512,24 +513,12 @@ void mp7wrapped_pack_in(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], Tk
     #define HADOFFS 2*NEMCALO
     #define TKOFFS 2*NCALO+HADOFFS
     #define MUOFFS 2*NTRACK+TKOFFS
-    for (unsigned int i = 0; i < NEMCALO; ++i) {
-        data[2*i+0] = ( emcalo[i].hwPtErr, emcalo[i].hwPt );
-        data[2*i+1] = ( emcalo[i].hwPhi,   emcalo[i].hwEta );
-    }
-    for (unsigned int i = 0; i < NCALO; ++i) {
-        data[2*i+0+HADOFFS] = ( hadcalo[i].hwEmPt, hadcalo[i].hwPt );
-        data[2*i+1+HADOFFS] = ( hadcalo[i].hwIsEM, hadcalo[i].hwPhi, hadcalo[i].hwEta );
-    }
-    for (unsigned int i = 0; i < NTRACK; ++i) {
-        data[2*i+0+TKOFFS] = ( track[i].hwPtErr, track[i].hwPt );
-        data[2*i+1+TKOFFS] = ( track[i].hwZ0, track[i].hwPhi, track[i].hwEta );
-   }
-    for (unsigned int i = 0; i < NMU; ++i) {
-        data[2*i+0+MUOFFS] = ( mu[i].hwPtErr, mu[i].hwPt );
-        data[2*i+1+MUOFFS] = ( mu[i].hwPhi, mu[i].hwEta );
-   }
-
+    mp7_pack<NEMCALO,0>(emcalo, data);
+    mp7_pack<NCALO,HADOFFS>(hadcalo, data);
+    mp7_pack<NTRACK,TKOFFS>(track, data);
+    mp7_pack<NMU,MUOFFS>(mu, data);
 }
+
 void mp7wrapped_unpack_in(MP7DataWord data[MP7_NCHANN], EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj track[NTRACK], MuObj mu[NMU]) {
     #pragma HLS ARRAY_PARTITION variable=data complete
     #pragma HLS ARRAY_PARTITION variable=emcalo complete
@@ -541,32 +530,10 @@ void mp7wrapped_unpack_in(MP7DataWord data[MP7_NCHANN], EmCaloObj emcalo[NEMCALO
     #define HADOFFS 2*NEMCALO
     #define TKOFFS 2*NCALO+HADOFFS
     #define MUOFFS 2*NTRACK+TKOFFS
-    for (unsigned int i = 0; i < NEMCALO; ++i) {
-        emcalo[i].hwPt    = data[2*i+0](15, 0);
-        emcalo[i].hwPtErr = data[2*i+0](31,16);
-        emcalo[i].hwEta   = data[2*i+1](9,  0);
-        emcalo[i].hwPhi   = data[2*i+1](19,10);
-    }
-    for (unsigned int i = 0; i < NCALO; ++i) {
-        hadcalo[i].hwPt   = data[2*i+0+HADOFFS](15, 0);
-        hadcalo[i].hwEmPt = data[2*i+0+HADOFFS](31,16);
-        hadcalo[i].hwEta  = data[2*i+1+HADOFFS](9, 0);
-        hadcalo[i].hwPhi  = data[2*i+1+HADOFFS](19,10);
-        hadcalo[i].hwIsEM = data[2*i+1+HADOFFS][20];
-    }
-    for (unsigned int i = 0; i < NTRACK; ++i) {
-        track[i].hwPt    = data[2*i+0+TKOFFS](15, 0);
-        track[i].hwPtErr = data[2*i+0+TKOFFS](31,16);
-        track[i].hwEta   = data[2*i+1+TKOFFS](9, 0);
-        track[i].hwPhi   = data[2*i+1+TKOFFS](19,10);
-        track[i].hwZ0    = data[2*i+1+TKOFFS](29,20);
-    }
-    for (unsigned int i = 0; i < NMU; ++i) {
-        mu[i].hwPt    = data[2*i+0+MUOFFS](15, 0);
-        mu[i].hwPtErr = data[2*i+0+MUOFFS](31,16);
-        mu[i].hwEta   = data[2*i+1+MUOFFS](9, 0);
-        mu[i].hwPhi   = data[2*i+1+MUOFFS](19,10);
-    }
+    mp7_unpack<NEMCALO,0>(data, emcalo);
+    mp7_unpack<NCALO,HADOFFS>(data, hadcalo);
+    mp7_unpack<NTRACK,TKOFFS>(data, track);
+    mp7_unpack<NMU,MUOFFS>(data, mu);
 }
 
 void mp7wrapped_pack_out( PFChargedObj pfch[NTRACK], PFNeutralObj pfpho[NPHOTON], PFNeutralObj pfne[NSELCALO], PFChargedObj pfmu[NMU], MP7DataWord data[MP7_NCHANN]) {

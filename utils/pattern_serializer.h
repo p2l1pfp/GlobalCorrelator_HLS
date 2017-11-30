@@ -1,6 +1,6 @@
-#include "firmware/data.h"
 #include <cstdio>
 #include <vector>
+#include "../firmware/data.h"
 
 class MP7PatternSerializer {
     public:

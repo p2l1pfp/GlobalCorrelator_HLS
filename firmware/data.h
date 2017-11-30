@@ -34,8 +34,8 @@ enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=
    #define NPHOTON NEMCALO
    #define NSELCALO 4
 #else
-   #define NTRACK 15
-   #define NCALO 15
+   #define NTRACK 25
+   #define NCALO 20
    #define NMU 4
    #define NEMCALO 15
    #define NPHOTON NEMCALO
