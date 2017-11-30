@@ -294,7 +294,10 @@ void tk2em_emalgo(EmCaloObj calo[NEMCALO], pt_t sumtk[NEMCALO], bool isEM[NEMCAL
             photonPt[icalo] = calo[icalo].hwPt;
         } else {
             pt_t ptdiff = calo[icalo].hwPt - sumtk[icalo];
-            if (ptdiff*ptdiff <= ((calo[icalo].hwPtErr*calo[icalo].hwPtErr)<<2)) {
+            int ptdiff2 = ptdiff*ptdiff;
+            int sigma2 = (calo[icalo].hwPtErr*calo[icalo].hwPtErr);
+            int sigma2Lo = (sigma2 << 2), sigma2Hi = sigma2 + (sigma2 >> 1);
+            if ((ptdiff > 0 && ptdiff2 <= sigma2Hi) || (ptdiff < 0 && ptdiff2 < sigma2Lo)) {
                 photonPt[icalo] = 0;    
                 isEM[icalo] = true;
             } else if (ptdiff > 0) {
@@ -329,8 +332,8 @@ void em2calo_sub(HadCaloObj calo[NCALO], pt_t sumem[NCALO], bool keepcalo[NCALO]
     for (int icalo = 0; icalo < NCALO; ++icalo) {
         pt_t ptsub = calo[icalo].hwPt   - sumem[icalo];
         pt_t emsub = calo[icalo].hwEmPt - sumem[icalo];
-        if ((ptsub < (calo[icalo].hwPt >> 4)) || 
-                (calo[icalo].hwIsEM && (emsub < (calo[icalo].hwEmPt>>3)) && !keepcalo[icalo])) {
+        if ((ptsub <= (calo[icalo].hwPt >> 4)) || 
+                (calo[icalo].hwIsEM && (emsub <= (calo[icalo].hwEmPt>>3)) && !keepcalo[icalo])) {
             calo_out[icalo].hwPt   = 0;
             calo_out[icalo].hwEmPt = 0;
             calo_out[icalo].hwEta  = 0;
