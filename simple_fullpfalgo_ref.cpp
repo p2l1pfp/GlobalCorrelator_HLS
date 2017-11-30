@@ -193,6 +193,7 @@ void pfalgo3_em_ref(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj 
 void pfalgo3_full_ref(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj track[NTRACK], MuObj mu[NMU], PFChargedObj outch[NTRACK], PFNeutralObj outpho[NPHOTON], PFNeutralObj outne[NSELCALO], PFChargedObj outmu[NMU]) {
 
     if (g_debug_) {
+#ifdef FASTPUPPI_NTUPLERPRODUCER_DISCRETEPFINPUTS_MORE
         for (int i = 0; i < NTRACK; ++i) { if (track[i].hwPt == 0) continue;
             l1tpf_int::PropagatedTrack tk; fw2dpf::convert(track[i], tk); 
             printf("FW  \t track %3d: pt %8d [ %7.2f ]  calo eta %+7d [ %+5.2f ]  calo phi %+7d [ %+5.2f ]  calo ptErr %6d [ %7.2f ] \n", 
@@ -213,6 +214,7 @@ void pfalgo3_full_ref(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkOb
             printf("FW  \t muon  %3d: pt %8d [ %7.2f ]  muon eta %+7d [ %+5.2f ]  muon phi %+7d [ %+5.2f ]   \n", 
                                 i, muon.hwPt, muon.floatPt(), muon.hwEta, muon.floatEta(), muon.hwPhi, muon.floatPhi());
         } 
+#endif
     }
 
     // constants
@@ -305,10 +307,12 @@ void pfalgo3_full_ref(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkOb
             pt_t ptdiff = hadcalo_subem[ic].hwPt - calo_sumtk[ic];
             int sigmamult = (calo_sumtkErr2[ic] + (calo_sumtkErr2[ic] >> 1)); // this multiplies by 1.5 = sqrt(1.5)^2 ~ (1.2)^2
             if (g_debug_ && (hadcalo_subem[ic].hwPt > 0)) {
+#ifdef FASTPUPPI_NTUPLERPRODUCER_DISCRETEPFINPUTS_MORE
                 l1tpf_int::CaloCluster floatcalo; fw2dpf::convert(hadcalo_subem[ic], floatcalo); 
                 printf("FW  \t calo'  %3d pt %7d [ %7.2f ] eta %+7d [ %+5.2f ] has a sum track pt %7d, difference %7d +- %.2f \n",
                             ic, int(hadcalo_subem[ic].hwPt), floatcalo.floatPt(), int(hadcalo_subem[ic].hwEta), floatcalo.floatEta(), 
                                 int(calo_sumtk[ic]), int(ptdiff), std::sqrt(float(int(calo_sumtkErr2[ic]))));
+#endif
                         
             }
             if (ptdiff > 0 && ptdiff*ptdiff > sigmamult) {
