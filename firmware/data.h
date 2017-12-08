@@ -12,7 +12,7 @@ typedef ap_int<10> z0_t;  // 40cm / 0.1
 enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=4 };
 
 // VERTEXING
-#define NVTXBINS  15
+#define NVTXBINS 15
 #define NPOW 6
 #define NALLTRACK 1 << NPOW
 #define NSECTOR 1
@@ -34,8 +34,8 @@ enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=
    #define NPHOTON NEMCALO
    #define NSELCALO 4
 #else
-   #define NTRACK 25
-   #define NCALO 20
+   #define NTRACK 15
+   #define NCALO 15
    #define NMU 4
    #define NEMCALO 15
    #define NPHOTON NEMCALO
@@ -43,8 +43,8 @@ enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=
 #endif
 
 // PUPPI & CHS
-#define NPVTRACK 7
-
+#define NPVTRACK 15
+#define NNEUTRALS NPHOTON+NSELCALO
 
 struct CaloObj {
 	pt_t hwPt;
@@ -94,6 +94,7 @@ struct PFNeutralObj {
 	pt_t hwPt;
 	etaphi_t hwEta, hwPhi; // relative to the region center, at calo
 	particleid_t hwId;
+  pt_t hwPtPuppi;
 };
 struct VtxObj {
 	pt_t  hwSumPt;
