@@ -1,4 +1,4 @@
-#include "firmware/data.h"
+#include "../firmware/data.h"
 #include "firmware/simple_vtx.h"
 #include <cmath>
 #include <cassert>

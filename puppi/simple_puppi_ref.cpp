@@ -4,34 +4,19 @@
 #include <cmath>
 #include <algorithm>
 
-void simple_puppi_ref(PFChargedObj pfch[NTRACK], PFNeutralObj pfallne[NNEUTRALS], z0_t Z0, 
-                      PFChargedObj out_pfch_pv[NTRACK], PFNeutralObj out_pfne_pv[NNEUTRALS]) {
+void simple_puppi_ref(PFChargedObj pfch[NTRACK], PFNeutralObj pfallne[NNEUTRALS], z0_t Z0) {
 
-    #pragma HLS ARRAY_PARTITION variable=pfch complete
-    #pragma HLS ARRAY_PARTITION variable=pfallne complete
-    #pragma HLS ARRAY_PARTITION variable=out_pfch_pv complete
-    #pragma HLS ARRAY_PARTITION variable=out_pfne_pv complete
-    
-    #pragma HLS pipeline II=1
+    z0_t DZMAX = 256; // placeholder, big window (z0 is 10-bits)
 
-
-    z0_t DZMAX = 128; // placeholder
-
-    // e^10 = 22000, e^16 = 8,000,000, e^14 = 1,200,000
     // input to the table is a 12-bit number, 2^12 = 4096
-    // input to the table is a 12-bit number, 2^14 = 16384
-    // input to the table is a 16-bit number, 2^16 = 65536
-    // input to the table is a 32-bit number, 2^32 = 4,294,967,296
     ap_uint<8> puppiweight_table[4096];
-    _lut_puppiweight_init< ap_uint<8>, 4096 >( puppiweight_table );
+    lut_puppiweight_init< ap_uint<8>, 4096 >( puppiweight_table );
 
     // compute alpha
     const int DR2MAX = 8404; // 0.4 cone
     for (int in = 0; in < NNEUTRALS; ++in) {
         
         if (pfallne[in].hwPt == 0) continue;
-        
-        // computing the alpha for the analysis
         int sum = 0;
         for (int it = 0; it < NTRACK; ++it) {
             if ((Z0 - pfch[it].hwZ0 > DZMAX) || (Z0 - pfch[it].hwZ0 < -DZMAX)) continue; // if track is PV
@@ -44,7 +29,6 @@ void simple_puppi_ref(PFChargedObj pfch[NTRACK], PFNeutralObj pfallne[NNEUTRALS]
             }
         }
       
-        // compute the weight
         int weight = 0;
         if (sum > 0) { // get the weight if e^alpha is not 0
 
@@ -58,19 +42,14 @@ void simple_puppi_ref(PFChargedObj pfch[NTRACK], PFNeutralObj pfallne[NNEUTRALS]
                 // sum is the current e^alpha
                 // med of alpha = 10, rms of alpha = 2
                 // pass in sum, alphamed, alpharms into a LUT
-                int index = sum_short >= 4096 ? 4096 : sum; // 2^16
-                // ap_uint<8> weight_short = puppiweight_table[index];            
-                // ap_uint<6> weight = puppiweight_table[1000];            
-                // weight = (int) weight_short;
-                // weight = 0;
-                weight = (int) puppiweight_table[sum_short];
-                // printf("sum = %i, sum_short = %i, weight = %i \n", sum, sum_short, (int) puppiweight_table[sum_short]);
+                int index = sum_short >= 4096 ? 4096 : sum_short; // 2^16
+                // ap_uint<8> weight_short = puppiweight_table[index];
+                weight = (int) puppiweight_table[index];
             }
         }
 
         int pT_new = ( pfallne[in].hwPt * weight ) >> 8;
         pfallne[in].hwPtPuppi = (pt_t) pT_new;
-        // printf("old pt = %i, new pt = %i \n", (int) pfallne[in].hwPt, (int) pT_new);
     }
 
 }
