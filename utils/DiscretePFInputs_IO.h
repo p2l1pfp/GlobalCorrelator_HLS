@@ -6,12 +6,13 @@
 #include "../firmware/data.h"
 #include "../DiscretePFInputs.h"
 #include "DiscretePF2Firmware.h"
+#include <iostream>
 
 typedef l1tpf_int::InputRegion Region;
 
 struct Event {
 	uint32_t run, lumi; uint64_t event;
-	float z0;
+	float z0, genZ0;
 	float alphaCMed, alphaCRms, alphaFMed, alphaFRms;
 	std::vector<Region> regions;
 	
@@ -22,6 +23,7 @@ struct Event {
 		fread(&event, sizeof(uint64_t), 1, fRegionDump);
 		l1tpf_int::readManyFromFile(regions, fRegionDump); 
 		fread(&z0, sizeof(float), 1, fRegionDump);
+		fread(&genZ0, sizeof(float), 1, fRegionDump);
 		fread(&alphaCMed, sizeof(float), 1, fRegionDump);
 		fread(&alphaCRms, sizeof(float), 1, fRegionDump);
 		fread(&alphaFMed, sizeof(float), 1, fRegionDump);
@@ -31,7 +33,10 @@ struct Event {
 
 class DiscretePFInputs {
 	public:
-		DiscretePFInputs(const char *fileName) : file_(fopen(fileName,"rb")), iregion_(0) {}
+		DiscretePFInputs(const char *fileName) : file_(fopen(fileName,"rb")), iregion_(0) {
+                    if (!file_) { std::cout << "ERROR: cannot read '" << fileName << "'" << std::endl; }
+                    assert(file_);
+                }
 		~DiscretePFInputs() { fclose(file_); }
                 // for region-by-region approach
 		bool nextRegion(HadCaloObj calo[NCALO], EmCaloObj emcalo[NEMCALO], TkObj track[NTRACK], MuObj mu[NMU], z0_t & hwZPV) {
