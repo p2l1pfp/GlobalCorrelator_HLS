@@ -80,6 +80,9 @@ int main() {
         simple_vtx_ref(track,&curvtx);
         simple_puppi_ref( outch_ref, outallne_ref, curvtx.hwZ0);
         simple_puppi_hw(  outch_ref, outallne,     curvtx.hwZ0);
+        // weight_t curweight;
+        // compute_puppi_weight_hw( 100, curweight );
+        // std::cout << "curweight = " << curweight << std::endl;
 
         for (int i = 0; i < NNEUTRALS; ++i){
             printf("hwpt = %i, hwptpuppi = %i, hwptpuppi-ref = %i \n", (int) outallne[i].hwPt, (int) outallne[i].hwPtPuppi, (int) outallne_ref[i].hwPtPuppi);

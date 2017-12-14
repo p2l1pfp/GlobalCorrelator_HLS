@@ -6,6 +6,7 @@
 
 # open the project, don't forget to reset
 open_project -reset proj_pfpuppi
+# set_top compute_puppi_weight_hw
 set_top simple_puppi_hw
 add_files firmware/simple_puppi.cpp 
 #add_files ../firmware/simple_fullpfalgo.cpp 

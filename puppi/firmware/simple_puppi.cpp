@@ -5,24 +5,14 @@
 #endif
 
 typedef ap_uint<7> tk2em_dr_t;
-typedef ap_uint<8> weight_t;
 typedef ap_uint<10> tk2calo_dr_t;
 typedef ap_uint<10> em2calo_dr_t;
 typedef ap_uint<12> tk2calo_dq_t;
 typedef ap_uint<12> mu2trk_dr_t;
 
-// template<class data_T>
-// void lut_puppiweight_init3(data_T table_out[4096])
-// {
-//   for (int ii = 0; ii < 4096; ii++) {
-//     data_T real_val = weight_function_float( float(ii) );
-//     table_out[ii] = real_val;
-//   }
-// }
-
-weight_t puppiweight(weight_t iWeight){
-  weight_t _table[4096];
-  lut_puppiweight_init<weight_t,4096>(_table);
+weight_t puppiweight(int iWeight){
+  static weight_t _table[PUPPI_TABLE_SIZE];
+  lut_puppiweight_init<weight_t,PUPPI_TABLE_SIZE>(_table);
   return _table[iWeight];
 }
 
@@ -30,23 +20,6 @@ int dr2_int(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2) {
     etaphi_t deta = (eta1-eta2);
     etaphi_t dphi = (phi1-phi2);
     return deta*deta + dphi*dphi;
-}
-
-void compute_puppi_weight( ap_uint<32> eToAlpha, ap_uint<8> &curweight ){
-	
-	if (eToAlpha < 22026){
-		curweight = 0; // < e^10 where that is the median
-	} 
-	else if (eToAlpha > 1202604){
-		curweight = 256; // e^14 where that is the median + 2 sigma
-	}
-	else{
-		// bitshift down the sum by 10 bits to get it in the right range
-		int sum_short = eToAlpha >> 10;
-		int index = sum_short >= 4096 ? 4096 : sum_short; // 2^16
-		curweight = puppiweight(index);//(int) puppiweight_table[index];
-		// weight = puppiweight_table[index];
-	}
 }
 
 void simple_puppi_hw(PFChargedObj pfch[NTRACK], PFNeutralObj pfallne[NNEUTRALS], z0_t Z0) {
@@ -82,18 +55,23 @@ void simple_puppi_hw(PFChargedObj pfch[NTRACK], PFNeutralObj pfallne[NNEUTRALS],
                 sum += term;
             }
         }    
-        std::cout << "sum = " << sum << std::endl;
-        eToAlphas[in] = sum;
+        eToAlphas[in] = sum >> 10;
     }
 
     for (int in = 0; in < NNEUTRALS; ++in) {
-    	
-    	compute_puppi_weight( eToAlphas[in], weights[in] );
-    	std::cout << "eToAlphas[in] = " << eToAlphas[in] << ", weights[in] " << weights[in]  << std::endl;
-    	pfallne[in].eToAlpha = eToAlphas[in];
+        if (eToAlphas[in] <= 0){
+            weights[in] = 0; // < e^10 where that is the median
+        } 
+        else if (eToAlphas[in] > 1174){
+            weights[in] = 256; // e^14 where that is the median + 2 sigma
+        }
+        else{
+            int sum_short = eToAlphas[in];
+            int index = sum_short >= PUPPI_TABLE_SIZE ? PUPPI_TABLE_SIZE : sum_short; // 2^16
+            weights[in] = puppiweight(index); //(int) puppiweight_table[index];
+        }
     	int ptnew = ( pfallne[in].hwPt * weights[in] ) >> 8;
     	pfallne[in].hwPtPuppi = (pt_t) ptnew;
-
     }
 
 }

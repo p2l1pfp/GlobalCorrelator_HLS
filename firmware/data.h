@@ -101,7 +101,6 @@ struct PFNeutralObj {
 	etaphi_t hwEta, hwPhi; // relative to the region center, at calo
 	particleid_t hwId;
   pt_t hwPtPuppi;
-  ap_uint<32> eToAlpha;
 };
 struct VtxObj {
 	pt_t  hwSumPt;
