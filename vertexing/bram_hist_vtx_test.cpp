@@ -95,7 +95,7 @@ int main() {
 
         for (unsigned int i = 0; i < MP7_NCHANN; ++i) mp7_out[i] = 0; 
         for (unsigned int ic = 0; ic < N_CLOCKS; ++ic) {
-            bool done = (ic == N_CLOCKS-2);
+            bool done = (ic == 0);
             mp7_out[0] = done ? 1 : 0;
             mp7_out[1] = done ? ptsum_hw : pt_t(0);
             mp7_out[2] = done ? pvbin_hw : zbin_t(0);
