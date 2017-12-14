@@ -33,14 +33,14 @@ class MP7PatternSerializer {
             if nempty < 0, will do like nempty > 0 but filling with "magic" data instead of zeros
 
         */
-        MP7PatternSerializer(const std::string &fname, unsigned int nmux=1, int nempty=0, const std::string &boardName = "Board MP7_L1PF") ;
+        MP7PatternSerializer(const std::string &fname, unsigned int nmux=1, int nempty=0, unsigned int nlinks=0, const std::string &boardName = "Board MP7_L1PF") ;
         ~MP7PatternSerializer() ;
         
         void operator()(const MP7DataWord event[MP7_NCHANN]) ;
         
     protected:
         const std::string fname_;
-        const unsigned int nmux_, nchann_, nempty_;
+        const unsigned int nlinks_, nmux_, nchann_, nempty_;
         const bool fillmagic_;
         FILE *file_;
         unsigned int ipattern_;

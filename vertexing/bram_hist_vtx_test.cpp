@@ -26,7 +26,7 @@ int main() {
     unsigned int test_in_frame = 0, test_out_frame = 0;
     MP7PatternSerializer serMP7_in("mp7_input.txt",2,1);  
     MP7PatternSerializer serMP7_in_debug("mp7_input_debug.txt",1,0);  
-    MP7PatternSerializer serMP7_out("mp7_output.txt",1,0); 
+    MP7PatternSerializer serMP7_out("mp7_output.txt",1,0,3); 
     MP7PatternSerializer serMP7_out_debug("mp7_output_debug.txt",1,0); 
 
     for (int test = 1; test <= NTEST; ++test) {
