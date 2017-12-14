@@ -30,9 +30,8 @@ void simple_puppi_ref(PFChargedObj pfch[NTRACK], PFNeutralObj pfallne[NNEUTRALS]
         }
       
         int weight = 0;
+        pfallne[in].eToAlpha = sum;
         if (sum > 0) { // get the weight if e^alpha is not 0
-
-            // also need to check if alpha > alphaMED
             if (sum < 22026) weight = 0; // < e^10 where that is the median
             else if (sum > 1202604) weight = 256; // e^14 where that is the median
             else{

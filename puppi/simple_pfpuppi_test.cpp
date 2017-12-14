@@ -75,10 +75,11 @@ int main() {
 
         std::cout << "test " << test << std::endl;
 
+        ap_uint<8> weights[NNEUTRALS];
         VtxObj curvtx;    
         simple_vtx_ref(track,&curvtx);
-        simple_puppi_ref(outch_ref, outallne_ref, curvtx.hwZ0);
-        simple_puppi_hw( outch_ref, outallne, curvtx.hwZ0);
+        simple_puppi_ref( outch_ref, outallne_ref, curvtx.hwZ0);
+        simple_puppi_hw(  outch_ref, outallne,     curvtx.hwZ0);
 
         for (int i = 0; i < NNEUTRALS; ++i){
             printf("hwpt = %i, hwptpuppi = %i, hwptpuppi-ref = %i \n", (int) outallne[i].hwPt, (int) outallne[i].hwPtPuppi, (int) outallne_ref[i].hwPtPuppi);
