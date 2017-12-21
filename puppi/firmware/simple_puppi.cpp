@@ -22,6 +22,19 @@ int dr2_int(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2) {
     return deta*deta + dphi*dphi;
 }
 
+
+void _lut_shift15_invert_init(ap_uint<16> _table[512]) { // returns 2^15 / x
+	_table[0] = 32768; // this is 2^15
+	for (int i = 1; i <= 511; ++i) {
+		_table[i] = (32768 / i);
+	}
+}
+int _lut_shift15_divide(ap_uint<17> num, ap_uint<9> den) { // returns (num * 2^15) / den
+	ap_uint<16> _table[512];
+	_lut_shift15_invert_init(_table);
+	return (num * _table[den]);
+}
+
 void simple_puppi_hw(PFChargedObj pfch[NTRACK], PFNeutralObj pfallne[NNEUTRALS], z0_t Z0) {
 
     const z0_t DZMAX = 256;
@@ -40,6 +53,13 @@ void simple_puppi_hw(PFChargedObj pfch[NTRACK], PFNeutralObj pfallne[NNEUTRALS],
       eToAlphas[in] = 0; weights[in] = 0; 
     }
 
+    ap_uint<17> pt2_shift[NTRACK];
+    #pragma HLS ARRAY_PARTITION variable=pt2_shift complete
+    for (int it = 0; it < NTRACK; ++it) {
+        int mypt2 = (pfch[it].hwPt*pfch[it].hwPt) >> 5;
+        pt2_shift[it] = (mypt2 < 131071 ? mypt2 : 131071);
+    }
+
     for (int in = 0; in < NNEUTRALS; ++in) {
         
         int sum = 0;
@@ -50,8 +70,7 @@ void simple_puppi_hw(PFChargedObj pfch[NTRACK], PFNeutralObj pfallne[NNEUTRALS],
             int dr2 = dr2_int(pfch[it].hwEta, pfch[it].hwPhi, pfallne[in].hwEta, pfallne[in].hwPhi); // if dr is inside puppi cone
             if (dr2 <= DR2MAX) {
                 ap_uint<9> dr2short = dr2 >> 5; // why?
-                int pt2 = pfch[it].hwPt*pfch[it].hwPt;
-                int term = (std::min(pt2 >> 5, 131071) << 15)/(dr2short > 0 ? dr2short : ap_uint<9>(1));
+                int term = _lut_shift15_divide(pt2_shift[it], dr2short);
                 sum += term;
             }
         }    
