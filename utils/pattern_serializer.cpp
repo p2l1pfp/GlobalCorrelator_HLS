@@ -2,15 +2,19 @@
 #include <cassert>
 #include <string>
 #include <cstdlib>
+#include <cassert>
 
-MP7PatternSerializer::MP7PatternSerializer(const std::string &fname, unsigned int nmux, int nempty, const std::string &boardName) :
-    fname_(fname), nmux_(nmux), nchann_(MP7_NCHANN/nmux), nempty_(std::abs(nempty)), fillmagic_(nempty<0), file_(nullptr), ipattern_(0) 
+MP7PatternSerializer::MP7PatternSerializer(const std::string &fname, unsigned int nmux, int nempty, unsigned int nlinks, const std::string &boardName) :
+    fname_(fname), nlinks_(nlinks ? nlinks : MP7_NCHANN/nmux), nmux_(nmux), nchann_(MP7_NCHANN/nmux), nempty_(std::abs(nempty)), fillmagic_(nempty<0), file_(nullptr), ipattern_(0) 
 {
     if (!fname.empty()) {
         file_ = fopen(fname.c_str(), "w");
         fprintf(file_, "Board %s\n", boardName.c_str());
-        fprintf(file_, " Quad/Chan :    q00c0      q00c1      q00c2      q00c3      q01c0      q01c1      q01c2      q01c3      q02c0      q02c1      q02c2      q02c3      q03c0      q03c1      q03c2      q03c3      q04c0      q04c1      q04c2      q04c3      q05c0      q05c1      q05c2      q05c3      q06c0      q06c1      q06c2      q06c3      q07c0      q07c1      q07c2      q07c3      q08c0      q08c1      q08c2      q08c3      q09c0      q09c1      q09c2      q09c3      q10c0      q10c1      q10c2      q10c3      q11c0      q11c1      q11c2      q11c3      q12c0      q12c1      q12c2      q12c3      q13c0      q13c1      q13c2      q13c3      q14c0      q14c1      q14c2      q14c3      q15c0      q15c1      q15c2      q15c3      q16c0      q16c1      q16c2      q16c3      q17c0      q17c1      q17c2      q17c3  \n");
-        fprintf(file_, "      Link :     00         01         02         03         04         05         06         07         08         09         10         11         12         13         14         15         16         17         18         19         20         21         22         23         24         25         26         27         28         29         30         31         32         33         34         35         36         37         38         39         40         41         42         43         44         45         46         47         48         49         50         51         52         53         54         55         56         57         58         59         60         61         62         63         64         65         66         67         68         69         70         71    \n");
+        fprintf(file_, " Quad/Chan :    ");
+        for (unsigned int i = 0; i < nlinks_; ++i) fprintf(file_, "q%02dc%1d      ", i/4, i % 4);
+        fprintf(file_, "\n      Link :     ");
+        for (unsigned int i = 0; i < nlinks_; ++i) fprintf(file_, "%02d         ", i);
+        fprintf(file_, "\n");
     }
     if (nmux_ > 1) {
         assert(MP7_NCHANN % nmux_ == 0);
@@ -51,7 +55,7 @@ template<typename T> void MP7PatternSerializer::print(unsigned int iframe, const
 //void MP7PatternSerializer::print(const MP7DataWord event[MP7_NCHANN]) 
 {
     fprintf(file_, "Frame %04u :", iframe);
-    for (unsigned int i = 0; i < MP7_NCHANN; ++i) {
+    for (unsigned int i = 0; i < nlinks_; ++i) {
         fprintf(file_, " 1v%08x", unsigned(event[i]));
     }
     fprintf(file_, "\n");
