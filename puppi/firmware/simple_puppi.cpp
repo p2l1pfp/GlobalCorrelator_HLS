@@ -51,11 +51,11 @@ void simple_puppi_hw(PFChargedObj pfch[NTRACK], PFNeutralObj pfallne[NNEUTRALS],
             if (dr2 <= DR2MAX) {
                 ap_uint<9> dr2short = dr2 >> 5; // why?
                 int pt2 = pfch[it].hwPt*pfch[it].hwPt;
-                int term = (std::min(pt2 >> 5, 131071) << 15)/(dr2short > 0 ? dr2short : ap_uint<9>(1));
+                int term = (std::min(pt2 >> 5, 131071) << 15)/(dr2short > 0 ? dr2short : ap_uint<9>(1)) >> 5;
                 sum += term;
             }
         }    
-        eToAlphas[in] = sum >> 10;
+        eToAlphas[in] = sum >> 5;
     }
 
     for (int in = 0; in < NNEUTRALS; ++in) {
