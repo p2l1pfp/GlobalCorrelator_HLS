@@ -74,7 +74,7 @@ void simple_puppi_hw(PFChargedObj pfch[NTRACK], PFNeutralObj pfallne[NNEUTRALS],
                 sum += term;
             }
         }    
-        eToAlphas[in] = sum >> 10;
+        eToAlphas[in] = sum >> 5;
     }
 
     for (int in = 0; in < NNEUTRALS; ++in) {
