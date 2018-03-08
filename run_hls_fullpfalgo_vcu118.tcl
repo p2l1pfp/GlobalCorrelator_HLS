@@ -17,7 +17,7 @@ add_files -tb data/regions_TTbar_PU140.dump
 open_solution -reset "solution"
 set_part {xcvu9p-flga2104-2L-e}
 create_clock -period 4.16667 -name default
-set_clock_uncertainty 1.2
+set_clock_uncertainty 1.5
 
 config_interface -trim_dangling_port
 # do stuff
