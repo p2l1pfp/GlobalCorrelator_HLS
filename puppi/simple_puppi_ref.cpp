@@ -12,6 +12,7 @@ void simple_puppi_ref(PFChargedObj pfch[NTRACK], PFNeutralObj pfallne[NNEUTRALS]
     ap_uint<8> puppiweight_table[PUPPI_TABLE_SIZE];
     lut_puppiweight_init< ap_uint<8>, PUPPI_TABLE_SIZE >( puppiweight_table );
 
+
     // compute alpha
     const int DR2MAX = 8404; // 0.4 cone
     for (int in = 0; in < NNEUTRALS; ++in) {
@@ -24,7 +25,9 @@ void simple_puppi_ref(PFChargedObj pfch[NTRACK], PFNeutralObj pfallne[NNEUTRALS]
             if (dr2 <= DR2MAX) {
                 ap_uint<9> dr2short = dr2 >> 5; // why?
                 int pt2 = pfch[it].hwPt*pfch[it].hwPt;
-                int term = (std::min(pt2 >> 5, 131071) << 15)/(dr2short > 0 ? dr2short : ap_uint<9>(1));
+                //int term = (std::min(pt2 >> 5, 131071) << 15)/(dr2short > 0 ? dr2short : ap_uint<9>(1));
+                int term = 32768/(dr2short > 0 ? dr2short : ap_uint<9>(1));
+                term = std::min(pt2 >> 5, 131071)*term;
                 sum += term;
             }
         }
@@ -33,7 +36,7 @@ void simple_puppi_ref(PFChargedObj pfch[NTRACK], PFNeutralObj pfallne[NNEUTRALS]
         int eToAlpha = sum >> 10;
         if (eToAlpha > 0) { // get the weight if e^alpha is not 0
             if (eToAlpha <= 0) weight = 0; // < e^10 where that is the median
-            else if (eToAlpha > 1174) weight = 256; // e^14 where that is the median
+            else if (eToAlpha >= 1174) weight = 256; // e^14 where that is the median
             else{
                 // bitshift down the sum by 10 bits to get it in the right range
                 int sum_short = eToAlpha;
