@@ -31,7 +31,30 @@ void push_in_sector_ref(const T & in, T out[N_OBJ_PER_SECTOR_PER_ETA], etaphi_t 
 }
 
 template<typename T, int N_OBJ_PER_SECTOR_PER_ETA, int N_OBJ_PER_REGION> 
-void merge_sectors_ref(T list1[N_OBJ_PER_SECTOR_PER_ETA], etaphi_t phiShift1, T list2[N_OBJ_PER_SECTOR_PER_ETA], etaphi_t phiShift2, T list3[N_OBJ_PER_SECTOR_PER_ETA], etaphi_t phiShift3, T out[N_OBJ_PER_REGION]) {
+void merge_sectors_ref2(T list1[N_OBJ_PER_SECTOR_PER_ETA], etaphi_t phiShift1, T list2[N_OBJ_PER_SECTOR_PER_ETA], etaphi_t phiShift2, T out[N_OBJ_PER_REGION]) {
+    unsigned int i1 = 0, i2 = 0;
+    for (unsigned int i = 0; i < N_OBJ_PER_REGION; ++i) {
+        clear(out[i]);
+    }
+    for (unsigned int i = 0; i < N_OBJ_PER_REGION; ++i) {
+        pt_t pt1 = (i1 < N_OBJ_PER_SECTOR_PER_ETA ? list1[i1].hwPt : pt_t(0));
+        pt_t pt2 = (i2 < N_OBJ_PER_SECTOR_PER_ETA ? list2[i2].hwPt : pt_t(0));
+        if (pt1 >= pt2) {
+            if (pt1 == 0) break; // if i'm picking a null, it means I'm out of objects
+            out[i] = list1[i1]; 
+            out[i].hwPhi += phiShift1;
+            i1++;  
+        } else {
+            assert(i2 < N_OBJ_PER_SECTOR_PER_ETA);
+            out[i] = list2[i2]; 
+            out[i].hwPhi += phiShift2;
+            i2++;  
+	}
+    }
+}
+
+template<typename T, int N_OBJ_PER_SECTOR_PER_ETA, int N_OBJ_PER_REGION> 
+void merge_sectors_ref3(T list1[N_OBJ_PER_SECTOR_PER_ETA], etaphi_t phiShift1, T list2[N_OBJ_PER_SECTOR_PER_ETA], etaphi_t phiShift2, T list3[N_OBJ_PER_SECTOR_PER_ETA], etaphi_t phiShift3, T out[N_OBJ_PER_REGION]) {
     unsigned int i1 = 0, i2 = 0, i3 = 0;
     for (unsigned int i = 0; i < N_OBJ_PER_REGION; ++i) {
         clear(out[i]);
@@ -59,6 +82,41 @@ void merge_sectors_ref(T list1[N_OBJ_PER_SECTOR_PER_ETA], etaphi_t phiShift1, T 
     }
 }
 
+template<typename T, int N_OBJ_PER_SECTOR_PER_ETA, int N_OBJ_PER_REGION> 
+void merge_sectors_ref4(T list1[N_OBJ_PER_SECTOR_PER_ETA], etaphi_t phiShift1, T list2[N_OBJ_PER_SECTOR_PER_ETA], etaphi_t phiShift2, T list3[N_OBJ_PER_SECTOR_PER_ETA], etaphi_t phiShift3, T list4[N_OBJ_PER_SECTOR_PER_ETA], etaphi_t phiShift4, T out[N_OBJ_PER_REGION]) {
+    unsigned int i1 = 0, i2 = 0, i3 = 0, i4 = 0;
+    for (unsigned int i = 0; i < N_OBJ_PER_REGION; ++i) {
+        clear(out[i]);
+    }
+    for (unsigned int i = 0; i < N_OBJ_PER_REGION; ++i) {
+        pt_t pt1 = (i1 < N_OBJ_PER_SECTOR_PER_ETA ? list1[i1].hwPt : pt_t(0));
+        pt_t pt2 = (i2 < N_OBJ_PER_SECTOR_PER_ETA ? list2[i2].hwPt : pt_t(0));
+        pt_t pt3 = (i3 < N_OBJ_PER_SECTOR_PER_ETA ? list3[i3].hwPt : pt_t(0));
+        pt_t pt4 = (i4 < N_OBJ_PER_SECTOR_PER_ETA ? list4[i4].hwPt : pt_t(0));
+        if (pt1 >= pt2 && pt1 >= pt3 && pt1 >= pt4) {
+            if (pt1 == 0) break; // if i'm picking a null, it means I'm out of objects
+            out[i] = list1[i1]; 
+            out[i].hwPhi += phiShift1;
+            i1++;  
+        } else if (pt1 < pt2 && pt2 >= pt3 && pt2 >= pt4)  {
+            assert(i2 < N_OBJ_PER_SECTOR_PER_ETA);
+            out[i] = list2[i2]; 
+            out[i].hwPhi += phiShift2;
+            i2++;  
+        } else if (pt1 < pt3 && pt2 < pt3 && pt3 >= pt4){
+            assert(i3 < N_OBJ_PER_SECTOR_PER_ETA);
+            out[i] = list3[i3]; 
+            out[i].hwPhi += phiShift3;
+            i3++;  
+        } else {
+            assert(i4 < N_OBJ_PER_SECTOR_PER_ETA);
+            out[i] = list4[i4]; 
+            out[i].hwPhi += phiShift4;
+            i4++;  
+        }
+    }
+}
+
 template<typename T, int N_OBJ_PER_SECTOR, int N_OBJ_PER_SECTOR_PER_ETA, int N_OBJ_PER_REGION, int N_FIBERS_PER_SECTOR=1> 
 void regionize_ref(hls::stream<T> instream[N_FIBERS_PER_SECTOR*N_IN_SECTORS], T regions[N_OUT_REGIONS][N_OBJ_PER_REGION]) {
 
@@ -71,7 +129,7 @@ void regionize_ref(hls::stream<T> instream[N_FIBERS_PER_SECTOR*N_IN_SECTORS], T 
             }
         }
     }
-    // steam the data in
+    // stream the data in
     for (unsigned int io = 0; io < N_OBJ_PER_SECTOR/N_FIBERS_PER_SECTOR; ++io) {
         for (unsigned int is = 0; is < N_IN_SECTORS; ++is) {
             for (unsigned int f = 0; f < N_FIBERS_PER_SECTOR; ++f) {
@@ -102,12 +160,29 @@ void regionize_ref(hls::stream<T> instream[N_FIBERS_PER_SECTOR*N_IN_SECTORS], T 
     for (unsigned int ie = 0; ie < N_OUT_REGIONS_ETA; ++ie) {
         for (unsigned int ip = 0; ip < N_OUT_REGIONS_PHI; ++ip) {
             unsigned int ir = N_OUT_REGIONS_PHI*ie + ip;
-            merge_sectors_ref<T,N_OBJ_PER_SECTOR_PER_ETA,N_OBJ_PER_REGION>(
+	    if(N_SECTORS_PER_PHI_REGION==2) {
+	      merge_sectors_ref2<T,N_OBJ_PER_SECTOR_PER_ETA,N_OBJ_PER_REGION>(
+	        obj_sector_eta[IN_SECTOR_OF_REGION[ip][0]][ie], PHI_SHIFT[0],
+		obj_sector_eta[IN_SECTOR_OF_REGION[ip][1]][ie], PHI_SHIFT[1],
+		regions[ir]);
+	    }
+	    else if(N_SECTORS_PER_PHI_REGION==3) {
+	      merge_sectors_ref3<T,N_OBJ_PER_SECTOR_PER_ETA,N_OBJ_PER_REGION>(
+		obj_sector_eta[IN_SECTOR_OF_REGION[ip][0]][ie], PHI_SHIFT[0],
+		obj_sector_eta[IN_SECTOR_OF_REGION[ip][1]][ie], PHI_SHIFT[1],
+		obj_sector_eta[IN_SECTOR_OF_REGION[ip][2]][ie], PHI_SHIFT[2],
+		regions[ir]);
+	    }
+	    else if(N_SECTORS_PER_PHI_REGION==4) {
+	      merge_sectors_ref4<T,N_OBJ_PER_SECTOR_PER_ETA,N_OBJ_PER_REGION>(								     
                 obj_sector_eta[IN_SECTOR_OF_REGION[ip][0]][ie], PHI_SHIFT[0],
-                obj_sector_eta[IN_SECTOR_OF_REGION[ip][1]][ie], PHI_SHIFT[1],
-                obj_sector_eta[IN_SECTOR_OF_REGION[ip][2]][ie], PHI_SHIFT[2],
-                regions[ir]);
-        }
+		obj_sector_eta[IN_SECTOR_OF_REGION[ip][1]][ie], PHI_SHIFT[1],
+		obj_sector_eta[IN_SECTOR_OF_REGION[ip][2]][ie], PHI_SHIFT[2],
+		obj_sector_eta[IN_SECTOR_OF_REGION[ip][3]][ie], PHI_SHIFT[3],
+		regions[ir]);
+
+	    }
+	}
     }
 }
 

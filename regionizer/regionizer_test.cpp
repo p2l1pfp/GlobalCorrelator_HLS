@@ -49,7 +49,11 @@ int main() {
 
     // input format: could be random or coming from simulation
     //RandomPFInputs inputs(37); // 37 is a good random number
-    DiscretePFInputs inputs("barrel_sectors_1x12_TTbar_PU140.dump");
+    //DiscretePFInputs inputs("barrel_sectors_1x9_TTbar_PU140.dump");
+    DiscretePFInputs calo_inputs("barrel_sectors_1x12_TTbar_PU140.dump");
+    DiscretePFInputs track_inputs("barrel_sectors_1x12_TTbar_PU140.dump");
+    DiscretePFInputs muon_inputs("barrel_sectors_1x4_TTbar_PU140.dump");
+
     HumanReadablePatternSerializer debug("-"); // this will print on stdout, we'll use it for errors
 
     printf(" --- Configuration --- \n");
@@ -83,7 +87,7 @@ int main() {
     TkObj track_regions[N_OUT_REGIONS][NTRACK]; 
     TkObj track_regions_ref[N_OUT_REGIONS][NTRACK]; 
 
-    MuObj mu_in_cmssw[N_IN_SECTORS][NMU]; // 12-fold 
+    //MuObj mu_in_cmssw[N_IN_SECTORS][NMU]; // 12-fold 
     MuObj mu_in[N_MUON_SECTORS][NMU]; // 4-fold
     hls::stream<MuObj> mu_fibers[N_MUON_SECTORS]; 
     hls::stream<MuObj> mu_fibers_ref[N_MUON_SECTORS];
@@ -117,40 +121,43 @@ int main() {
     // -----------------------------------------
     // run multiple tests
     for (int test = 1; test <= NTEST; ++test) {
-        // read the event
-        if (!inputs.nextEvent()) break;
-        if (inputs.event().regions.size() != N_IN_SECTORS) { printf("ERROR: Mismatching number of input regions: %lu\n", inputs.event().regions.size()); return 2; }
+        // read the calo event
+        if (!calo_inputs.nextEvent()) break;
+        if (calo_inputs.event().regions.size() != N_IN_SECTORS) { printf("ERROR: Mismatching number of calo input regions: %lu\n", calo_inputs.event().regions.size()); return 2; }
+	// read the track event 
+        if (!track_inputs.nextEvent()) break;
+        if (track_inputs.event().regions.size() != N_IN_SECTORS) { printf("ERROR: Mismatching number of track input regions: %lu\n", track_inputs.event().regions.size()); return 2; }
+	// read the muon event 
+        if (!muon_inputs.nextEvent()) break;
+        if (muon_inputs.event().regions.size() != N_MUON_SECTORS) { printf("ERROR: Mismatching number of muon input regions: %lu\n", muon_inputs.event().regions.size()); return 2; }
+
         //fill in the streams
         for (int is = 0; is < N_IN_SECTORS; ++is) {
-            const Region & r = inputs.event().regions[is];
+            const Region & r_calo = calo_inputs.event().regions[is];
             // CALO
-            dpf2fw::convert<NCALO_PER_SECTOR>(r.calo, calo_in[is]); 
+            dpf2fw::convert<NCALO_PER_SECTOR>(r_calo.calo, calo_in[is]); 
             for (unsigned int i = 0; i < NCALO_PER_SECTOR; ++i) assert(calo_in[is][i].hwPt >= 0);
             if (!fill_stream<NCALO_PER_SECTOR>(calo_fibers[is], calo_in[is], 1, 0, "calo stream", is)) return 3;
             if (!fill_stream<NCALO_PER_SECTOR>(calo_fibers_ref[is], calo_in[is], 1, 0, "calo ref stream", is)) return 3;
             // EMCALO
-            dpf2fw::convert<NEMCALO_PER_SECTOR>(r.emcalo, emcalo_in[is]); 
+            dpf2fw::convert<NEMCALO_PER_SECTOR>(r_calo.emcalo, emcalo_in[is]); 
             if (!fill_stream<NEMCALO_PER_SECTOR>(emcalo_fibers[is], emcalo_in[is], 1, 0, "emcalo stream", is)) return 3;
             if (!fill_stream<NEMCALO_PER_SECTOR>(emcalo_fibers_ref[is], emcalo_in[is], 1, 0, "emcalo ref stream", is)) return 3;
+            const Region & r_track = track_inputs.event().regions[is];
             // TRACK
-            dpf2fw::convert<NTRACK_PER_SECTOR>(r.track, track_in[is]); 
+            dpf2fw::convert<NTRACK_PER_SECTOR>(r_track.track, track_in[is]); 
             for (unsigned int i = 0; i < 2; ++i) {
                 if (!fill_stream<NTRACK_PER_SECTOR>(track_fibers[2*is+i],     track_in[is], 2, i, "track stream ",    2*is+i)) return 3;
                 if (!fill_stream<NTRACK_PER_SECTOR>(track_fibers_ref[2*is+i], track_in[is], 2, i, "track ref stream", 2*is+i)) return 3;
             }
-            // MUON (12-fold CMSSW input)
-            dpf2fw::convert<NMU>(r.muon, mu_in_cmssw[is]); 
-            //for (int i = 0; i < NMU; ++i) if (mu_in_cmssw[is][i].hwPt > 0) printf("Muon 12-fold %2d/%d of hwPt %6d local phi %+6d  global phi %+8d  sector %+6.4f\n", is, i,
-            //    int(mu_in_cmssw[is][i].hwPt), int(mu_in_cmssw[is][i].hwPhi), int(mu_in_cmssw[is][i].hwPhi) + is * _PHI_PIO6 + _PHI_PIO6/2, (int(mu_in_cmssw[is][i].hwPhi) + is * _PHI_PIO6 + _PHI_PIO6/2)/float(_PHI_PIO6));
-        }
-        // MUONS need a dedicate handling to fake a 4-fold readout instead of a 12-fold
-        merge_muon_in(mu_in_cmssw, mu_in); // 12-fold to 4-fold
+	}                                                                                           
         for (int is = 0; is < N_MUON_SECTORS; ++is) {
-            //for (int i = 0; i < NMU; ++i) if (mu_in[is][i].hwPt > 0) printf("Muon  4-fold %2d/%d of hwPt %6d local phi %+6d  global phi %+8d\n", is, i,
-            //    int(mu_in[is][i].hwPt), int(mu_in[is][i].hwPhi), int(mu_in[is][i].hwPhi) + is * 3*_PHI_PIO6 + 3*_PHI_PIO6/2);
+            // MUON
+	    const Region & r_muon = muon_inputs.event().regions[is];
+	    dpf2fw::convert<NMU>(r_muon.muon, mu_in[is]);
             if (!fill_stream<NMU>(mu_fibers[is], mu_in[is], 1, 0, "mu stream", is)) return 3;
             if (!fill_stream<NMU>(mu_fibers_ref[is], mu_in[is], 1, 0, "mu ref stream", is)) return 3;
-        }
+	    }
         // dump inputs
         for (unsigned int ic = 0; ic < N_CLOCKS; ++ic) {
             // takes 2 clocks to send one input; so we just duplicate the lines for now
@@ -218,6 +225,7 @@ int main() {
         regionize_muon_ref(mu_fibers, mu_regions);
         regionize_muon_ref(mu_fibers_ref, mu_regions_ref);
 
+        // dump outputs
         for (unsigned int ic = 0; ic < N_CLOCKS; ++ic) {
             fprintf(f_out,"Frame %04d :", ++frame_out);
             for (int i = 0; i < NCALO; ++i) {

@@ -14,7 +14,9 @@ add_files -tb ../utils/pattern_serializer.cpp
 add_files -tb ../utils/test_utils.cpp
 add_files -tb ../DiscretePFInputs.h -cflags "-std=c++0x"
 add_files -tb ../utils/DiscretePFInputs_IO.h -cflags "-std=c++0x"
+#add_files -tb data/barrel_sectors_1x9_TTbar_PU140.dump
 add_files -tb data/barrel_sectors_1x12_TTbar_PU140.dump
+add_files -tb data/barrel_sectors_1x4_TTbar_PU140.dump
 
 # reset the solution
 open_solution -reset "solution"
@@ -27,7 +29,7 @@ set_clock_uncertainty 1.0
 config_interface -trim_dangling_port
 # do stuff
 csim_design
-csynth_design
+#csynth_design
 #cosim_design -trace_level all
 #export_design -format ip_catalog
 

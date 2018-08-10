@@ -1,4 +1,5 @@
 #include <cassert>
+#include <cstdio>
 #include "regionizer.h"
 
 #if 0
@@ -57,7 +58,38 @@ void deserialize_ptsort_eta(hls::stream<T> instream[N_IN_SECTORS], T deserialize
 }
 
 template<typename T, int N_OBJ_PER_SECTOR_PER_ETA, int N_OBJ_PER_REGION> 
-void merge_smart(const T list1[N_OBJ_PER_SECTOR_PER_ETA], etaphi_t phiShift1, const T list2[N_OBJ_PER_SECTOR_PER_ETA], etaphi_t phiShift2, const T list3[N_OBJ_PER_SECTOR_PER_ETA], etaphi_t phiShift3, T out[N_OBJ_PER_REGION]) {
+void merge_smart2(const T list1[N_OBJ_PER_SECTOR_PER_ETA], etaphi_t phiShift1, const T list2[N_OBJ_PER_SECTOR_PER_ETA], etaphi_t phiShift2, T out[N_OBJ_PER_REGION]) {
+    T tmp[N_OBJ_PER_REGION];
+    #pragma HLS ARRAY_PARTITION variable=tmp complete
+
+    for (unsigned int i = 0; i < N_OBJ_PER_SECTOR_PER_ETA; ++i) {
+        tmp[i] = list1[i];
+        if (list1[i].hwPt > 0) tmp[i].hwPhi += phiShift1;
+    }
+    for (unsigned int i = N_OBJ_PER_SECTOR_PER_ETA; i < N_OBJ_PER_REGION; ++i) {
+        clear(tmp[i]);
+    }
+
+    for (unsigned int it = 0; it < N_OBJ_PER_SECTOR_PER_ETA; ++it) {
+        for (int iout = N_OBJ_PER_REGION-1; iout >= 0; --iout) {
+            if (tmp[iout].hwPt < list2[it].hwPt) {
+                if (iout == 0 || tmp[iout-1].hwPt >= list2[it].hwPt) {
+                    tmp[iout] = list2[it];
+                    if (list2[it].hwPt > 0) tmp[iout].hwPhi += phiShift2;
+                } else {
+                    tmp[iout] = tmp[iout-1];
+                }
+            }
+        }
+    }
+    for (unsigned int i = 0; i < N_OBJ_PER_REGION; ++i) {
+        out[i] = tmp[i];
+    }
+
+ }
+
+template<typename T, int N_OBJ_PER_SECTOR_PER_ETA, int N_OBJ_PER_REGION> 
+void merge_smart3(const T list1[N_OBJ_PER_SECTOR_PER_ETA], etaphi_t phiShift1, const T list2[N_OBJ_PER_SECTOR_PER_ETA], etaphi_t phiShift2, const T list3[N_OBJ_PER_SECTOR_PER_ETA], etaphi_t phiShift3, T out[N_OBJ_PER_REGION]) {
     T tmp[N_OBJ_PER_REGION];
     #pragma HLS ARRAY_PARTITION variable=tmp complete
 
@@ -100,13 +132,88 @@ void merge_smart(const T list1[N_OBJ_PER_SECTOR_PER_ETA], etaphi_t phiShift1, co
 
  }
 
-void merge_hadcalo(HadCaloObj list1[NCALO_PER_SECTOR_PER_ETA], etaphi_t phiShift1, HadCaloObj list2[NCALO_PER_SECTOR_PER_ETA], etaphi_t phiShift2, HadCaloObj list3[NCALO_PER_SECTOR_PER_ETA], etaphi_t phiShift3, HadCaloObj out[NCALO]) {
+template<typename T, int N_OBJ_PER_SECTOR_PER_ETA, int N_OBJ_PER_REGION> 
+void merge_smart4(const T list1[N_OBJ_PER_SECTOR_PER_ETA], etaphi_t phiShift1, const T list2[N_OBJ_PER_SECTOR_PER_ETA], etaphi_t phiShift2, const T list3[N_OBJ_PER_SECTOR_PER_ETA], etaphi_t phiShift3, const T list4[N_OBJ_PER_SECTOR_PER_ETA], etaphi_t phiShift4, T out[N_OBJ_PER_REGION]) {
+    T tmp[N_OBJ_PER_REGION];
+    #pragma HLS ARRAY_PARTITION variable=tmp complete
+
+    for (unsigned int i = 0; i < N_OBJ_PER_SECTOR_PER_ETA; ++i) {
+        tmp[i] = list1[i];
+        if (list1[i].hwPt > 0) tmp[i].hwPhi += phiShift1;
+    }
+    for (unsigned int i = N_OBJ_PER_SECTOR_PER_ETA; i < N_OBJ_PER_REGION; ++i) {
+        clear(tmp[i]);
+    }
+
+    for (unsigned int it = 0; it < N_OBJ_PER_SECTOR_PER_ETA; ++it) {
+        for (int iout = N_OBJ_PER_REGION-1; iout >= 0; --iout) {
+            if (tmp[iout].hwPt < list2[it].hwPt) {
+                if (iout == 0 || tmp[iout-1].hwPt >= list2[it].hwPt) {
+                    tmp[iout] = list2[it];
+                    if (list2[it].hwPt > 0) tmp[iout].hwPhi += phiShift2;
+                } else {
+                    tmp[iout] = tmp[iout-1];
+                }
+            }
+        }
+    }
+
+    for (unsigned int it = 0; it < N_OBJ_PER_SECTOR_PER_ETA; ++it) {
+        for (int iout = N_OBJ_PER_REGION-1; iout >= 0; --iout) {
+            if (tmp[iout].hwPt < list3[it].hwPt) {
+                if (iout == 0 || tmp[iout-1].hwPt >= list3[it].hwPt) {
+                    tmp[iout] = list3[it];
+                    if (list3[it].hwPt > 0) tmp[iout].hwPhi += phiShift3;
+                } else {
+                    tmp[iout] = tmp[iout-1];
+                }
+            }
+        }
+    }
+
+    for (unsigned int it = 0; it < N_OBJ_PER_SECTOR_PER_ETA; ++it) {
+        for (int iout = N_OBJ_PER_REGION-1; iout >= 0; --iout) {
+            if (tmp[iout].hwPt < list4[it].hwPt) {
+                if (iout == 0 || tmp[iout-1].hwPt >= list4[it].hwPt) {
+                    tmp[iout] = list4[it];
+                    if (list4[it].hwPt > 0) tmp[iout].hwPhi += phiShift4;
+                } else {
+                    tmp[iout] = tmp[iout-1];
+                }
+            }
+        }
+    }
+    for (unsigned int i = 0; i < N_OBJ_PER_REGION; ++i) {
+        out[i] = tmp[i];
+    }
+
+ }
+
+void merge_hadcalo2(HadCaloObj list1[NCALO_PER_SECTOR_PER_ETA], etaphi_t phiShift1, HadCaloObj list2[NCALO_PER_SECTOR_PER_ETA], etaphi_t phiShift2, HadCaloObj out[NCALO]) {
+   #pragma HLS pipeline II=HLS_pipeline_II
+   #pragma HLS array_partition variable=list1 complete 
+   #pragma HLS array_partition variable=list2 complete 
+   #pragma HLS array_partition variable=out complete
+   merge_smart2<HadCaloObj,NCALO_PER_SECTOR_PER_ETA,NCALO>(list1, phiShift1, list2, phiShift2, out); 
+}
+
+void merge_hadcalo3(HadCaloObj list1[NCALO_PER_SECTOR_PER_ETA], etaphi_t phiShift1, HadCaloObj list2[NCALO_PER_SECTOR_PER_ETA], etaphi_t phiShift2, HadCaloObj list3[NCALO_PER_SECTOR_PER_ETA], etaphi_t phiShift3, HadCaloObj out[NCALO]) {
    #pragma HLS pipeline II=HLS_pipeline_II
    #pragma HLS array_partition variable=list1 complete 
    #pragma HLS array_partition variable=list2 complete 
    #pragma HLS array_partition variable=list3 complete 
    #pragma HLS array_partition variable=out complete
-   merge_smart<HadCaloObj,NCALO_PER_SECTOR_PER_ETA,NCALO>(list1, phiShift1, list2, phiShift2, list3, phiShift3, out); 
+   merge_smart3<HadCaloObj,NCALO_PER_SECTOR_PER_ETA,NCALO>(list1, phiShift1, list2, phiShift2, list3, phiShift3, out); 
+}
+
+void merge_hadcalo4(HadCaloObj list1[NCALO_PER_SECTOR_PER_ETA], etaphi_t phiShift1, HadCaloObj list2[NCALO_PER_SECTOR_PER_ETA], etaphi_t phiShift2, HadCaloObj list3[NCALO_PER_SECTOR_PER_ETA], etaphi_t phiShift3, HadCaloObj list4[NCALO_PER_SECTOR_PER_ETA], etaphi_t phiShift4, HadCaloObj out[NCALO]) {
+   #pragma HLS pipeline II=HLS_pipeline_II
+   #pragma HLS array_partition variable=list1 complete 
+   #pragma HLS array_partition variable=list2 complete 
+   #pragma HLS array_partition variable=list3 complete 
+   #pragma HLS array_partition variable=list4 complete 
+   #pragma HLS array_partition variable=out complete
+   merge_smart4<HadCaloObj,NCALO_PER_SECTOR_PER_ETA,NCALO>(list1, phiShift1, list2, phiShift2, list3, phiShift3, list4, phiShift4, out); 
 }
 
 void regionize_hadcalo(hls::stream<HadCaloObj> fibers[N_IN_SECTORS], HadCaloObj regions[N_OUT_REGIONS][NCALO]) {
@@ -116,7 +223,19 @@ void regionize_hadcalo(hls::stream<HadCaloObj> fibers[N_IN_SECTORS], HadCaloObj 
    for (int ie = 0; ie < N_OUT_REGIONS_ETA; ++ie) {
        for (int ip = 0; ip < N_OUT_REGIONS_PHI; ++ip) {
            int ir = N_OUT_REGIONS_PHI*ie + ip;
-           merge_hadcalo( work[IN_SECTOR_OF_REGION[ip][0]][ie], PHI_SHIFT[0], work[IN_SECTOR_OF_REGION[ip][1]][ie], PHI_SHIFT[1], work[IN_SECTOR_OF_REGION[ip][2]][ie], PHI_SHIFT[2], regions[ir]);
+	   if(N_SECTORS_PER_PHI_REGION==2) {
+             merge_hadcalo2( work[IN_SECTOR_OF_REGION[ip][0]][ie], PHI_SHIFT[0], work[IN_SECTOR_OF_REGION[ip][1]][ie], PHI_SHIFT[1], regions[ir]);
+	   }
+	   else if(N_SECTORS_PER_PHI_REGION==3) {
+	     merge_hadcalo3( work[IN_SECTOR_OF_REGION[ip][0]][ie], PHI_SHIFT[0], work[IN_SECTOR_OF_REGION[ip][1]][ie], PHI_SHIFT[1], work[IN_SECTOR_OF_REGION[ip][2]][ie], PHI_SHIFT[2], regions[ir]);
+	   }
+	   else if(N_SECTORS_PER_PHI_REGION==4) {
+	     merge_hadcalo4( work[IN_SECTOR_OF_REGION[ip][0]][ie], PHI_SHIFT[0], work[IN_SECTOR_OF_REGION[ip][1]][ie], PHI_SHIFT[1], work[IN_SECTOR_OF_REGION[ip][2]][ie], PHI_SHIFT[2], work[IN_SECTOR_OF_REGION[ip][3]][ie], PHI_SHIFT[3], regions[ir]);
+	   }
+	   else {
+	     printf("ERROR: merge not implemented for choice of input sectors/output regions\n");
+	   }
+	   
        }
    }
 }
