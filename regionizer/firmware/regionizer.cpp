@@ -36,7 +36,7 @@ void push_in_sector_eta(const T & in, T out[N_OBJ_PER_SECTOR_PER_ETA], etaphi_t 
     }
 }
 
-template<typename T, int N_OBJ_PER_SECTOR, int N_OBJ_PER_SECTOR_PER_ETA> 
+template<typename T, int N_IN_SECTORS, int N_OBJ_PER_SECTOR, int N_OBJ_PER_SECTOR_PER_ETA> 
 void deserialize_ptsort_eta(hls::stream<T> instream[N_IN_SECTORS], T deserialized[N_IN_SECTORS][N_OUT_REGIONS_ETA][N_OBJ_PER_SECTOR_PER_ETA]) {
     for (unsigned int is = 0; is < N_IN_SECTORS; ++is) {
         for (unsigned int ie = 0; ie < N_OUT_REGIONS_ETA; ++ie) {
@@ -216,9 +216,9 @@ void merge_hadcalo4(HadCaloObj list1[NCALO_PER_SECTOR_PER_ETA], etaphi_t phiShif
    merge_smart4<HadCaloObj,NCALO_PER_SECTOR_PER_ETA,NCALO>(list1, phiShift1, list2, phiShift2, list3, phiShift3, list4, phiShift4, out); 
 }
 
-void regionize_hadcalo(hls::stream<HadCaloObj> fibers[N_IN_SECTORS], HadCaloObj regions[N_OUT_REGIONS][NCALO]) {
-   HadCaloObj work[N_IN_SECTORS][N_OUT_REGIONS_ETA][NCALO_PER_SECTOR_PER_ETA];
-   deserialize_ptsort_eta<HadCaloObj,NCALO_PER_SECTOR,NCALO_PER_SECTOR_PER_ETA>(fibers, work);
+void regionize_hadcalo(hls::stream<HadCaloObj> fibers[N_CALO_SECTORS], HadCaloObj regions[N_OUT_REGIONS][NCALO]) {
+   HadCaloObj work[N_CALO_SECTORS][N_OUT_REGIONS_ETA][NCALO_PER_SECTOR_PER_ETA];
+   deserialize_ptsort_eta<HadCaloObj,N_CALO_SECTORS,NCALO_PER_SECTOR,NCALO_PER_SECTOR_PER_ETA>(fibers, work);
 
    for (int ie = 0; ie < N_OUT_REGIONS_ETA; ++ie) {
        for (int ip = 0; ip < N_OUT_REGIONS_PHI; ++ip) {

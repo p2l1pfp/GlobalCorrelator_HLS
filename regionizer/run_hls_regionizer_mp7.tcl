@@ -15,6 +15,7 @@ add_files -tb ../utils/test_utils.cpp
 add_files -tb ../DiscretePFInputs.h -cflags "-std=c++0x"
 add_files -tb ../utils/DiscretePFInputs_IO.h -cflags "-std=c++0x"
 add_files -tb data/barrel_sectors_1x12_TTbar_PU140.dump
+add_files -tb data/barrel_sectors_1x4_TTbar_PU140.dump
 
 # reset the solution
 open_solution -reset "solution"

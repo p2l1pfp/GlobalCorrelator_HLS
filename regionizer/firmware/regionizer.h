@@ -4,8 +4,9 @@
 #include "../../firmware/data.h"
 #include "hls_stream.h"
 
-#define N_IN_SECTORS 12
-//#define N_IN_SECTORS 9
+#define N_TRACK_SECTORS 12
+#define N_CALO_SECTORS 12
+//#define N_IN_SECTORS 12
 #define N_CLOCKS 36 // number of clock cycles per sector
 
 #define N_MUON_SECTORS 4
@@ -47,13 +48,12 @@ const int PHI_FID_SIZE = 2*_PHI_PIO6;
 #define NTRACK_PER_SECTOR 20
 #define NTRACK_PER_SECTOR_PER_ETA 9
 
-void regionize_hadcalo(hls::stream<HadCaloObj> fibers[N_IN_SECTORS], HadCaloObj regions[N_OUT_REGIONS][NCALO]) ;
-void regionize_hadcalo_ref(hls::stream<HadCaloObj> fibers[N_IN_SECTORS], HadCaloObj regions[N_OUT_REGIONS][NCALO]) ;
-void regionize_emcalo(hls::stream<EmCaloObj> fibers[N_IN_SECTORS], EmCaloObj regions[N_OUT_REGIONS][NEMCALO]) ;
-void regionize_emcalo_ref(hls::stream<EmCaloObj> fibers[N_IN_SECTORS], EmCaloObj regions[N_OUT_REGIONS][NEMCALO]) ;
-void regionize_track(hls::stream<TkObj> fibers[2*N_IN_SECTORS], TkObj regions[N_OUT_REGIONS][NTRACK]) ;
-void regionize_track_ref(hls::stream<TkObj> fibers[2*N_IN_SECTORS], TkObj regions[N_OUT_REGIONS][NTRACK]) ;
+void regionize_hadcalo(hls::stream<HadCaloObj> fibers[N_CALO_SECTORS], HadCaloObj regions[N_OUT_REGIONS][NCALO]) ;
+void regionize_hadcalo_ref(hls::stream<HadCaloObj> fibers[N_CALO_SECTORS], HadCaloObj regions[N_OUT_REGIONS][NCALO]) ;
+void regionize_emcalo(hls::stream<EmCaloObj> fibers[N_CALO_SECTORS], EmCaloObj regions[N_OUT_REGIONS][NEMCALO]) ;
+void regionize_emcalo_ref(hls::stream<EmCaloObj> fibers[N_CALO_SECTORS], EmCaloObj regions[N_OUT_REGIONS][NEMCALO]) ;
+void regionize_track(hls::stream<TkObj> fibers[2*N_TRACK_SECTORS], TkObj regions[N_OUT_REGIONS][NTRACK]) ;
+void regionize_track_ref(hls::stream<TkObj> fibers[2*N_TRACK_SECTORS], TkObj regions[N_OUT_REGIONS][NTRACK]) ;
 void regionize_muon(hls::stream<MuObj> fibers[N_MUON_SECTORS], MuObj regions[N_OUT_REGIONS][NMU]) ;
 void regionize_muon_ref(hls::stream<MuObj> fibers[N_MUON_SECTORS], MuObj regions[N_OUT_REGIONS][NMU]) ;
-void merge_muon_in(MuObj in_cmssw[N_IN_SECTORS][NMU], MuObj out_fibers[N_MUON_SECTORS][NMU]);
 #endif

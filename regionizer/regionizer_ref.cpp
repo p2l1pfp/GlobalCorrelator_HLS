@@ -117,7 +117,7 @@ void merge_sectors_ref4(T list1[N_OBJ_PER_SECTOR_PER_ETA], etaphi_t phiShift1, T
     }
 }
 
-template<typename T, int N_OBJ_PER_SECTOR, int N_OBJ_PER_SECTOR_PER_ETA, int N_OBJ_PER_REGION, int N_FIBERS_PER_SECTOR=1> 
+template<typename T, int N_IN_SECTORS, int N_OBJ_PER_SECTOR, int N_OBJ_PER_SECTOR_PER_ETA, int N_OBJ_PER_REGION, int N_FIBERS_PER_SECTOR=1> 
 void regionize_ref(hls::stream<T> instream[N_FIBERS_PER_SECTOR*N_IN_SECTORS], T regions[N_OUT_REGIONS][N_OBJ_PER_REGION]) {
 
     // define and clear work area for deserializers 
@@ -186,31 +186,14 @@ void regionize_ref(hls::stream<T> instream[N_FIBERS_PER_SECTOR*N_IN_SECTORS], T 
     }
 }
 
-void regionize_hadcalo_ref(hls::stream<HadCaloObj> fibers[N_IN_SECTORS], HadCaloObj regions[N_OUT_REGIONS][NCALO]) {
-   regionize_ref<HadCaloObj,NCALO_PER_SECTOR,NCALO_PER_SECTOR_PER_ETA,NCALO>(fibers, regions); 
+void regionize_hadcalo_ref(hls::stream<HadCaloObj> fibers[N_CALO_SECTORS], HadCaloObj regions[N_OUT_REGIONS][NCALO]) {
+   regionize_ref<HadCaloObj,N_CALO_SECTORS,NCALO_PER_SECTOR,NCALO_PER_SECTOR_PER_ETA,NCALO>(fibers, regions); 
 }
-void regionize_emcalo_ref(hls::stream<EmCaloObj> fibers[N_IN_SECTORS], EmCaloObj regions[N_OUT_REGIONS][NEMCALO]) {
-   regionize_ref<EmCaloObj,NEMCALO_PER_SECTOR,NEMCALO_PER_SECTOR_PER_ETA,NEMCALO>(fibers, regions); 
+void regionize_emcalo_ref(hls::stream<EmCaloObj> fibers[N_CALO_SECTORS], EmCaloObj regions[N_OUT_REGIONS][NEMCALO]) {
+   regionize_ref<EmCaloObj,N_CALO_SECTORS,NEMCALO_PER_SECTOR,NEMCALO_PER_SECTOR_PER_ETA,NEMCALO>(fibers, regions); 
 }
-void regionize_track_ref(hls::stream<TkObj> fibers[2*N_IN_SECTORS], TkObj regions[N_OUT_REGIONS][NTRACK]) {
-   regionize_ref<TkObj,NTRACK_PER_SECTOR,NTRACK_PER_SECTOR_PER_ETA,NTRACK,2>(fibers, regions); 
-}
-
-
-void merge_muon_in(MuObj in_cmssw[N_IN_SECTORS][NMU], MuObj out_fibers[N_MUON_SECTORS][NMU]) {
-    for (unsigned int is = 0; is < N_MUON_SECTORS; ++is) {
-        for (unsigned int io = 0; io < NMU; ++io) {
-            clear(out_fibers[is][io]);
-        }
-    }
-    for (unsigned int ics = 0; ics < N_IN_SECTORS; ++ics) {
-        int is = ics / 3;
-        for (unsigned int io = 0; io < NMU; ++io) {
-            MuObj mu = in_cmssw[ics][io];
-            mu.hwPhi += PHI_SHIFT[ics % 3];
-            push_in<MuObj,NMU>(mu, out_fibers[is]);
-        }
-    }
+void regionize_track_ref(hls::stream<TkObj> fibers[2*N_TRACK_SECTORS], TkObj regions[N_OUT_REGIONS][NTRACK]) {
+   regionize_ref<TkObj,N_TRACK_SECTORS,NTRACK_PER_SECTOR,NTRACK_PER_SECTOR_PER_ETA,NTRACK,2>(fibers, regions); 
 }
 
 void regionize_muon_ref(hls::stream<MuObj> instream[N_MUON_SECTORS], MuObj regions[N_OUT_REGIONS][NMU]) {
