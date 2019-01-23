@@ -46,8 +46,8 @@ int best_match_with_pt_ref(CO_t calo[NCAL], const TkObj & track) {
             int dr = dr2_int(track.hwEta, track.hwPhi, calo[ic].hwEta, calo[ic].hwPhi);
             if (dr >= DR2MAX) continue;
             dr += (( sqr(std::max<int>(track.hwPt-calo[ic].hwPt,0))*dptscale ) >> 8);
-            //printf("REF DQ(track %+7d %+7d  calo %3d) = %12d\n", int(track.hwEta), int(track.hwPhi), ic, dr);
-            if (ibest == -1 || dr < drmin) { drmin = dr; ibest = ic; }
+            if (g_debug_) printf("REF DQ(track %+7d %+7d  calo %3d) = %12d\n", int(track.hwEta), int(track.hwPhi), ic, dr);
+            if (ibest == -1 || dr <= drmin) { drmin = dr; ibest = ic; }
     }
     return ibest;
 }
