@@ -84,13 +84,19 @@ int main() {
         // compute_puppi_weight_hw( 100, curweight );
         // std::cout << "curweight = " << curweight << std::endl;
 
+        int errors = 0;
         for (int i = 0; i < NNEUTRALS; ++i){
-            printf("hwpt = %i, hwptpuppi = %i, hwptpuppi-ref = %i \n", (int) outallne[i].hwPt, (int) outallne[i].hwPtPuppi, (int) outallne_ref[i].hwPtPuppi);
+            printf("hwpt = %i, hwptpuppi = %i, hwptpuppi_ref = %i \n", (int) outallne[i].hwPt, (int) outallne[i].hwPtPuppi, (int) outallne_ref[i].hwPtPuppi);
+            if (outallne[i].hwPtPuppi-outallne_ref[i].hwPtPuppi != 0 && outallne[i].hwPt>0) errors++;
         }
         std::cout << "end of test ---- " << test << std::endl;
 
-    }
+        if (errors>0) {
+            printf("Found %i errors in puppi test!", errors);
+            //return errors;
+        }
 
+    }
 
     return 0;
 }
