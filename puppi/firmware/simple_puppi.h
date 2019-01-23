@@ -8,7 +8,7 @@ typedef ap_uint<8> weight_t;
 // typedef ap_fixed<18,8> weight_t;
 #define PUPPI_TABLE_SIZE 1174
 
-//int dr2_int(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2);
+//int dr2_int(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2); //not needed if pf algo is included
 
 inline float erf_approx( float arg ){
     float denom = 1 + 0.278393*arg + 0.230389*arg*arg + 0.000972*arg*arg*arg + 0.078108*arg*arg*arg*arg;

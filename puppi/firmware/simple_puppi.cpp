@@ -17,7 +17,7 @@ weight_t puppiweight(int iWeight){
   return _table[iWeight];
 }
 
-/*int dr2_int(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2) {
+/*int dr2_int(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2) { //not needed if pf algo is included
     etaphi_t deta = (eta1-eta2);
     etaphi_t dphi = (phi1-phi2);
     return deta*deta + dphi*dphi;
@@ -30,7 +30,7 @@ void _lut_shift15_invert_init(ap_uint<16> _table[512]) { // returns 2^15 / x
 		_table[i] = (32768 / i);
 	}
 }
-int _lut_shift15_divide(ap_uint<17> num, ap_uint<9> den) { // returns (num * 2^15) / den
+int _lut_shift15_divide(ap_uint<17> num, ap_uint<9> den) { // returns (num * 2^15) / den // intermediate rounding happens, not exact
 	ap_uint<16> _table[512];
 	_lut_shift15_invert_init(_table);
 	return (num * _table[den]);
@@ -97,7 +97,4 @@ void simple_puppi_hw(PFChargedObj pfch[NTRACK], PFNeutralObj pfallne[NNEUTRALS],
     	    pfallne[in].hwPtPuppi = pfallne[in].hwPt;
         }
     }
-
 }
-
-
