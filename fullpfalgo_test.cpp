@@ -9,7 +9,8 @@
 #include "utils/test_utils.h"
 
 #define NTEST 312
-
+#define NLINKS_APX_GEN0 48
+#define NFRAMES_APX_GEN0 3
 
 int main() {
 
@@ -83,55 +84,47 @@ int main() {
         mp7wrapped_unpack_out_necomb(data_out, outch, outpho, outne, outmupf);
 		// for (int ii = 0; ii < 72; ++ii){ std::cout << ii << ", " << data_in[ii] << std::endl; }
 
-        for (unsigned int di = 0; di < MP7_NCHANN; di++) {
-            std::cout<< std::setfill('0') << std::setw(8) << std::hex << (unsigned int)(data_out[di]) << "  ";
-            if (di%48==47) std::cout << std::endl;
-        }
+        //for (unsigned int di = 0; di < MP7_NCHANN; di++) {
+        //    std::cout<< std::setfill('0') << std::setw(8) << std::hex << (unsigned int)(data_out[di]) << "  ";
+        //    if (di%48==47) std::cout << std::endl;
+        //}
 
         std::cout<<"\n-----------"<<std::endl;
 
-        unsigned int index = 0;
-        for (unsigned int fi = 0; fi < 3; fi++) {
-            std::cout << "INPUT 0x" << std::setfill('0') << std::setw(4) << std::hex << 3*(test-1)+fi;
-            for (unsigned int ch = 0; ch < 48; ++ch){
+        for (unsigned int fi = 0; fi < NFRAMES_APX_GEN0; fi++) {
+            std::cout << "INPUT 0x" << std::setfill('0') << std::setw(4) << std::hex << NFRAMES_APX_GEN0*(test-1)+fi;
+            for (unsigned int ch = 0; ch < NLINKS_APX_GEN0; ++ch){
                 std::cout << "    0x";
                 if (fi==0) {
-                    if (index >= MP7_NCHANN) std::cout << "00000000";
-                    else std::cout << std::setfill('0') << std::setw(8) << std::hex << (unsigned int)(data_in[index]);
-                    index++;
-                    std::cout << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(curvtx.hwZ0.range(9,0))) << 14) << "dd";
+                    if (ch*5 >= MP7_NCHANN) std::cout << "00000000";
+                    else std::cout << std::setfill('0') << std::setw(8) << std::hex << (unsigned int)(data_in[ch*5]);
+                    std::cout << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(curvtx.hwZ0.range(9,0))) << 14) << "00";
                 }
                 else {
-                    if (index+48 >= MP7_NCHANN) std::cout << "00000000";
-                    else std::cout << std::setfill('0') << std::setw(8) << std::hex << (unsigned int)(data_in[index+48]);
-                    if (index >= MP7_NCHANN) std::cout << "00000000";
-                    else std::cout << std::setfill('0') << std::setw(8) << std::hex << (unsigned int)(data_in[index]);
-                    index++;
+                    if (ch*5+(2*fi) >= MP7_NCHANN) std::cout << "00000000";
+                    else std::cout << std::setfill('0') << std::setw(8) << std::hex << (unsigned int)(data_in[ch*5+(2*fi)]);
+                    if (ch*5+(2*fi)-1 >= MP7_NCHANN) std::cout << "00000000";
+                    else std::cout << std::setfill('0') << std::setw(8) << std::hex << (unsigned int)(data_in[ch*5+(2*fi)-1]);
                 }
             }
-            if (fi>0) index = index + 48;
             std::cout << "    " << std::endl;
         }
-        index = 0;
-        for (unsigned int fi = 0; fi < 3; fi++) {
-            std::cout << "OUTPUT 0x" << std::setfill('0') << std::setw(4) << std::hex << 3*(test-1)+fi;
-            for (unsigned int ch = 0; ch < 48; ++ch){
+        for (unsigned int fi = 0; fi < NFRAMES_APX_GEN0; fi++) {
+            std::cout << "OUTPUT 0x" << std::setfill('0') << std::setw(4) << std::hex << NFRAMES_APX_GEN0*(test-1)+fi;
+            for (unsigned int ch = 0; ch < NLINKS_APX_GEN0; ++ch){
                 std::cout << "    0x";
                 if (fi==0) {
-                    if (index >= MP7_NCHANN) std::cout << "00000000";
-                    else std::cout << std::setfill('0') << std::setw(8) << std::hex << (unsigned int)(data_out[index]);
-                    index++;
-                    std::cout << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(curvtx.hwZ0.range(9,0))) << 14) << "dd";
+                    if (ch*5 >= MP7_NCHANN) std::cout << "00000000";
+                    else std::cout << std::setfill('0') << std::setw(8) << std::hex << (unsigned int)(data_out[ch*5]);
+                    std::cout << "00000000";
                 }
                 else {
-                    if (index+48 >= MP7_NCHANN) std::cout << "00000000";
-                    else std::cout << std::setfill('0') << std::setw(8) << std::hex << (unsigned int)(data_out[index+48]);
-                    if (index >= MP7_NCHANN) std::cout << "00000000";
-                    else std::cout << std::setfill('0') << std::setw(8) << std::hex << (unsigned int)(data_out[index]);
-                    index++;
+                    if (ch*5+(2*fi) >= MP7_NCHANN) std::cout << "00000000";
+                    else std::cout << std::setfill('0') << std::setw(8) << std::hex << (unsigned int)(data_out[ch*5+(2*fi)]);
+                    if (ch*5+(2*fi)-1 >= MP7_NCHANN) std::cout << "00000000";
+                    else std::cout << std::setfill('0') << std::setw(8) << std::hex << (unsigned int)(data_out[ch*5+(2*fi)-1]);
                 }
             }
-            if (fi>0) index = index + 48;
             std::cout << "    " << std::endl;
         }
 
