@@ -8,7 +8,7 @@
 #include "utils/pattern_serializer.h"
 #include "utils/test_utils.h"
 
-#define NTEST 312
+#define NTEST 10
 #define NLINKS_APX_GEN0 48
 #define NFRAMES_APX_GEN0 3
 
