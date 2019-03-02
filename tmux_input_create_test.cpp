@@ -13,7 +13,7 @@
 #define NFRAMES_APX_GEN0 3
 #define TMUX_IN 18
 #define TMUX_OUT 6
-int mp7DataLength = NTRACK+NCALO+NEMCALO+NMU;
+int mp7DataLength = 2*(NTRACK+NCALO+NEMCALO+NMU);
 
 int main() {
 
@@ -32,9 +32,9 @@ int main() {
     PFNeutralObj outne[NSELCALO], outne_ref[NSELCALO];
     PFChargedObj outmupf[NMU], outmupf_ref[NMU];
 
-    printf("NTRACK = %i, NEMCALO = %i, NCALO = %i, NMU = %i, MP7_NCHANN = %i \n", NTRACK, NEMCALO, NCALO, NMU, MP7_NCHANN);
+    //printf("NTRACK = %i, NEMCALO = %i, NCALO = %i, NMU = %i, MP7_NCHANN = %i \n", NTRACK, NEMCALO, NCALO, NMU, MP7_NCHANN);
 
-    const int listLength = NFRAMES_APX_GEN0*(NTEST+TMUX_IN);
+    const int listLength = NFRAMES_APX_GEN0*TMUX_OUT*(((NTEST-1)/TMUX_OUT)+1);
     std::string datawords [NLINKS_APX_GEN0][listLength];
     for (int ia = 0; ia < NLINKS_APX_GEN0; ia++){
         for (int ib = 0; ib < listLength; ib++){
@@ -46,10 +46,13 @@ int main() {
     // run multiple tests
 
     int link_ctr = 0;
+    int link_off = 0;
     int offset = 0;
     for (int test = 0; test < NTEST; ++test) {
         
-        offset = NFRAMES_APX_GEN0*TMUX_OUT*(link_ctr/TMUX_OUT) + NFRAMES_APX_GEN0*TMUX_IN*(test/TMUX_IN);
+        offset = NFRAMES_APX_GEN0*TMUX_OUT*(test/TMUX_OUT);
+        //std::cout<<offset<<std::endl;
+
 
         // initialize TP objects
         for (int i = 0; i < NTRACK; ++i) {
@@ -70,7 +73,7 @@ int main() {
 
         VtxObj curvtx;    
         simple_vtx_ref(track,&curvtx);
-        printf("Vertex Z   %i\n",(int)(curvtx.hwZ0));
+        //printf("Vertex Z   %i\n",(int)(curvtx.hwZ0));
 
         MP7DataWord data_in[MP7_NCHANN], data_out[MP7_NCHANN];
         mp7wrapped_pack_in(emcalo, calo, track, mu, data_in);
@@ -78,30 +81,53 @@ int main() {
         //     printf("data_in[%i] = %i \n", in, (int) data_in[in]);
         // }
 
+        std::stringstream stream1;
+        stream1 << "0x";
+        stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[0]);
+        stream1 << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(curvtx.hwZ0.range(9,0))) << 14) << "00";
+        datawords[link_off+link_ctr][offset] = stream1.str();
+
         // put the data on the link number = link_ctr;
-        for (int id = 0; id < mp7DataLength; id += 2){
-            std::stringstream stream1;
+        stream1.str("");
+        int id = 1;
+        int index = 1;
+        while (id < mp7DataLength) {
+            stream1.str("");
             stream1 << "0x";
-            stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]);
-            stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id+1]);
-            datawords[link_ctr][offset+(id/2)] = stream1.str();
+            if (index%NFRAMES_APX_GEN0==0) {
+                stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]) << "00000000";
+                id+=1;
+            }
+            else {
+                stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id+1]);
+                stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]);
+                id+=2;
+            }
+            datawords[link_off+link_ctr][offset+index] = stream1.str();
+            index++;
             // std::cout << stream1.str() << std::endl;
             // std::cout << datawords[link_ctr][offset+(id/2)] << std::endl;
-            printf("test = %i, link ctr = %i, clock = %i, offset = %i \n", test, link_ctr, offset+(id/2), offset);
+            //printf("test = %i, link ctr = %i, clock = %i, offset = %i \n", test, link_ctr, offset+((id+1)/2), offset);
         }
+        std::cout<<"link_ctr = "<<link_ctr<<" link_off = "<<link_off<<" offset = "<<offset<<" index = "<<index<<std::endl;
+        
         
         link_ctr++;
-        if (link_ctr >= TMUX_IN) link_ctr = 0;
+        if (link_ctr >= TMUX_OUT) {
+            link_off += link_ctr;
+            link_ctr = 0;
+        }
+        if (link_off>= TMUX_IN) link_off = 0;
 
-        std::cout<<"-----------"<<std::endl;
+        //std::cout<<"-----------"<<std::endl;
     }
 
     for (int ib = 0; ib < listLength; ib++){
         // std::cout << ib << " ";
-        std::cout << "0x" << std::setfill('0') << std::setw(4) << std::hex << ib << " ";
+        std::cout << "0x" << std::setfill('0') << std::setw(4) << std::hex << ib << "  ";
         for (int ia = 0; ia < NLINKS_APX_GEN0; ia++){
             //datawords[ia][ib] = "0x0000000000000000";
-            std::cout << datawords[ia][ib] << " ";
+            std::cout << datawords[ia][ib] << "   ";
         }
         std::cout << std::endl;
     }
