@@ -23,10 +23,10 @@ enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=
 
 // PF
 #ifdef TESTMP7  // reduced input size to fit in a board
-   #define NTRACK 10
-   #define NCALO 10
+   #define NTRACK 14
+   #define NCALO 14
    #define NMU 2
-   #define NEMCALO 10
+   #define NEMCALO 14
    #define NPHOTON NEMCALO
    #define NSELCALO 8
 #elif TESTCTP7  // reduced input size to fit in a board
@@ -50,6 +50,15 @@ enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=
    #define NPHOTON NEMCALO
    #define NSELCALO 4
 #endif
+
+//TMUX
+#define NETA_TMUX 3
+#define NPHI_TMUX 1
+#define NREGIONS_TMUX 6
+#define NTRACK_TMUX (NTRACK*NREGIONS_TMUX*NETA_TMUX*NPHI_TMUX)
+#define NCALO_TMUX (NCALO*NREGIONS_TMUX*NETA_TMUX*NPHI_TMUX)
+#define NEMCALO_TMUX (NEMCALO*NREGIONS_TMUX*NETA_TMUX*NPHI_TMUX)
+#define NMU_TMUX (NMU*NREGIONS_TMUX*NETA_TMUX*NPHI_TMUX)
 
 // PUPPI & CHS
 #define NPVTRACK 15
@@ -113,7 +122,7 @@ struct VtxObj {
 	particleid_t hwId;
 };
 
-#define MP7_NCHANN 200
+#define MP7_NCHANN 144
 #define CTP7_NCHANN_IN 67
 #define CTP7_NCHANN_OUT 48
 typedef ap_uint<32> MP7DataWord;
