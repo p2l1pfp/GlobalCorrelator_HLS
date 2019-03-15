@@ -23,12 +23,12 @@ enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=
 
 // PF
 #ifdef TESTMP7  // reduced input size to fit in a board
-   #define NTRACK 14
-   #define NCALO 14
-   #define NMU 2
-   #define NEMCALO 14
+   #define NTRACK 20
+   #define NCALO 20
+   #define NMU 5
+   #define NEMCALO 20
    #define NPHOTON NEMCALO
-   #define NSELCALO 8
+   #define NSELCALO 15
 #elif TESTCTP7  // reduced input size to fit in a board
    #define NTRACK 7
    #define NCALO 5
@@ -50,15 +50,6 @@ enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=
    #define NPHOTON NEMCALO
    #define NSELCALO 4
 #endif
-
-//TMUX
-#define NETA_TMUX 3
-#define NPHI_TMUX 1
-#define NREGIONS_TMUX 6
-#define NTRACK_TMUX (NTRACK*NREGIONS_TMUX*NETA_TMUX*NPHI_TMUX)
-#define NCALO_TMUX (NCALO*NREGIONS_TMUX*NETA_TMUX*NPHI_TMUX)
-#define NEMCALO_TMUX (NEMCALO*NREGIONS_TMUX*NETA_TMUX*NPHI_TMUX)
-#define NMU_TMUX (NMU*NREGIONS_TMUX*NETA_TMUX*NPHI_TMUX)
 
 // PUPPI & CHS
 #define NPVTRACK 15
@@ -121,6 +112,16 @@ struct VtxObj {
 	vtx_t mult;
 	particleid_t hwId;
 };
+
+//TMUX
+#define NETA_TMUX 1
+#define NPHI_TMUX 3
+#define TMUX_IN 18
+#define TMUX_OUT 6
+#define NTRACK_TMUX (NTRACK*TMUX_OUT*NETA_TMUX*NPHI_TMUX)
+#define NCALO_TMUX (NCALO*TMUX_OUT*NETA_TMUX*NPHI_TMUX)
+#define NEMCALO_TMUX (NEMCALO*TMUX_OUT*NETA_TMUX*NPHI_TMUX)
+#define NMU_TMUX (NMU*TMUX_OUT*NETA_TMUX*NPHI_TMUX)
 
 #define MP7_NCHANN 144
 #define CTP7_NCHANN_IN 67
