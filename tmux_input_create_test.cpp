@@ -282,10 +282,10 @@ int main() {
 
     for (int ib = 0; ib < listLength; ib++){
         // std::cout << ib << " ";
-        std::cout << "0x" << std::setfill('0') << std::setw(4) << std::hex << ib << "  " <<std::dec;
+        std::cout << "0x" << std::setfill('0') << std::setw(4) << std::hex << ib << "   " <<std::dec;
         for (int ia = 0; ia < NLINKS_APX_GEN0; ia++){
             //datawords[ia][ib] = "0x0000000000000000";
-            std::cout << datawords[ia][ib] << "   ";
+            std::cout << datawords[ia][ib] << "    ";
         }
         std::cout << std::endl;
     }
