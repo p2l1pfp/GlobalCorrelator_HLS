@@ -234,6 +234,11 @@ int main() {
                     id++;
                     index++;
                 }
+                else {
+                    stream1 << datawords[link_off+link_ctr][offset].substr(0,10);
+                    stream1 << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(curvtx.hwZ0.range(9,0))) << 14) << "00";
+                    datawords[link_off+link_ctr][offset] = stream1.str();
+                }
 
                 //std::cout<<"index="<<index<<" id"<<id<<std::endl;
         
