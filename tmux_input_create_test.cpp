@@ -21,6 +21,9 @@
 #define MAXETA_INT 243
 #define MAXPHI_INT 510
 
+#define ETA_BUFFER 32
+#define PHI_BUFFER 32
+
 int mp7DataLength = 2*(NTRACK+NCALO+NEMCALO+NMU);
 int objDataLength[4] = {2*NEMCALO, 2*(NEMCALO+NCALO), 2*(NEMCALO+NCALO+NTRACK), 2*(NEMCALO+NCALO+NTRACK+NMU)};
 int link_max[4] = {NLINKS_PER_EMCALO, NLINKS_PER_EMCALO+NLINKS_PER_CALO, NLINKS_PER_TRACK+NLINKS_PER_CALO+NLINKS_PER_EMCALO, NLINKS_PER_TRACK+NLINKS_PER_CALO+NLINKS_PER_EMCALO+NLINKS_PER_MU};
@@ -117,10 +120,10 @@ int main() {
             }
         }
         // fill temp containers
-        int etalo = -MAXETA_INT+int(float(2*MAXETA_INT*ie)/float(NETA_TMUX));
-        int etahi = -MAXETA_INT+int(float(2*MAXETA_INT*(ie+1))/float(NETA_TMUX));
-        int philo = -MAXPHI_INT+int(float(2*MAXPHI_INT*ip)/float(NPHI_TMUX));
-        int phihi = -MAXPHI_INT+int(float(2*MAXPHI_INT*(ip+1))/float(NPHI_TMUX));
+        int etalo = -MAXETA_INT+int(float(2*MAXETA_INT*ie)/float(NETA_TMUX))-ETA_BUFFER;
+        int etahi = -MAXETA_INT+int(float(2*MAXETA_INT*(ie+1))/float(NETA_TMUX))+ETA_BUFFER;
+        int philo = -MAXPHI_INT+int(float(2*MAXPHI_INT*ip)/float(NPHI_TMUX))-PHI_BUFFER;
+        int phihi = -MAXPHI_INT+int(float(2*MAXPHI_INT*(ip+1))/float(NPHI_TMUX))+PHI_BUFFER;
         //std::cout<<etalo<<" "<<etahi<<" "<<philo<<" "<<phihi<<" "<<std::endl;
 
         int i_temp = 0;
