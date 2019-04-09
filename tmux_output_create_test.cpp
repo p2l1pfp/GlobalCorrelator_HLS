@@ -23,8 +23,8 @@
 
 #define ETA_BUFFER 32
 #define PHI_BUFFER 32
-#define NETA_SMALL 6
-#define NPHI_SMALL 1
+#define NETA_SMALL 3
+#define NPHI_SMALL 2
 
 int mp7DataLength = 2*(NTRACK+NCALO+NEMCALO+NMU);
 int objDataLength[4] = {2*NEMCALO, 2*(NEMCALO+NCALO), 2*(NEMCALO+NCALO+NTRACK), 2*(NEMCALO+NCALO+NTRACK+NMU)};
