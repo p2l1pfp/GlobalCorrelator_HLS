@@ -1,35 +1,11 @@
-#include <cstdio>
-#include <iomanip>
-#include "firmware/simple_fullpfalgo.h"
-#include "vertexing/firmware/simple_vtx.h"
-#include "puppi/firmware/simple_puppi.h"
-#include "utils/random_inputs.h"
-#include "utils/DiscretePFInputs_IO.h"
-#include "utils/pattern_serializer.h"
-#include "utils/test_utils.h"
-
-#define NTEST 6
-#define NLINKS_APX_GEN0 48
-#define NFRAMES_APX_GEN0 3
-
-#define NLINKS_PER_TRACK 4
-#define NLINKS_PER_CALO 4
-#define NLINKS_PER_EMCALO 4
-#define NLINKS_PER_MU 2
-#define NLINKS_PER_REG (NLINKS_PER_TRACK+NLINKS_PER_CALO+NLINKS_PER_EMCALO+NLINKS_PER_MU)
-
-#define MAXETA_INT 243
-#define MAXPHI_INT 510
-
-#define ETA_BUFFER 32
-#define PHI_BUFFER 32
+#include "tmux_create_test.h"
 
 int mp7DataLength = 2*(NTRACK+NCALO+NEMCALO+NMU);
-int objDataLength[4] = {2*NEMCALO, 2*(NEMCALO+NCALO), 2*(NEMCALO+NCALO+NTRACK), 2*(NEMCALO+NCALO+NTRACK+NMU)};
-int link_max[4] = {NLINKS_PER_EMCALO, NLINKS_PER_EMCALO+NLINKS_PER_CALO, NLINKS_PER_TRACK+NLINKS_PER_CALO+NLINKS_PER_EMCALO, NLINKS_PER_TRACK+NLINKS_PER_CALO+NLINKS_PER_EMCALO+NLINKS_PER_MU};
-int link_min[4] = {0, NLINKS_PER_EMCALO, NLINKS_PER_EMCALO+NLINKS_PER_CALO, NLINKS_PER_TRACK+NLINKS_PER_CALO+NLINKS_PER_EMCALO};
+int objDataLength[4] = {2*NTRACK, 2*(NEMCALO+NTRACK), 2*(NEMCALO+NCALO+NTRACK), 2*(NEMCALO+NCALO+NTRACK+NMU)};
+int link_max[4] = {NLINKS_PER_TRACK, NLINKS_PER_TRACK+NLINKS_PER_EMCALO, NLINKS_PER_TRACK+NLINKS_PER_CALO+NLINKS_PER_EMCALO, NLINKS_PER_TRACK+NLINKS_PER_CALO+NLINKS_PER_EMCALO+NLINKS_PER_MU};
+int link_min[4] = {0, NLINKS_PER_TRACK, NLINKS_PER_TRACK+NLINKS_PER_EMCALO, NLINKS_PER_TRACK+NLINKS_PER_EMCALO+NLINKS_PER_CALO};
 unsigned int theEtaRegion = 0;
-unsigned int thePhiRegion = 1;
+unsigned int thePhiRegion = 0;
 
 int main() {
 
@@ -39,7 +15,9 @@ int main() {
     // input format: could be random or coming from simulation
     //RandomPFInputs inputs(37); // 37 is a good random number
     //DiscretePFInputs inputs("regions_TTbar_PU140.dump");
-    DiscretePFInputs inputs("barrel_sectors_1x1_TTbar_PU140.dump");
+    //DiscretePFInputs inputs("barrel_sectors_1x1_TTbar_PU140.dump");
+    //DiscretePFInputs inputs("barrel_sectors_1x1_TTbar_PU200.dump");
+    DiscretePFInputs inputs("dummy.dump");
     
     // input TP objects
     HadCaloObj calo[NCALO_TMUX]; EmCaloObj emcalo[NEMCALO_TMUX]; TkObj track[NTRACK_TMUX]; z0_t hwZPV;
@@ -96,8 +74,8 @@ int main() {
             std::cout<<mu[i].hwPt<<"\t "<<mu[i].hwEta<<"\t "<<mu[i].hwPhi<<std::endl;
         }*/
 
-        VtxObj curvtx;    
-        simple_vtx_ref(track,&curvtx);
+        //VtxObj curvtx;    
+        //simple_vtx_ref(track,&curvtx);
         //printf("Vertex Z   %i\n",(int)(curvtx.hwZ0));
 
         unsigned int ie = theEtaRegion;
@@ -168,7 +146,7 @@ int main() {
         }
         i_temp = 0;
         ireg = 0;
-        for (int i = 0; i < NMU_TMUX; ++i) {
+        /*for (int i = 0; i < NMU_TMUX; ++i) {
             if (int(mu[i].hwEta) < etalo or int(mu[i].hwEta) > etahi) continue;
             if (int(mu[i].hwPhi) < philo or int(mu[i].hwPhi) > phihi) continue;
             if (int(mu[i].hwPt) == 0) continue;
@@ -177,18 +155,19 @@ int main() {
             ireg++;
             if (ireg == TMUX_OUT) {i_temp++; ireg=0;}
             if (i_temp == NMU) {break;}
-        }
+        }*/
+        //FIXME skipping muons for now, makes link alignment with firmware work out
 
-        //std::cout<<"Totals:"<<std::endl;
-        //std::cout<<"\ttrack  = "<<ntracks<<std::endl;
-        //std::cout<<"\tcalo   = "<<ncalos<<std::endl;
-        //std::cout<<"\temcalo = "<<nemcalos<<std::endl;
-        //std::cout<<"\tmu     = "<<nmus<<std::endl;
+        /*std::cout<<"Totals:"<<std::endl;
+        std::cout<<"\ttrack  = "<<ntracks<<std::endl;
+        std::cout<<"\tcalo   = "<<ncalos<<std::endl;
+        std::cout<<"\temcalo = "<<nemcalos<<std::endl;
+        std::cout<<"\tmu     = "<<nmus<<std::endl;*/
 
         for (int ir = 0; ir < TMUX_OUT; ir++) {
 
             MP7DataWord data_in[MP7_NCHANN];
-            mp7wrapped_pack_in(emcalo_temp[ir], calo_temp[ir], track_temp[ir], mu_temp[ir], data_in);
+            mp7wrapped_pack_in_reorder(emcalo_temp[ir], calo_temp[ir], track_temp[ir], mu_temp[ir], data_in);
             //for (unsigned int in = 0; in < MP7_NCHANN; in++){
             //    printf("data_in[%i] = %i \n", in, (int) data_in[in]);
             //}
@@ -200,9 +179,9 @@ int main() {
             int link_start[4];
             int add_off[4];
             
-            tot_perc[0] = float(ir*NLINKS_PER_EMCALO)/float(TMUX_OUT);
-            tot_perc[1] = float(ir*NLINKS_PER_CALO)/float(TMUX_OUT);
-            tot_perc[2] = float(ir*NLINKS_PER_TRACK)/float(TMUX_OUT);
+            tot_perc[0] = float(ir*NLINKS_PER_TRACK)/float(TMUX_OUT);
+            tot_perc[1] = float(ir*NLINKS_PER_EMCALO)/float(TMUX_OUT);
+            tot_perc[2] = float(ir*NLINKS_PER_CALO)/float(TMUX_OUT);
             tot_perc[3] = float(ir*NLINKS_PER_MU)/float(TMUX_OUT);
             link_start[0] = int(tot_perc[0]);
             link_start[1] = int(tot_perc[1]);
@@ -214,7 +193,7 @@ int main() {
             add_off[3] = int(float(NFRAMES_APX_GEN0*TMUX_IN)*tot_perc[3])%(NFRAMES_APX_GEN0*TMUX_IN);
 
             int id = 0;
-            unsigned int link_type = 0; //0=track, 1=calo, 2=emcalo, 3=mu
+            unsigned int link_type = 0; //0=track, 1=emcalo, 2=calo, 3=mu
 
             for (int link_ctr = 0; link_ctr < NLINKS_PER_REG; link_ctr++) {
 
@@ -232,14 +211,14 @@ int main() {
                 if (index==0) {
                     stream1 << "0x";
                     stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]);
-                    stream1 << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(curvtx.hwZ0.range(9,0))) << 14) << "00";
+                    stream1 << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(hwZPV.range(9,0))) << 14) << "00";
                     datawords[link_off+link_ctr][offset] = stream1.str();
                     id++;
                     index++;
                 }
                 else {
                     stream1 << datawords[link_off+link_ctr][offset].substr(0,10);
-                    stream1 << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(curvtx.hwZ0.range(9,0))) << 14) << "00";
+                    stream1 << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(hwZPV.range(9,0))) << 14) << "00";
                     datawords[link_off+link_ctr][offset] = stream1.str();
                 }
 
@@ -280,6 +259,7 @@ int main() {
         }
         link_off += NLINKS_PER_REG;
         if (link_off>= NLINKS_PER_REG*TMUX_IN/TMUX_OUT) link_off = 0;
+        //std::cout<<"\t"<<test<<std::endl;
     
     }
 

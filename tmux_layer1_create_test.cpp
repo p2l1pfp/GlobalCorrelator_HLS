@@ -3,8 +3,7 @@
 #define NETA_SMALL 2
 #define NPHI_SMALL 9
 
-int mp7DataLength = 2*(NTRACK+NCALO+NEMCALO+NMU);
-int objDataLength[4] = {2*NTRACK, 2*(NEMCALO+NTRACK), 2*(NEMCALO+NCALO+NTRACK), 2*(NEMCALO+NCALO+NTRACK+NMU)};
+int mp7DataLength = NTRACK+NPHOTON+NSELCALO+NMU;
 int link_max[4] = {NLINKS_PER_TRACK, NLINKS_PER_TRACK+NLINKS_PER_EMCALO, NLINKS_PER_TRACK+NLINKS_PER_CALO+NLINKS_PER_EMCALO, NLINKS_PER_TRACK+NLINKS_PER_CALO+NLINKS_PER_EMCALO+NLINKS_PER_MU};
 int link_min[4] = {0, NLINKS_PER_TRACK, NLINKS_PER_TRACK+NLINKS_PER_EMCALO, NLINKS_PER_TRACK+NLINKS_PER_EMCALO+NLINKS_PER_CALO};
 unsigned int theEtaRegion = 0;
@@ -26,8 +25,8 @@ int main() {
     //RandomPFInputs inputs(37); // 37 is a good random number
     //DiscretePFInputs inputs("regions_TTbar_PU140.dump");
     //DiscretePFInputs inputs("barrel_sectors_1x1_TTbar_PU140.dump");
-    //DiscretePFInputs inputs("barrel_sectors_1x1_TTbar_PU200.dump");
-    DiscretePFInputs inputs("dummy.dump");
+    DiscretePFInputs inputs("barrel_sectors_1x1_TTbar_PU200.dump");
+    //DiscretePFInputs inputs("dummy.dump");
     
     // input TP objects
     HadCaloObj calo[NCALO_TMUX]; EmCaloObj emcalo[NEMCALO_TMUX]; TkObj track[NTRACK_TMUX]; z0_t hwZPV;
@@ -124,17 +123,17 @@ int main() {
             if (int(track[i].hwEta) < etalo or int(track[i].hwEta) > etahi) continue;
             if (int(track[i].hwPhi) < philo or int(track[i].hwPhi) > phihi) continue;
             if (int(track[i].hwPt) == 0) continue;
-            std::cout<<"\t"<<track[i].hwEta<<" "<<track[i].hwPhi<<std::endl;
+            //std::cout<<"\t"<<track[i].hwEta<<" "<<track[i].hwPhi<<std::endl;
             for (int ies = 0; ies < NETA_SMALL; ies++) {
-                std::cout<<"checking eta: "<<etalo+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*ies<<" "<<etalo+(2*ETA_BUFFER)+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*(ies+1)<<std::endl;
+                //std::cout<<"checking eta: "<<etalo+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*ies<<" "<<etalo+(2*ETA_BUFFER)+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*(ies+1)<<std::endl;
                 if (int(track[i].hwEta) <= etalo+(2*ETA_BUFFER)+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*(ies+1)
                 and int(track[i].hwEta) > etalo+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*ies) {
                     for (int ips = 0; ips < NPHI_SMALL; ips++) {
-                        std::cout<<"checking phi: "<<philo+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*ips<<" "<<philo+(2*PHI_BUFFER)+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*(ips+1)<<std::endl;
+                        //std::cout<<"checking phi: "<<philo+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*ips<<" "<<philo+(2*PHI_BUFFER)+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*(ips+1)<<std::endl;
                         if (int(track[i].hwPhi) <= philo+(2*PHI_BUFFER)+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*(ips+1)
                         and int(track[i].hwPhi) > philo+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*ips) {
                             if (i_temp[ies*NPHI_SMALL+ips]==NTRACK) continue;
-                            std::cout<<"\tX -- ("<<ies<<","<<ips<<")"<<std::endl;
+                            //std::cout<<"\tX -- ("<<ies<<","<<ips<<")"<<std::endl;
                             track_temp[ies*NPHI_SMALL+ips][i_temp[ies*NPHI_SMALL+ips]] = track[i];
                             i_temp[ies*NPHI_SMALL+ips] += 1;
                             ntracks[ies*NPHI_SMALL+ips]++;
@@ -213,16 +212,22 @@ int main() {
             std::cout<<"\tmu     = "<<nmus[ir]<<std::endl;*/
 
             MP7DataWord data_in[MP7_NCHANN];
-            mp7wrapped_pack_in_reorder(emcalo_temp[ir], calo_temp[ir], track_temp[ir], mu_temp[ir], data_in);
+            MP7DataWord data_out[MP7_NCHANN];
+            for (unsigned int idm = 0; idm < MP7_NCHANN; idm++) {
+                data_in[idm] = 0;
+                data_out[idm] = 0;
+            }
+            mp7wrapped_pack_in(emcalo_temp[ir], calo_temp[ir], track_temp[ir], mu_temp[ir], data_in);
             //for (unsigned int in = 0; in < MP7_NCHANN; in++){
             //    printf("data_in[%i] = %i \n", in, (int) data_in[in]);
             //}
                 
+            mp7wrapped_pfalgo3_full(data_in, data_out, hwZPV);
 
             for (int id = 0; id < mp7DataLength; id++) {
                 std::stringstream stream1;
-                stream1 << std::uppercase << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id*2+1]);
-                stream1 << std::uppercase << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id*2+0]);
+                stream1 << std::uppercase << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_out[id*2+1]);
+                stream1 << std::uppercase << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_out[id*2+0]);
                 datawords[test*TMUX_OUT+ir][id] = stream1.str();
             }
             std::stringstream stream1;
