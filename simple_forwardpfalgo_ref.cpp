@@ -43,69 +43,51 @@ void ptsort_ref(T in[NIn], T out[NOut]) {
 }
 
 
-void pfalgo3_em_ref(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], PFNeutralObj outpho[NPHOTON], HadCaloObj hadcalo_out[NCALO]) {
-    // constants
-    const int DR2MAX_EH = PFALGO3_DR2MAX_EM_CALO;
+void pfalgo3_ne_ref(HadCaloObj hadcalo[NCALO], PFNeutralObj outpho[NCALO], PFNeutralObj outne[NCALO]) {
 
-    for (int ic = 0; ic < NEMCALO; ++ic) {
-        pt_t photonPt = emcalo[ic].hwPt;
-        if (g_debug_ && emcalo[ic].hwPt > 0) printf("FW  \t emcalo %3d pt %7d flagged as photon\n", ic, int(emcalo[ic].hwPt));
-        outpho[ic].hwPt  = photonPt;
-        outpho[ic].hwEta = photonPt ? emcalo[ic].hwEta : etaphi_t(0);
-        outpho[ic].hwPhi = photonPt ? emcalo[ic].hwPhi : etaphi_t(0);
-        outpho[ic].hwId  = photonPt ? PID_Photon : particleid_t(0);
-
-    }
-
-    int em2calo[NEMCALO];
-    for (int ic = 0; ic < NEMCALO; ++ic) {
-        em2calo[ic] = best_match_ref<NCALO,DR2MAX_EH>(hadcalo, emcalo[ic]);
-        if (g_debug_ && (emcalo[ic].hwPt > 0)) {
-             printf("FW  \t emcalo %3d pt %7d matched to hadcalo %7d pt %7d emPt %7d isEM %d\n", 
-                                ic, int(emcalo[ic].hwPt), em2calo[ic], (em2calo[ic] >= 0 ? int(hadcalo[em2calo[ic]].hwPt) : -1), 
-                                (em2calo[ic] >= 0 ? int(hadcalo[em2calo[ic]].hwEmPt) : -1), (em2calo[ic] >= 0 ? int(hadcalo[em2calo[ic]].hwIsEM) : 0));
-        }
-    }
-    
     for (int ih = 0; ih < NCALO; ++ih) {
-        hadcalo_out[ih] = hadcalo[ih];
-        pt_t sub = 0; bool keep = false;
-        for (int ic = 0; ic < NEMCALO; ++ic) {
-            if (em2calo[ic] == ih) {
-                sub += emcalo[ic].hwPt;
-            }
-        }
-        pt_t emdiff  = hadcalo[ih].hwEmPt - sub;
-        pt_t alldiff = hadcalo[ih].hwPt - sub;
         if (g_debug_ && (hadcalo[ih].hwPt > 0)) {
-            printf("FW  \t calo   %3d pt %7d has a subtracted pt of %7d, empt %7d -> %7d   isem %d keep %d \n",
-                        ih, int(hadcalo[ih].hwPt), int(alldiff), int(hadcalo[ih].hwEmPt), int(emdiff), int(hadcalo[ih].hwIsEM), keep);
+            printf("FW  \t calo   %3d has a pt of %7d, empt %7d   isem %d \n",
+                        ih, int(hadcalo[ih].hwPt), int(hadcalo[ih].hwEmPt), int(hadcalo[ih].hwIsEM));
                     
         }
-        if (alldiff <= ( hadcalo[ih].hwPt >>  4 ) ) {
-            hadcalo_out[ih].hwPt = 0;   // kill
-            hadcalo_out[ih].hwEmPt = 0; // kill
-            if (g_debug_ && (hadcalo[ih].hwPt > 0)) printf("FW  \t calo   %3d pt %7d --> discarded (zero pt)\n", ih, int(hadcalo[ih].hwPt));
-        } else if ((hadcalo[ih].hwIsEM && emdiff <= ( hadcalo[ih].hwEmPt >> 3 )) && !keep) {
-            hadcalo_out[ih].hwPt = 0;   // kill
-            hadcalo_out[ih].hwEmPt = 0; // kill
-            if (g_debug_ && (hadcalo[ih].hwPt > 0)) printf("FW  \t calo   %3d pt %7d --> discarded (zero em)\n", ih, int(hadcalo[ih].hwPt));
+        if ((hadcalo[ih].hwPt > 0) && hadcalo[ih].hwIsEM) {
+            outpho[ih].hwPt  = hadcalo[ih].hwPt;
+            outpho[ih].hwEta = hadcalo[ih].hwEta;
+            outpho[ih].hwPhi = hadcalo[ih].hwPhi;
+            outpho[ih].hwId  = PID_Photon;
+            outne[ih].hwPt  = pt_t(0);
+            outne[ih].hwEta = etaphi_t(0);
+            outne[ih].hwPhi = etaphi_t(0);
+            outne[ih].hwId  = PID_Neutral;
+            if (g_debug_ && (hadcalo[ih].hwPt > 0)) printf("FW  \t calo   %3d pt %7d --> PHOTON\n", ih, int(hadcalo[ih].hwPt));
+        } else if (hadcalo[ih].hwPt > 0) {
+            outpho[ih].hwPt  = pt_t(0);
+            outpho[ih].hwEta = etaphi_t(0);
+            outpho[ih].hwPhi = etaphi_t(0);
+            outpho[ih].hwId  = PID_Photon;
+            outne[ih].hwPt  = hadcalo[ih].hwPt;
+            outne[ih].hwEta = hadcalo[ih].hwEta;
+            outne[ih].hwPhi = hadcalo[ih].hwPhi;
+            outne[ih].hwId  = PID_Neutral;
+            if (g_debug_ && (hadcalo[ih].hwPt > 0)) printf("FW  \t calo   %3d pt %7d --> NEUTRAL HADRON\n", ih, int(hadcalo[ih].hwPt));
         } else {
-            hadcalo_out[ih].hwPt   = alldiff;   
-            hadcalo_out[ih].hwEmPt = (emdiff > 0 ? emdiff : pt_t(0)); 
+            outpho[ih].hwPt  = pt_t(0);
+            outpho[ih].hwEta = etaphi_t(0);
+            outpho[ih].hwPhi = etaphi_t(0);
+            outpho[ih].hwId  = PID_Photon;
+            outne[ih].hwPt  = pt_t(0);
+            outne[ih].hwEta = etaphi_t(0);
+            outne[ih].hwPhi = etaphi_t(0);
+            outne[ih].hwId  = PID_Neutral;
         }
     }
 }
 
-void pfalgo3_forward_ref(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], MuObj mu[NMU], PFNeutralObj outpho[NPHOTON], PFNeutralObj outne[NSELCALO], PFChargedObj outmu[NMU]) {
+void pfalgo3_forward_ref(HadCaloObj hadcalo[NCALO], MuObj mu[NMU], PFNeutralObj outpho[NPHOTON], PFNeutralObj outne[NSELCALO], PFChargedObj outmu[NMU]) {
 
     if (g_debug_) {
 #ifdef FASTPUPPI_NTUPLERPRODUCER_DISCRETEPFINPUTS_MORE
-        for (int i = 0; i < NEMCALO; ++i) { if (emcalo[i].hwPt == 0) continue;
-            l1tpf_int::CaloCluster em; fw2dpf::convert(emcalo[i], em); 
-            printf("FW  \t EM    %3d: pt %8d [ %7.2f ]  calo eta %+7d [ %+5.2f ]  calo phi %+7d [ %+5.2f ]  calo ptErr %6d [ %7.2f ] \n", 
-                                i, em.hwPt, em.floatPt(), em.hwEta, em.floatEta(), em.hwPhi, em.floatPhi(), em.hwPtErr, em.floatPtErr());
-        } 
         for (int i = 0; i < NCALO; ++i) { if (hadcalo[i].hwPt == 0) continue;
             l1tpf_int::CaloCluster calo; fw2dpf::convert(hadcalo[i], calo); 
             printf("FW  \t calo  %3d: pt %8d [ %7.2f ]  calo eta %+7d [ %+5.2f ]  calo phi %+7d [ %+5.2f ]  calo emPt %7d [ %7.2f ]   isEM %d \n", 
@@ -135,29 +117,20 @@ void pfalgo3_forward_ref(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], M
         }
     }
 
-    ////////////////////////////////////////////////////
-    // TK-EM Linking
-    HadCaloObj hadcalo_subem[NCALO];
-    pfalgo3_em_ref(emcalo, hadcalo, outpho, hadcalo_subem);
-
-    ////////////////////////////////////////////////////
-    // TK-HAD Linking
-
-    // initialize output
-    for (int ipf = 0; ipf < NSELCALO; ++ipf) { outne[ipf].hwPt = 0; outne[ipf].hwEta = 0; outne[ipf].hwPhi = 0; outne[ipf].hwId = 0; }
-
-    // copy out neutral hadrons
+    PFNeutralObj outpho_all[NCALO];
+    for (int ipf = 0; ipf < NCALO; ++ipf) { outpho_all[ipf].hwPt = 0; outpho_all[ipf].hwEta = 0; outpho_all[ipf].hwPhi = 0; outpho_all[ipf].hwId = 0; }
     PFNeutralObj outne_all[NCALO];
     for (int ipf = 0; ipf < NCALO; ++ipf) { outne_all[ipf].hwPt = 0; outne_all[ipf].hwEta = 0; outne_all[ipf].hwPhi = 0; outne_all[ipf].hwId = 0; }
-    for (int ic = 0; ic < NCALO; ++ic) {
-        if (hadcalo_subem[ic].hwPt > 0) {
-            outne_all[ic].hwPt  = hadcalo_subem[ic].hwPt;
-            outne_all[ic].hwEta = hadcalo_subem[ic].hwEta;
-            outne_all[ic].hwPhi = hadcalo_subem[ic].hwPhi;
-            outne_all[ic].hwId  = PID_Neutral;
-        }
-    }
 
+    ////////////////////////////////////////////////////
+    // Converting
+    pfalgo3_ne_ref(hadcalo, outpho_all, outne_all);
+
+    // initialize output
+    for (int ipf = 0; ipf < NPHOTON; ++ipf) { outpho[ipf].hwPt = 0; outpho[ipf].hwEta = 0; outpho[ipf].hwPhi = 0; outpho[ipf].hwId = 0; }
+    for (int ipf = 0; ipf < NSELCALO; ++ipf) { outne[ipf].hwPt = 0; outne[ipf].hwEta = 0; outne[ipf].hwPhi = 0; outne[ipf].hwId = 0; }
+
+    ptsort_ref<PFNeutralObj,NCALO,NPHOTON>(outpho_all, outpho);
     ptsort_ref<PFNeutralObj,NCALO,NSELCALO>(outne_all, outne);
 
 }

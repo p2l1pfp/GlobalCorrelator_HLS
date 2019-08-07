@@ -44,8 +44,7 @@ static void lut_puppiweight_init(data_T table_out[N_TABLE])
 }
 
 void simple_puppi_forward_ref(PFNeutralObj pfallne[NNEUTRALS]);
-//void simple_puppi_forward_hw(PFNeutralObj pfallne[NNEUTRALS], pt_t ptpuppi[NNEUTRALS]);
-void simple_puppi_forward_hw(PFNeutralObj pfallne[NNEUTRALS], pt_t ptpuppi[NNEUTRALS], em2calo_dr_t drvals[NPHOTON][NSELCALO]);
+void simple_puppi_forward_hw(PFNeutralObj pfallne[NNEUTRALS], pt_t ptpuppi[NNEUTRALS]);
 void compute_puppi_weight_hw(int index, weight_t &weight);
 
 #endif

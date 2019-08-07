@@ -56,6 +56,7 @@ void compute_puppi_weight_hw(int index, weight_t &weight);
 #define PFALGO3_DR2MAX_EM_CALO 525
 #define PFALGO3_DR2MAX_TK_MU   2101
 #define PFALGO3_DR2MAX_TK_EM   84
-#define PFPUPPI_DR2MAX 8404
+//#define PFPUPPI_DR2MAX 8404 #this is before changing eta/phi granularity for regionizer tests
+#define PFPUPPI_DR2MAX 4195
 #define PFALGO3_TK_MAXINVPT    80
 #endif

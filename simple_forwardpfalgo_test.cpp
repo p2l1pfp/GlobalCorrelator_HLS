@@ -17,7 +17,6 @@ int main() {
     
     // input TP objects
     HadCaloObj calo[NCALO]; EmCaloObj emcalo[NEMCALO]; TkObj track[NTRACK]; z0_t hwZPV;
-    HadCaloObj calo_subem[NCALO], calo_subem_ref[NCALO]; 
     MuObj mu[NMU];
 
     // output PF objects
@@ -69,13 +68,13 @@ int main() {
             data_in[i] = 0;
             data_out[i] = 0;
         }
-        mp7wrapped_pack_in(emcalo, calo, mu, data_in);
+        mp7wrapped_pack_in(calo, mu, data_in);
         MP7_TOP_FUNC(data_in, data_out);
         //mp7wrapped_unpack_out(data_out, outpho, outne, outmupf);
         mp7wrapped_unpack_out_necomb(data_out, outpho, outne, outmupf);
 		// for (int ii = 0; ii < 72; ++ii){ std::cout << ii << ", " << data_in[ii] << std::endl; }
 		
-        MP7_REF_FUNC(emcalo, calo, mu, outpho_ref, outne_ref, outmupf_ref);
+        MP7_REF_FUNC(calo, mu, outpho_ref, outne_ref, outmupf_ref);
 
         // write out patterns for MP7 board hardware or simulator test
         serInPatterns(data_in); serOutPatterns(data_out);

@@ -29,10 +29,10 @@ int main() {
     PFNeutralObj outne[NSELCALO], outne_ref[NSELCALO];
     PFChargedObj outmupf[NMU], outmupf_ref[NMU];
 #if defined(TESTMP7)
-    MP7PatternSerializer serInPatterns( "mp7_input_patterns.txt", HLS_pipeline_II,HLS_pipeline_II-1); // mux each event into HLS_pipeline_II frames
-    MP7PatternSerializer serOutPatterns("mp7_output_patterns.txt",HLS_pipeline_II,HLS_pipeline_II-1); // assume only one PF core running per chip,
-    MP7PatternSerializer serInPatterns2( "mp7_input_patterns_magic.txt", HLS_pipeline_II,-HLS_pipeline_II+1); // mux each event into HLS_pipeline_II frames
-    MP7PatternSerializer serOutPatterns2("mp7_output_patterns_magic.txt",HLS_pipeline_II,-HLS_pipeline_II+1); // assume only one PF core running per chip,
+    //MP7PatternSerializer serInPatterns( "mp7_input_patterns.txt", HLS_pipeline_II,HLS_pipeline_II-1); // mux each event into HLS_pipeline_II frames
+    //MP7PatternSerializer serOutPatterns("mp7_output_patterns.txt",HLS_pipeline_II,HLS_pipeline_II-1); // assume only one PF core running per chip,
+    //MP7PatternSerializer serInPatterns2( "mp7_input_patterns_magic.txt", HLS_pipeline_II,-HLS_pipeline_II+1); // mux each event into HLS_pipeline_II frames
+    //MP7PatternSerializer serOutPatterns2("mp7_output_patterns_magic.txt",HLS_pipeline_II,-HLS_pipeline_II+1); // assume only one PF core running per chip,
     MP7PatternSerializer serInPatterns3( "mp7_input_patterns_nomux.txt");  // 
     MP7PatternSerializer serOutPatterns3("mp7_output_patterns_nomux.txt"); // ,
 #endif
@@ -89,7 +89,7 @@ int main() {
         //    if (di%48==47) std::cout << std::endl;
         //}
 
-        std::cout<<"\n-----------"<<std::endl;
+        /*std::cout<<"\n-----------"<<std::endl;
 
         for (unsigned int fi = 0; fi < NFRAMES_APX_GEN0; fi++) {
             std::cout << "INPUT 0x" << std::setfill('0') << std::setw(4) << std::hex << NFRAMES_APX_GEN0*(test-1)+fi;
@@ -126,7 +126,7 @@ int main() {
                 }
             }
             std::cout << "    " << std::endl;
-        }
+        }*/
 
 
         MP7_REF_FUNC(emcalo, calo, track, mu, outch_ref, outpho_ref, outne_ref, outmupf_ref);
@@ -186,7 +186,7 @@ int main() {
             printf("Inputs: \n"); debugHR.dump_inputs(emcalo, calo, track, mu);
             printf("Reference output: \n"); debugHR.dump_outputs(outch_ref, outpho_ref, outne_ref, outmupf_ref);
             printf("Current output: \n"); debugHR.dump_outputs(outch, outpho, outne, outmupf);
-            return 1;
+            //return 1;
         } else {
             printf("Passed pf test %d (%d, %d, %d, %d)\n", test, ntot, nch, npho, nneu);
         }

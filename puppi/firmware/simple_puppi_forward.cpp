@@ -49,18 +49,15 @@ int get_sum(int dr2[NNEUTRALS], ap_uint<17> pt2_shift[NNEUTRALS]) {
     return sum;
 }
 
-//void simple_puppi_forward_hw(PFNeutralObj pfallne[NNEUTRALS], pt_t ptpuppi[NNEUTRALS]) {
-void simple_puppi_forward_hw(PFNeutralObj pfallne[NNEUTRALS], pt_t ptpuppi[NNEUTRALS], em2calo_dr_t drvals[NPHOTON][NSELCALO]) {
+void simple_puppi_forward_hw(PFNeutralObj pfallne[NNEUTRALS], pt_t ptpuppi[NNEUTRALS]) {
 
     const int DR2MAX = 8404; // 0.4 cone
 
     #pragma HLS INTERFACE ap_none port=pfallne
     #pragma HLS INTERFACE ap_none port=ptpuppi
-    #pragma HLS INTERFACE ap_none port=drvals
 
     #pragma HLS ARRAY_PARTITION variable=pfallne complete
     #pragma HLS ARRAY_PARTITION variable=ptpuppi complete
-    #pragma HLS ARRAY_PARTITION variable=drvals complete dim=0
     #pragma HLS pipeline II=HLS_pipeline_II
 
     ap_uint<32> eToAlphas[NNEUTRALS];
@@ -72,54 +69,21 @@ void simple_puppi_forward_hw(PFNeutralObj pfallne[NNEUTRALS], pt_t ptpuppi[NNEUT
     #pragma HLS ARRAY_PARTITION variable=pt2_shift complete
     int dr2[NNEUTRALS][NNEUTRALS];
     #pragma HLS ARRAY_PARTITION variable=dr2 complete dim=0
-    int dr2flat_lo[((NPHOTON)*(NPHOTON-1))/2];
-    #pragma HLS ARRAY_PARTITION variable=dr2flat_lo complete dim=0
-    int dr2flat_hi[((NSELCALO)*(NSELCALO-1))/2];
-    #pragma HLS ARRAY_PARTITION variable=dr2flat_hi complete dim=0
     for (int in = 0; in < NNEUTRALS; ++in){ 
         eToAlphas[in] = 0; weights[in] = 0; 
         int mypt2 = (pfallne[in].hwPt*pfallne[in].hwPt) >> 5;
         pt2_shift[in] = (mypt2 < 131071 ? mypt2 : 131071);    
     }
 
-    //for (int in = 0; in < NNEUTRALS; ++in){ 
-    //    for (int it = 0; it < NNEUTRALS; ++it) {
-    //        dr2[in][it] = dr2_int(pfallne[it].hwEta, pfallne[it].hwPhi, pfallne[in].hwEta, pfallne[in].hwPhi);
-    //        if (in==it) dr2[in][it] = DR2MAX+1;
-    //    }
-    //}
+    for (int in = 0; in < NNEUTRALS; ++in){ 
+        for (int it = 0; it <= in; ++it) {
+            int dr2_temp = dr2_int(pfallne[it].hwEta, pfallne[it].hwPhi, pfallne[in].hwEta, pfallne[in].hwPhi);
+            dr2[in][it] = dr2_temp;
+            dr2[it][in] = dr2_temp;
+            if (in==it) dr2[in][it] = DR2MAX+1;
+        }
+    }
 
-    for (int in = 1; in < NPHOTON; ++in){ 
-        for (int it = 0; it < in; ++it) {
-            dr2flat_lo[((in*(in-1))/2)+it] = dr2_int(pfallne[it].hwEta, pfallne[it].hwPhi, pfallne[in].hwEta, pfallne[in].hwPhi);
-        }
-    }
-    for (int in = 1; in < NSELCALO; ++in){ 
-        for (int it = 0; it < in; ++it) {
-            dr2flat_hi[((in*(in-1))/2)+it] = dr2_int(pfallne[it+NPHOTON].hwEta, pfallne[it+NPHOTON].hwPhi, pfallne[in+NPHOTON].hwEta, pfallne[in+NPHOTON].hwPhi);
-        }
-    }
-    for (int in = 0; in < NPHOTON; ++in){ 
-        for (int it = 0; it < NPHOTON; ++it) {
-            if (it < in) dr2[in][it] = dr2flat_lo[((in*(in-1))/2)+it];
-            else if (in==it) dr2[in][it] = DR2MAX+1;
-            else dr2[in][it] = dr2flat_lo[((it*(it-1))/2)+in];
-        }
-    }
-    for (int in = 0; in < NPHOTON; ++in){ 
-        for (int it = 0; it < NSELCALO; ++it) {
-            dr2[in][it+NPHOTON] = drvals[in][it];
-            dr2[it+NPHOTON][in] = dr2[in][it+NPHOTON];
-        }
-    }
-    for (int in = 0; in < NSELCALO; ++in){ 
-        for (int it = 0; it < NSELCALO; ++it) {
-            if (it < in) dr2[in+NPHOTON][it+NPHOTON] = dr2flat_hi[((in*(in-1))/2)+it];
-            else if (in==it) dr2[in+NPHOTON][it+NPHOTON] = DR2MAX+1;
-            else dr2[in+NPHOTON][it+NPHOTON] = dr2flat_hi[((it*(it-1))/2)+in];
-        }
-    }
-    
     for (int in = 0; in < NNEUTRALS; ++in) {
         /*int sum = 0;
         for (int it = 0; it < NNEUTRALS; ++it) {

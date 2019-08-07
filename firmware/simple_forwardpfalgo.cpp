@@ -147,37 +147,6 @@ void init_dr2max_times_pterr2_inv(int vals[512]) {
     }
 }
 
-template<int DR2MAX>
-void em2calo_drvals(HadCaloObj hadcalo[NCALO], EmCaloObj emcalo[NEMCALO], em2calo_dr_t hadcalo_emcalo_drval[NEMCALO][NCALO]) {
-    const em2calo_dr_t eDR2MAX = DR2MAX;
-    for (int it = 0; it < NEMCALO; ++it) {
-        pt_t hadcaloEmPtMin = (emcalo[it].hwPt >> 1);
-        for (int icalo = 0; icalo < NCALO; ++icalo) {
-            if (hadcalo[icalo].hwEmPt > hadcaloEmPtMin) {
-                hadcalo_emcalo_drval[it][icalo] = dr2_int_cap(emcalo[it].hwEta, emcalo[it].hwPhi, hadcalo[icalo].hwEta, hadcalo[icalo].hwPhi, eDR2MAX);
-            } else {
-                hadcalo_emcalo_drval[it][icalo] = eDR2MAX;
-            }
-        }
-    }
-}
-
-template<int DR2MAX>
-void em2calo_drvals_cut(HadCaloObj hadcalo[NCALO], EmCaloObj emcalo[NEMCALO], em2calo_dr_t hadcalo_emcalo_drval[NEMCALO][NCALO], em2calo_dr_t hadcalo_emcalo_drval_cut[NEMCALO][NCALO]) {
-    const em2calo_dr_t eDR2MAX = DR2MAX;
-    for (int it = 0; it < NEMCALO; ++it) {
-        pt_t hadcaloEmPtMin = (emcalo[it].hwPt >> 1);
-        for (int icalo = 0; icalo < NCALO; ++icalo) {
-            hadcalo_emcalo_drval[it][icalo] = dr2_int_cap(emcalo[it].hwEta, emcalo[it].hwPhi, hadcalo[icalo].hwEta, hadcalo[icalo].hwPhi, eDR2MAX);
-            if (hadcalo[icalo].hwEmPt > hadcaloEmPtMin) {
-                hadcalo_emcalo_drval_cut[it][icalo] = hadcalo_emcalo_drval[it][icalo];
-            } else {
-                hadcalo_emcalo_drval_cut[it][icalo] = eDR2MAX;
-            }
-        }
-    }
-}
-
 template<int DR2MAX, int NTK, int NCA, typename DR_T>
 void pick_closest(DR_T calo_track_drval[NTK][NCA], ap_uint<NCA> calo_track_link_bit[NTK]) {
     const DR_T eDR2MAX = DR2MAX;
@@ -206,67 +175,42 @@ void pick_closest(DR_T calo_track_drval[NTK][NCA], ap_uint<NCA> calo_track_link_
     }
 }
 
-void em2calo_link(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], ap_uint<NCALO> em_calo_link_bit[NCALO], em2calo_dr_t drvals[NEMCALO][NCALO]) {
-    const int DR2MAX = PFALGO3_DR2MAX_EM_CALO;
-    em2calo_dr_t drvals_cut[NEMCALO][NCALO];
-    #pragma HLS ARRAY_PARTITION variable=drvals complete dim=0
-    #pragma HLS ARRAY_PARTITION variable=drvals_cut complete dim=0
-
-    em2calo_drvals_cut<PFPUPPI_DR2MAX>(hadcalo, emcalo, drvals, drvals_cut);
-    pick_closest<DR2MAX,NEMCALO,NCALO,em2calo_dr_t>(drvals_cut, em_calo_link_bit);
-}
-
-void em2calo_sumem(EmCaloObj emcalo[NEMCALO], ap_uint<NCALO> em_had_link_bit[NEMCALO], pt_t sumem[NEMCALO], bool keepcalo[NCALO]) {
+void calo_ne_all(HadCaloObj calo[NCALO], PFNeutralObj pfout[NCALO]) {
     for (int icalo = 0; icalo < NCALO; ++icalo) {
-        pt_t sum = 0; bool keep = false;
-        for (int iem = 0; iem < NEMCALO; ++iem) {
-            if (em_had_link_bit[iem][icalo]) { 
-                sum += emcalo[iem].hwPt; 
-            }
-        }
-        sumem[icalo] = sum;
-        keepcalo[icalo] = keep;
-    }
-}
-
-void em2calo_sub(HadCaloObj calo[NCALO], pt_t sumem[NCALO], bool keepcalo[NCALO], HadCaloObj calo_out[NCALO]) {
-    for (int icalo = 0; icalo < NCALO; ++icalo) {
-        pt_t ptsub = calo[icalo].hwPt   - sumem[icalo];
-        pt_t emsub = calo[icalo].hwEmPt - sumem[icalo];
-        if ((ptsub <= (calo[icalo].hwPt >> 4)) || 
-                (calo[icalo].hwIsEM && (emsub <= (calo[icalo].hwEmPt>>3)) && !keepcalo[icalo])) {
-            calo_out[icalo].hwPt   = 0;
-            calo_out[icalo].hwEmPt = 0;
-            calo_out[icalo].hwEta  = 0;
-            calo_out[icalo].hwPhi  = 0;
-            calo_out[icalo].hwIsEM = 0;
-        } else {
-            calo_out[icalo].hwPt   = ptsub;
-            calo_out[icalo].hwEmPt = (emsub > 0 ? emsub : pt_t(0));
-            calo_out[icalo].hwEta  = calo[icalo].hwEta;
-            calo_out[icalo].hwPhi  = calo[icalo].hwPhi;
-            calo_out[icalo].hwIsEM = calo[icalo].hwIsEM;
-        }
-    }
-}
-
-void em_photons(EmCaloObj calo[NEMCALO], PFNeutralObj pfout[NPHOTON]) {
-    for (int icalo = 0; icalo < NEMCALO; ++icalo) {
         pt_t phopt = calo[icalo].hwPt;
         pfout[icalo].hwPt  = phopt;
         pfout[icalo].hwEta = phopt ? calo[icalo].hwEta : etaphi_t(0);
         pfout[icalo].hwPhi = phopt ? calo[icalo].hwPhi : etaphi_t(0);
-        pfout[icalo].hwId  = phopt ? PID_Photon : 0;
+        pfout[icalo].hwId  = phopt ? (calo[icalo].hwIsEM ? PID_Photon : PID_Neutral) : 0;
     }
 }
 
-void had_caloalgo(HadCaloObj calo[NCALO], PFNeutralObj pfout[NCALO]) {
+void split_ne(PFNeutralObj pfcalo[NCALO], PFNeutralObj pfpho[NCALO], PFNeutralObj pfne[NCALO]) {
     for (int icalo = 0; icalo < NCALO; ++icalo) {
-        pt_t calopt = calo[icalo].hwPt;
-        pfout[icalo].hwPt  = calopt;
-        pfout[icalo].hwEta = calopt ? calo[icalo].hwEta : etaphi_t(0);
-        pfout[icalo].hwPhi = calopt ? calo[icalo].hwPhi : etaphi_t(0);
-        pfout[icalo].hwId  = calopt ? PID_Neutral : 0;
+        if (pfcalo[icalo].hwId == PID_Photon) {
+            pfpho[icalo] = pfcalo[icalo];
+            pfne[icalo].hwPt = 0;
+            pfne[icalo].hwEta = 0;
+            pfne[icalo].hwPhi = 0;
+            pfne[icalo].hwId = 0;
+        }
+        else if (pfcalo[icalo].hwId == PID_Neutral) {
+            pfpho[icalo].hwPt = 0;
+            pfpho[icalo].hwEta = 0;
+            pfpho[icalo].hwPhi = 0;
+            pfpho[icalo].hwId = 0;
+            pfne[icalo] = pfcalo[icalo];
+        }
+        else {
+            pfpho[icalo].hwPt = 0;
+            pfpho[icalo].hwEta = 0;
+            pfpho[icalo].hwPhi = 0;
+            pfpho[icalo].hwId = 0;
+            pfne[icalo].hwPt = 0;
+            pfne[icalo].hwEta = 0;
+            pfne[icalo].hwPhi = 0;
+            pfne[icalo].hwId = 0;
+        }
     }
 }
 
@@ -293,17 +237,14 @@ void spfph_mualgo_forward(MuObj mu[NMU], PFChargedObj pfmuout[NMU]) {
 // PF Algos
 //-------------------------------------------------------
 
-void pfalgo3_forward(EmCaloObj calo[NEMCALO], HadCaloObj hadcalo[NCALO], MuObj mu[NMU], PFNeutralObj outpho[NPHOTON], PFNeutralObj outne[NSELCALO], PFChargedObj outmu[NMU], em2calo_dr_t drvals_em2calo[NPHOTON][NSELCALO]) {
+void pfalgo3_forward(HadCaloObj hadcalo[NCALO], MuObj mu[NMU], PFNeutralObj outpho[NPHOTON], PFNeutralObj outne[NSELCALO], PFChargedObj outmu[NMU]) {
 //void pfalgo3_forward(EmCaloObj calo[NEMCALO], HadCaloObj hadcalo[NCALO], MuObj mu[NMU], PFNeutralObj outpho[NPHOTON], PFNeutralObj outne[NSELCALO], PFChargedObj outmu[NMU]) {
     
-    #pragma HLS ARRAY_PARTITION variable=calo complete
     #pragma HLS ARRAY_PARTITION variable=hadcalo complete
     #pragma HLS ARRAY_PARTITION variable=mu complete    
     #pragma HLS ARRAY_PARTITION variable=outpho complete
     #pragma HLS ARRAY_PARTITION variable=outne complete
     #pragma HLS ARRAY_PARTITION variable=outmu complete
-
-    #pragma HLS ARRAY_PARTITION variable=drvals_em2calo complete dim=0
 
     #pragma HLS pipeline II=HLS_pipeline_II
 
@@ -312,76 +253,45 @@ void pfalgo3_forward(EmCaloObj calo[NEMCALO], HadCaloObj hadcalo[NCALO], MuObj m
     spfph_mualgo_forward(mu, outmu);
 
     // ---------------------------------------------------------------
-    // EM
-    pt_t photonPt[NEMCALO];
-    #pragma HLS ARRAY_PARTITION variable=photonPt complete
+    // CALO
+    PFNeutralObj outne_calo[NCALO];
+    #pragma HLS ARRAY_PARTITION variable=outne_calo complete
+    calo_ne_all(hadcalo, outne_calo);
 
-    em_photons(calo, outpho);
-
-
-    em2calo_dr_t drvals_unsort[NEMCALO][NCALO];
-    #pragma HLS ARRAY_PARTITION variable=drvals_unsort complete dim=0
-
-    ap_uint<NCALO> em_calo_link_bit[NEMCALO];
-    #pragma HLS ARRAY_PARTITION variable=em_calo_link_bit complete
-    em2calo_link(calo, hadcalo, em_calo_link_bit, drvals_unsort);
-
-    bool keepcalo[NCALO];
-    pt_t sumem[NCALO]; 
-    #pragma HLS ARRAY_PARTITION variable=sumem complete
-    em2calo_sumem(calo, em_calo_link_bit, sumem, keepcalo);
-
-    HadCaloObj hadcalo_sub[NCALO];
-    #pragma HLS ARRAY_PARTITION variable=hadcalo_sub complete
-
-    em2calo_sub(hadcalo, sumem, keepcalo, hadcalo_sub);
-
-    // ---------------------------------------------------------------
-    // HAD
+    PFNeutralObj outpho_all[NCALO];
     PFNeutralObj outne_all[NCALO];
+    #pragma HLS ARRAY_PARTITION variable=outpho_all complete
     #pragma HLS ARRAY_PARTITION variable=outne_all complete
-    had_caloalgo(hadcalo_sub, outne_all);
+
+    split_ne(outne_calo,outpho_all,outne_all);
+
+    ptsort_hwopt<PFNeutralObj,NCALO,NPHOTON>(outpho_all, outpho);
     ptsort_hwopt<PFNeutralObj,NCALO,NSELCALO>(outne_all, outne);
 
-    ap_uint<6> calind[NSELCALO];
-    #pragma HLS ARRAY_PARTITION variable=calind complete
-    ptsort_hwopt_ind<PFNeutralObj,NCALO,NSELCALO>(outne_all, outne, calind);
-    for (int ic=0; ic<NSELCALO; ic++) {
-        #pragma HLS LOOP UNROLL
-        for (int it=0; it<NPHOTON; it++) {
-            #pragma HLS LOOP UNROLL
-            drvals_em2calo[it][ic] = drvals_unsort[it][calind[ic]];
-        }
-    }
+
 
 }
 
 
-void mp7wrapped_pack_in(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], MuObj mu[NMU], MP7DataWord data[MP7_NCHANN]) {
+void mp7wrapped_pack_in(HadCaloObj hadcalo[NCALO], MuObj mu[NMU], MP7DataWord data[MP7_NCHANN]) {
     #pragma HLS ARRAY_PARTITION variable=data complete
-    #pragma HLS ARRAY_PARTITION variable=emcalo complete
     #pragma HLS ARRAY_PARTITION variable=hadcalo complete
     #pragma HLS ARRAY_PARTITION variable=mu complete
     // pack inputs
-    assert(2*NEMCALO + 2*NCALO + 2*NMU <= MP7_NCHANN);
-    #define HADOFFS 2*NEMCALO
-    #define MUOFFS 2*NCALO+HADOFFS
-    mp7_pack<NEMCALO,0>(emcalo, data);
-    mp7_pack<NCALO,HADOFFS>(hadcalo, data);
+    assert(2*NCALO + 2*NMU <= MP7_NCHANN);
+    #define MUOFFS 2*NCALO
+    mp7_pack<NCALO,0>(hadcalo, data);
     mp7_pack<NMU,MUOFFS>(mu, data);
 }
 
-void mp7wrapped_unpack_in(MP7DataWord data[MP7_NCHANN], EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], MuObj mu[NMU]) {
+void mp7wrapped_unpack_in(MP7DataWord data[MP7_NCHANN], HadCaloObj hadcalo[NCALO], MuObj mu[NMU]) {
     #pragma HLS ARRAY_PARTITION variable=data complete
-    #pragma HLS ARRAY_PARTITION variable=emcalo complete
     #pragma HLS ARRAY_PARTITION variable=hadcalo complete
     #pragma HLS ARRAY_PARTITION variable=mu complete
     // unpack inputs
-    assert(2*NEMCALO + 2*NCALO + 2*NMU <= MP7_NCHANN);
-    #define HADOFFS 2*NEMCALO
-    #define MUOFFS 2*NCALO+HADOFFS
-    mp7_unpack<NEMCALO,0>(data, emcalo);
-    mp7_unpack<NCALO,HADOFFS>(data, hadcalo);
+    assert(2*NCALO + 2*NMU <= MP7_NCHANN);
+    #define MUOFFS 2*NCALO
+    mp7_unpack<NCALO,0>(data, hadcalo);
     mp7_unpack<NMU,MUOFFS>(data, mu);
 }
 
@@ -505,22 +415,20 @@ void mp7wrapped_pfalgo3_forward(MP7DataWord input[MP7_NCHANN], MP7DataWord outpu
 
     #pragma HLS pipeline II=HLS_pipeline_II
 
-    EmCaloObj emcalo[NEMCALO]; HadCaloObj hadcalo[NCALO]; MuObj mu[NMU];
-    #pragma HLS ARRAY_PARTITION variable=emcalo complete
+    HadCaloObj hadcalo[NCALO]; MuObj mu[NMU];
     #pragma HLS ARRAY_PARTITION variable=hadcalo complete
     #pragma HLS ARRAY_PARTITION variable=mu complete
 
-    PFNeutralObj pfpho[NPHOTON]; PFNeutralObj pfne[NSELCALO]; PFChargedObj pfmu[NMU];
+    PFChargedObj pfmu[NMU];
+    #pragma HLS ARRAY_PARTITION variable=pfmu complete
+    PFNeutralObj pfpho [NPHOTON]; PFNeutralObj pfne[NSELCALO];
     #pragma HLS ARRAY_PARTITION variable=pfpho complete
     #pragma HLS ARRAY_PARTITION variable=pfne complete
-    #pragma HLS ARRAY_PARTITION variable=pfmu complete
 
-    mp7wrapped_unpack_in(input, emcalo, hadcalo, mu);
-    em2calo_dr_t drvals_em2calo[NPHOTON][NSELCALO];
-    #pragma HLS ARRAY_PARTITION variable=drvals_em2calo complete dim=0
-    pfalgo3_forward(emcalo, hadcalo, mu, pfpho, pfne, pfmu, drvals_em2calo);
+    mp7wrapped_unpack_in(input, hadcalo, mu);
+    pfalgo3_forward(hadcalo, mu, pfpho, pfne, pfmu);
     //pfalgo3_forward(emcalo, hadcalo, mu, pfpho, pfne, pfmu);
-    //concat drvals, ne
+    //concat ne
     PFNeutralObj pfne_all[NNEUTRALS];
     #pragma HLS ARRAY_PARTITION variable=pfne_all complete dim=0
     pt_t ptpuppi[NNEUTRALS];
@@ -535,7 +443,7 @@ void mp7wrapped_pfalgo3_forward(MP7DataWord input[MP7_NCHANN], MP7DataWord outpu
         pfne_all[i+NPHOTON] = pfne[i];
         ptpuppi[i+NPHOTON] = 0;
     }
-    simple_puppi_forward_hw(pfne_all, ptpuppi, drvals_em2calo);
+    simple_puppi_forward_hw(pfne_all, ptpuppi);
     for (int in = 0; in < NNEUTRALS; in++) {
         #pragma HLS LOOP UNROLL
         pfne_all[in].hwPtPuppi = ptpuppi[in];
