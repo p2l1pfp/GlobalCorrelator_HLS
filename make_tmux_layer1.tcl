@@ -16,7 +16,7 @@ add_files -tb utils/DiscretePFInputs_IO.h -cflags "-DTESTMP7 -std=c++0x"
 #add_files -tb data/regions_TTbar_PU140.dump
 #add_files -tb data/barrel_sectors_1x1_TTbar_PU140.dump
 add_files -tb data/barrel_sectors_1x1_TTbar_PU200.dump
-add_files -tb dummy.dump
+add_files -tb data/dummy.dump
 add_files -tb puppi/simple_puppi_ref.cpp -cflags "-DTESTMP7"
 add_files -tb vertexing/simple_vtx_ref.cpp -cflags "-DTESTMP7"
 
