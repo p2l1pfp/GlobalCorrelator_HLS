@@ -3,7 +3,7 @@
 #define NETA_SMALL 2
 #define NPHI_SMALL 9
 
-int mp7DataLength = 2*(NTRACK+NCALO+NEMCALO+NMU);
+int mp7DataLength = NTRACK+NCALO+NEMCALO+NMU;
 int objDataLength[4] = {2*NTRACK, 2*(NEMCALO+NTRACK), 2*(NEMCALO+NCALO+NTRACK), 2*(NEMCALO+NCALO+NTRACK+NMU)};
 int link_max[4] = {NLINKS_PER_TRACK, NLINKS_PER_TRACK+NLINKS_PER_EMCALO, NLINKS_PER_TRACK+NLINKS_PER_CALO+NLINKS_PER_EMCALO, NLINKS_PER_TRACK+NLINKS_PER_CALO+NLINKS_PER_EMCALO+NLINKS_PER_MU};
 int link_min[4] = {0, NLINKS_PER_TRACK, NLINKS_PER_TRACK+NLINKS_PER_EMCALO, NLINKS_PER_TRACK+NLINKS_PER_EMCALO+NLINKS_PER_CALO};
@@ -39,7 +39,7 @@ int main() {
     //std::cout<<mp7DataLength<<std::endl;
     const int listLength = NFRAMES_APX_GEN0*((NTEST*TMUX_OUT)+(TMUX_IN-TMUX_OUT));
     //std::cout<<listLength<<std::endl;
-    std::string datawords [NTEST*TMUX_OUT][mp7DataLength+1];
+    std::string datawords[NTEST*TMUX_OUT][mp7DataLength+1];
     for (int ia = 0; ia < NTEST*TMUX_OUT; ia++){
         for (int ib = 0; ib < mp7DataLength+1; ib++){
             datawords[ia][ib] = "0000000000000000";
