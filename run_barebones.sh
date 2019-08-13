@@ -5,7 +5,7 @@ PF_DIR=/data/drankin/GlobalCorrelator_HLS/
 echo -e `date +"%h%y %T"` "BB [${LINENO}]  \t "
 
 if [[ "$1x" == "x" ]]; then
-    echo -e `date +"%h%y %T"` "BB [${LINENO}]  \t usage: ./run_barebones.sh <NTRACKS> <NCALOS> <II> <CLOCK_PERIOD> <CLOCK_FREQ> <PARTID>" 
+    echo -e `date +"%h%y %T"` "BB [${LINENO}]  \t usage: ./run_barebones.sh <NTRACKS> <NCALOS> <NEMCALOS> <II> <CLOCK_PERIOD> <CLOCK_FREQ> <PARTID>" 
     exit
 fi
 
@@ -21,13 +21,15 @@ NTRACKS=$1
 echo -e `date +"%h%y %T"` "BB [${LINENO}]  \t NTRACKS = $NTRACKS"
 NCALOS=$2
 echo -e `date +"%h%y %T"` "BB [${LINENO}]  \t NCALOS = $NCALOS"
-II=$3
+NEMCALOS=$3
+echo -e `date +"%h%y %T"` "BB [${LINENO}]  \t NEMCALOS = $NEMCALOS"
+II=$4
 echo -e `date +"%h%y %T"` "BB [${LINENO}]  \t II = $II"
-CLOCK_PERIOD=$4
+CLOCK_PERIOD=$5
 echo -e `date +"%h%y %T"` "BB [${LINENO}]  \t CLOCK_PERIOD = $CLOCK_PERIOD"
-CLOCK_FREQ=$5
+CLOCK_FREQ=$6
 echo -e `date +"%h%y %T"` "BB [${LINENO}]  \t CLOCK_FREQ = $CLOCK_FREQ"
-PARTID=$6
+PARTID=$7
 echo -e `date +"%h%y %T"` "BB [${LINENO}]  \t PARTID = $PARTID"
 
 # setup Vivado
@@ -38,8 +40,6 @@ echo -e `date +"%h%y %T"` "BB [${LINENO}]  \t PARTID = $PARTID"
 ###################### HLS
 
 echo -e `date +"%h%y %T"` "BB [${LINENO}]  \t Preparing for HLS..."
-
-cp 
 
 SRC_HLS_DIR=${PF_DIR}firmware/data.h.bak
 DEST_HLS_DIR=${PF_DIR}firmware/data.h
@@ -53,9 +53,9 @@ if true; then #for debugging
 
 	sed -i "s/NTRACK [0-9]*$/NTRACK ${NTRACKS}/g" $DEST_HLS_DIR
 	sed -i "s/NCALO [0-9]*$/NCALO ${NCALOS}/g" $DEST_HLS_DIR
-	sed -i "s/NEMCALO [0-9]*$/NEMCALO ${NCALOS}/g" $DEST_HLS_DIR
+	sed -i "s/NEMCALO [0-9]*$/NEMCALO ${NEMCALOS}/g" $DEST_HLS_DIR
 	sed -i "s/NSELCALO [0-9]*$/NSELCALO `expr ${NCALOS} - 5`/g" $DEST_HLS_DIR
-	sed -i "s/MP7_NCHANN [0-9]*$/MP7_NCHANN `expr ${NTRACKS} + ${NTRACKS} + ${NCALOS} + ${NCALOS} + ${NCALOS} + ${NCALOS} + ${NCALOS} + ${NCALOS} + ${NCALOS} + ${NCALOS} - 10 + 4`/g" $DEST_HLS_DIR
+	sed -i "s/MP7_NCHANN [0-9]*$/MP7_NCHANN `expr ${NTRACKS} + ${NTRACKS} + ${NCALOS} + ${NCALOS} + ${NCALOS} + ${NCALOS} + ${NCALOS} + ${NCALOS} + ${NEMCALOS} + ${NEMCALOS} - 10 + 4`/g" $DEST_HLS_DIR
 	
 	echo -e `date +"%h%y %T"` "BB [${LINENO}]  \t Running HLS..."
 	echo
@@ -95,10 +95,10 @@ if true; then #for debugging
 	cp $SRC_BUILD_DIR $DEST_BUILD_DIR
 
 #------CENTRAL
-	sed -i s/XX_NINPUTS_XX/$((2*(${NTRACKS} + (2 * ${NCALOS})) + 4))/g $DEST_BUILD_DIR
-	sed -i s/XX_NOUTPUTS_XX/$((2*(${NTRACKS} + (2 * ${NCALOS})) - 6))/g $DEST_BUILD_DIR
+	sed -i s/XX_NINPUTS_XX/$((2*(${NTRACKS} + (${NEMCALOS} + ${NCALOS})) + 4))/g $DEST_BUILD_DIR
+	sed -i s/XX_NOUTPUTS_XX/$((2*(${NTRACKS} + (${NEMCALOS} + ${NCALOS})) - 6))/g $DEST_BUILD_DIR
 	sed -i s/XX_NPFCH_XX/${NTRACKS}/g $DEST_BUILD_DIR
-	sed -i s/XX_NNEUTRAL_XX/$(((2 * ${NCALOS}) - 5))/g $DEST_BUILD_DIR
+	sed -i s/XX_NNEUTRAL_XX/$(((${NEMCALOS} + ${NCALOS}) - 5))/g $DEST_BUILD_DIR
 
 #-------FORWARD
 #	sed -i s/XX_NINPUTS_XX/$((2*(${NTRACKS} + (2 * ${NCALOS})) + 4))/g $DEST_BUILD_DIR
