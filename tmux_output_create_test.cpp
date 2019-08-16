@@ -11,11 +11,13 @@ unsigned int theEtaRegion = 0;
 unsigned int thePhiRegion = 0;
 
 //unsigned int outputOrder[TMUX_OUT] = {0,2,4,6,8,10,12,14,16,15,17,1,3,5,7,9,11,13};//NPHI x NETA
-unsigned int outputOrder[TMUX_OUT] = {0,11,1,12,2,13,3,14,4,15,5,16,6,17,7,9,8,10};//NPHI x NETA
-//mapping from Ryan:
-//  eta, phi — 0,0 --- 1,8
-//  0,0 - 1,2 - 0,1 - 1,3 - 0,2 - 1,4 - 0,3 - 1,5 - 0,4 - 1,6 - 0,5 - 1,7 - 0,6 - 1,8 - 0,7 - 1,0 - 0,8 - 1,1
-//  0     11    1     12    2     13    3     14    4     15    5     16    6     17    7     9     8     10
+//unsigned int outputOrder[TMUX_OUT] = {0,11,1,12,2,13,3,14,4,15,5,16,6,17,7,9,8,10};//NPHI x NETA
+unsigned int outputOrder[TMUX_OUT] = {0,2,1,3,11,4,12,5,13,6,14,7,15,8,16,9,17,10};//NPHI x NETA
+//  mapping from Ryan:
+//  eta, phi — 0,0 --- 1,8 
+//  0,0 - 0,2 - 0,1 - 0,3 - 1,2 - 0,4 - 1,3 - 0,5 - 1,4 - 0,6 - 1,5 - 0,7 - 1,6 - 0,8 - 1,7 - 1,0 - 1,8 - 1,1
+//  0     2     1     3     11    4     12    5     13    6     14    7     15    8     16    9     17    10
+
 
 int main() {
 
