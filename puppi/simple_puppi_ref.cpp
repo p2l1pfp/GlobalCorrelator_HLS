@@ -12,7 +12,6 @@ void simple_puppi_ref(PFChargedObj pfch[NTRACK], PFNeutralObj pfallne[NNEUTRALS]
     ap_uint<8> puppiweight_table[PUPPI_TABLE_SIZE];
     lut_puppiweight_init< ap_uint<8>, PUPPI_TABLE_SIZE >( puppiweight_table );
 
-
     // compute alpha
     const int DR2MAX = 8404; // 0.4 cone
     for (int in = 0; in < NNEUTRALS; ++in) {
@@ -50,8 +49,10 @@ void simple_puppi_ref(PFChargedObj pfch[NTRACK], PFNeutralObj pfallne[NNEUTRALS]
             }
         }
 
-        int pT_new = ( pfallne[in].hwPt * weight ) >> 8;
+        int pT_new = pfallne[in].hwPt * weight;
+        pT_new =  pT_new >> 8;
         pfallne[in].hwPtPuppi = (pt_t) pT_new;
+        //std::cout<<in<<" "<<weight<<" "<<pT_new<<" "<<pfallne[in].hwPtPuppi<<std::endl;
     }
 
 }

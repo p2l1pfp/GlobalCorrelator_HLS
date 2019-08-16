@@ -1,12 +1,12 @@
 #include "simple_puppi.h"
-#include "../../firmware/simple_fullpfalgo.h"
+//#include "../../firmware/simple_fullpfalgo.h"
 #include <cassert>
 #ifndef __SYNTHESIS__
 #include <cstdio>
 #endif
 
-typedef ap_uint<7> tk2em_dr_t;
-typedef ap_uint<10> tk2calo_dr_t;
+//typedef ap_uint<7> tk2em_dr_t;
+//typedef ap_uint<10> tk2calo_dr_t;
 typedef ap_uint<10> em2calo_dr_t;
 typedef ap_uint<12> tk2calo_dq_t;
 typedef ap_uint<12> mu2trk_dr_t;
@@ -36,14 +36,17 @@ int _lut_shift15_divide(ap_uint<17> num, ap_uint<9> den) { // returns (num * 2^1
 	return (num * _table[den]);
 }
 
-void simple_puppi_hw(PFChargedObj pfch[NTRACK], PFNeutralObj pfallne[NNEUTRALS], z0_t Z0) {
+//void simple_puppi_hw(PFChargedObj pfch[NTRACK], PFNeutralObj pfallne[NNEUTRALS], z0_t Z0) {
+void simple_puppi_hw(PFChargedObj pfch[NTRACK], PFNeutralObj pfallne[NNEUTRALS], tk2calo_dr_t drvals[NTRACK][NNEUTRALS], z0_t Z0) {
 
     const z0_t DZMAX = 256;
-    const int DR2MAX = 8404; // 0.4 cone
+    const int DR2MAX = PFPUPPI_DR2MAX; // 0.4 cone
+
+    #pragma HLS INTERFACE ap_none port=pfallne
 
     #pragma HLS ARRAY_PARTITION variable=pfch complete
     #pragma HLS ARRAY_PARTITION variable=pfallne complete
-    #pragma HLS pipeline II=1
+    #pragma HLS pipeline II=HLS_pipeline_II
 
     ap_uint<32> eToAlphas[NNEUTRALS];
     ap_uint<8> weights[NNEUTRALS];
@@ -68,14 +71,15 @@ void simple_puppi_hw(PFChargedObj pfch[NTRACK], PFNeutralObj pfallne[NNEUTRALS],
             // std::cout << "pfch[it].hwPt = " << pfch[it].hwPt << std::endl;
 
             if ((Z0 - pfch[it].hwZ0 > DZMAX) || (Z0 - pfch[it].hwZ0 < -DZMAX)) continue; // if track is PV
-            int dr2 = dr2_int(pfch[it].hwEta, pfch[it].hwPhi, pfallne[in].hwEta, pfallne[in].hwPhi); // if dr is inside puppi cone
-            if (dr2 <= DR2MAX) {
-                ap_uint<9> dr2short = dr2 >> 5; // matched to pt2 shift
+            //int dr2 = dr2_int(pfch[it].hwEta, pfch[it].hwPhi, pfallne[in].hwEta, pfallne[in].hwPhi); // if dr is inside puppi cone
+            int dr2 = int(drvals[it][in]);
+            if (dr2 < DR2MAX) {
+                ap_uint<9> dr2short = dr2 >> 5; // why?
                 int term = _lut_shift15_divide(pt2_shift[it], dr2short);
                 sum += term;
             }
         }    
-        eToAlphas[in] = sum >> 10; 
+        eToAlphas[in] = sum >> 10;
     }
 
     for (int in = 0; in < NNEUTRALS; ++in) {
@@ -84,12 +88,13 @@ void simple_puppi_hw(PFChargedObj pfch[NTRACK], PFNeutralObj pfallne[NNEUTRALS],
                 weights[in] = 0; // < e^10 where that is the median
             } 
             else{
-                weights[in] = puppiweight(int(eToAlphas[in])); //(int) puppiweight_table[index];
+                weights[in] = puppiweight(eToAlphas[in]); //(int) puppiweight_table[index];
             }
-            int ptnew = ( pfallne[in].hwPt * weights[in] ) >> 8;
-            pfallne[in].hwPtPuppi = (pt_t) ptnew;
+    	    int ptnew = pfallne[in].hwPt * weights[in];
+    	    ptnew = ptnew >> 8;
+    	    pfallne[in].hwPtPuppi = (pt_t) ptnew;
         } else {
-            pfallne[in].hwPtPuppi = pfallne[in].hwPt;
+    	    pfallne[in].hwPtPuppi = pfallne[in].hwPt;
         }
     }
 }

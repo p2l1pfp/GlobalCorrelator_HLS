@@ -58,6 +58,26 @@ class DiscretePFInputs {
 			iregion_++;
 			return true;
 		}
+                // using tmux regions (big)
+		bool nextRegion_tmux(HadCaloObj calo[NCALO_TMUX], EmCaloObj emcalo[NEMCALO_TMUX], TkObj track[NTRACK_TMUX], MuObj mu[NMU_TMUX], z0_t & hwZPV) {
+			if (!nextRegion()) return false;
+		    	const Region &r = event_.regions[iregion_];
+
+                        dpf2fw::convert<NTRACK_TMUX>(r.track, track);
+                        dpf2fw::convert<NCALO_TMUX>(r.calo, calo);
+                        dpf2fw::convert<NEMCALO_TMUX>(r.emcalo, emcalo);
+                        dpf2fw::convert<NMU_TMUX>(r.muon, mu);
+
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
+			hwZPV = event_.z0 * l1tpf_int::InputTrack::Z0_SCALE;
+#else
+			hwZPV = event_.z0 * 20;
+#endif
+
+			printf("Read region %u with %lu tracks, %lu em calo, %lu had calo, %lu muons\n", iregion_, r.track.size(), r.emcalo.size(), r.calo.size(), r.muon.size());
+			iregion_++;
+			return true;
+		}
                 // for full event approach (don't mix with the above)
 		bool nextEvent() {
                     if (feof(file_)) return false;
