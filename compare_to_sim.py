@@ -2,8 +2,6 @@ import sys
 import os
 import argparse
 
-# optionally dump some kinematics
-plotROOT=False
 
 #CLKMAX=150
 #CLKMAX=108
@@ -11,7 +9,13 @@ CLKMAX=18
 #CLKMAX=1
 
 def GetEmulationData(parser):
-  
+    '''
+    Emulation data is in a single file.
+    Each line has 48=(15+15+15+2+1) entries
+    Corresponding to track,em,calo,mu,pv objects.
+    The number of lines is equal to TMUX_OUT*NTEST
+    This may be 18*6=108
+    '''
     NTRACK=15
     NEM=15
     NCALO=15
@@ -36,6 +40,13 @@ def GetEmulationData(parser):
     return tracks, ems, calos
 
 def GetSimulationData(parser):
+    '''
+    Simulation data is stored across multiple files,
+    each corresponding to a time series of single-object outputs.
+    #files is #em+#calo+#track, which may equal 15+20+25=60.
+    Each line corresonds to a 'step' of the output and...
+    TODO add comment on length of each file.
+    '''
     NEM=15
     NCALO=20
     NTRACK=25
@@ -79,14 +90,9 @@ def GetSimulationData(parser):
 def SelectBits(x, nbits, shift):
     return ((2**nbits-1 << shift) & x) >> shift
 def BitsToInt(x,nbits):
-    # max_uint=2**nbits-1
-    # min_uint=0
-    # max_int=2**(nbits-1)-1
-    # min_int=-2**(nbits-1)
-    # if x <= max_int: return x
-    # else: return x - max_uint
     if x < 2**(nbits-1): return x
     else: return x - 2**nbits
+
 def SelectBitsInt(x, nbits, shift):
     return BitsToInt(SelectBits(x, nbits, shift),nbits)
 
@@ -175,6 +181,141 @@ def GetInputs(parser, dump=True):
 
     return tracks, ems, calos
 
+# print in red
+def Warn(x): print('\033[91m'+x+'\033[0m')
+
+def ComparePerEvent(em_tracks,sim_tracks):
+    '''
+    Loop over each event / tmuxed region and compare the outputs for each
+    '''
+    for ii in range(CLKMAX):
+        print("\nStep {}".format(ii))
+        # remove zero entries from the track lists
+        em_tracks[ii] = [x for x in em_tracks[ii] if x]
+        sim_tracks[ii] = [x for x in sim_tracks[ii] if x]
+
+        # Compare track sets
+        common_tks = set(em_tracks[ii]).intersection(set(sim_tracks[ii]))
+        em_only = set(em_tracks[ii]).difference(common_tks)
+        sim_only = set(sim_tracks[ii]).difference(common_tks)
+        if(len(set(em_tracks[ii])) != len(em_tracks[ii])): Warn("Warning! duplicate emulation track in this event!!")
+        if(len(set(sim_tracks[ii])) != len(sim_tracks[ii])): Warn("Warning! duplicate simulation track in this event!!")
+        print("\t {} common tracks, {} only emulation, {} only simulation".format(len(common_tks),len(em_only),len(sim_only)))
+
+        # dump the information for each of the tracks in this event
+        for tk in em_tracks[ii]:
+            pt, pte, eta, phi, z0, qual = GetTrackParams(tk)
+            if tk: print("\t\t EM tk",pt,eta,phi,"{:0>16x}".format(tk))
+        for tk in sim_tracks[ii]:
+            pt, pte, eta, phi, z0, qual = GetTrackParams(tk)
+            if tk: print("\t\t SIM tk",pt,eta,phi,"{:0>16x}".format(tk))
+    return
+
+def CheckCommonTracks(em_tracks,sim_tracks):
+    '''
+    Compare the links that the common tracks arrive on
+    '''
+    all_em=[]
+    all_sim=[]
+    for ii in range(CLKMAX):
+        for tk in [x for x in em_tracks[ii] if x]: all_em.append(tk)
+        for tk in [x for x in sim_tracks[ii] if x]: all_sim.append(tk)
+    common_tks = set(all_em).intersection(set(all_sim))
+    
+    em_links={}
+    sim_links={}
+    for tk in common_tks:
+        em_links[tk]=[]
+        sim_links[tk]=[]
+
+    for ii in range(CLKMAX):
+        for tk in [x for x in em_tracks[ii] if x and x in common_tks]:
+            em_links[tk].append(ii)
+        for tk in [x for x in sim_tracks[ii] if x and x in common_tks]:
+            sim_links[tk].append(ii)
+
+    # print the track characteristics
+    print("Comparing which output links over which the common tracks are sent")
+    for tk in common_tks:
+        pt, pte, eta, phi, z0, qual = GetTrackParams(tk)
+        print("\tFor track (pt,eta,phi, bits)=({}, {}, {}, {:0>16x})".format(pt,eta,phi,tk))
+        print("\t  Emulator links  {}".format(em_links[tk]))
+        print("\t  Simulator links {}".format(sim_links[tk]))
+
+    return
+    
+def DumpHistograms(em_tracks,sim_tracks, outfile="out.root"):
+    '''
+    Loop over each event / tmuxed region and dump a number of outputs into a histogram
+    '''
+    import ROOT
+    f = ROOT.TFile(outfile,"RECREATE")
+    hPhi_EM = ROOT.TH1D("hPhi_EM","",40,0,2**10)
+    hEta_EM = ROOT.TH1D("hEta_EM","",40,0,2**10)
+    hPhi_SIM = ROOT.TH1D("hPhi_SIM","",40,0,2**10)
+    hEta_SIM = ROOT.TH1D("hEta_SIM","",40,0,2**10)
+    hPhi_COMMON = ROOT.TH1D("hPhi_COMMON","",40,0,2**10)
+    hEta_COMMON = ROOT.TH1D("hEta_COMMON","",40,0,2**10)
+
+    # add all non-zero entries to the total track lists
+    all_em=[]
+    all_sim=[]
+    for ii in range(CLKMAX):
+        for tk in [x for x in em_tracks[ii] if x]: all_em.append(tk)
+        for tk in [x for x in sim_tracks[ii] if x]: all_sim.append(tk)
+
+    # categorize
+    common_tks = set(all_em).intersection(set(all_sim))
+    em_only = set(all_em).difference(common_tks)
+    sim_only = set(all_sim).difference(common_tks)
+    
+    for tk in em_only:
+        pt, pte, eta, phi, z0, qual = GetTrackParams(tk)
+        hPhi_EMonly.Fill(phi)
+        hEta_EMonly.Fill(eta)
+    for tk in sim_only:
+        pt, pte, eta, phi, z0, qual = GetTrackParams(tk)
+        hPhi_SIMonly.Fill(phi)
+        hEta_SIMonly.Fill(eta)
+    for tk in common_tks:
+        pt, pte, eta, phi, z0, qual = GetTrackParams(tk)
+        hPhi_COMMON.Fill(phi)
+        hEta_COMMON.Fill(eta)
+
+    hPhi_EM.Write()
+    hEta_EM.Write()
+    hPhi_SIM.Write()
+    hEta_SIM.Write()
+    hPhi_COMMON.Write()
+    hEta_COMMON.Write()
+    f.Close()                
+    return
+
+def DumpInputs(in_tracks, in_ems, in_calos):
+                        
+    # Process inputs
+    # ii=0
+    # while ii < len(in_tracks):
+    #     print (in_tracks[ii:ii+3])
+    #     ii += 3
+    # exit(0)
+
+    #first get rid of all of the zeros
+    in_tracks = [x for x in in_tracks if x]
+    in_ems    = [x for x in in_ems    if x]
+    in_calos  = [x for x in in_calos  if x]
+    # for tk in in_tracks:
+    #     pt, pte, eta, phi, z0, qual = GetTrackParams(tk)
+    #     print("Input tracks", pt, eta, phi, "{:0>16x}".format(tk))
+
+    # do we find EM only in the inputs?
+    all_in = set(in_tracks)
+    em_no_input = em_only.difference(all_in)
+    print("We find a total of {} input tracks ({} unique),".format(len(in_tracks),len(all_in)))
+    print(" and we find that {} of the {} emulated-but-not-simulated tracks".format(len(em_no_input),len(em_only)))
+    print(" do not match any input track!!")
+
+
 if __name__ == "__main__":
 
     # GetTrackParams(0x40411333000B0012)
@@ -188,6 +329,7 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--simulation-data-dir", default="/home/therwig/sandbox/otsdaq-cms-firmware/regionizer_full/sim/sim_data/", dest = "sim_output_dir", 
                         help = "regionizer output directory from simulation")
     parser = parser.parse_args(sys.argv[1:])
+    print()
     print("Reading from emulation output: "+parser.emulator_output)
     print("Reading from simulation output: "+parser.sim_output_dir)
     if len(parser.input_file): print("Checking inputs from: "+parser.input_file)
@@ -196,110 +338,19 @@ if __name__ == "__main__":
     em_tracks, em_ems, em_calos = GetEmulationData(parser)
     sim_tracks, sim_ems, sim_calos = GetSimulationData(parser)
 
-    em_tups=[]
-    sim_tups=[]
+    # print event-by-event comparisons
+    ComparePerEvent(em_tracks,sim_tracks)
 
-    all_em=[]
-    all_sim=[]
-    
-    if plotROOT:
-        import ROOT
-        f = ROOT.TFile("out.root","RECREATE")
-        hPhi_EM = ROOT.TH1D("hPhi_EM","",40,0,2**10)
-        hEta_EM = ROOT.TH1D("hEta_EM","",40,0,2**10)
-        hPhi_SIM = ROOT.TH1D("hPhi_SIM","",40,0,2**10)
-        hEta_SIM = ROOT.TH1D("hEta_SIM","",40,0,2**10)
-        hPhi_EMonly = ROOT.TH1D("hPhi_EMonly","",40,0,2**10)
-        hEta_EMonly = ROOT.TH1D("hEta_EMonly","",40,0,2**10)
-    
-    for ii in range(CLKMAX):
-        print
-        print("Event {}".format(ii))
-        # remove zeros
-        em_tracks[ii] = [x for x in em_tracks[ii] if x]
-        sim_tracks[ii] = [x for x in sim_tracks[ii] if x]
-        # print(em_tracks[ii])
-        # print(sim_tracks[ii])
+    # investigate common tracks
+    CheckCommonTracks(em_tracks,sim_tracks)
 
-        # Compare tracks
-        common_tks = set(em_tracks[ii]).intersection(set(sim_tracks[ii]))
-        em_only = set(em_tracks[ii]).difference(common_tks)
-        sim_only = set(sim_tracks[ii]).difference(common_tks)
-        print("{} common, {} only emulation, {} only simulation".format(len(common_tks),len(em_only),len(sim_only)))
-        for tk in em_tracks[ii]:
-            pt, pte, eta, phi, z0, qual = GetTrackParams(tk)
-            if tk:
-                all_em.append(tk)
-                print("EM tk",pt,eta,phi,"{:0>16x}".format(tk))
-                em_tups.append( (pt,eta,phi) )
-                if plotROOT:
-                    hPhi_EM.Fill(phi)
-                    hEta_EM.Fill(eta)
-        for tk in sim_tracks[ii]:
-            pt, pte, eta, phi, z0, qual = GetTrackParams(tk)
-            if tk:
-                all_sim.append(tk)
-                print("SIM tk",pt,eta,phi,"{:0>16x}".format(tk))
-                sim_tups.append( (pt,eta,phi) )
-                if plotROOT:
-                    hPhi_SIM.Fill(phi)
-                    hEta_SIM.Fill(eta)
+    # dump a number of distributions to a root file
+    #DumpHistograms(em_tracks,sim_tracks)
 
-    common_tks = set(all_em).intersection(set(all_sim))
-    em_only = set(all_em).difference(common_tks)
-    sim_only = set(all_sim).difference(common_tks)
-    print("\nOVERALL: {} common, {} only emulation, {} only simulation".format(len(common_tks),len(em_only),len(sim_only)))
-    for tk in em_only:
-        pt, pte, eta, phi, z0, qual = GetTrackParams(tk)
-        print("Emulation-only track",pt,eta,phi, "{:0>16x}".format(tk))
-        if plotROOT:
-            hPhi_EMonly.Fill(phi)
-            hEta_EMonly.Fill(eta)
-    for tk in common_tks:
-        pt, pte, eta, phi, z0, qual = GetTrackParams(tk)
-        print("Common tracks", pt, eta, phi, "{:0>16x}".format(tk))
+    # investigate the tracks that are sent through the input links
+    #DumpInputs(in_tracks, in_ems, in_calos)
 
 
-    if plotROOT:
-        hPhi_EM.Write()
-        hEta_EM.Write()
-        hPhi_SIM.Write()
-        hEta_SIM.Write()
-        hPhi_EMonly.Write()
-        hEta_EMonly.Write()
-        f.Close()
-                
-        
-    # Process inputs
-    # ii=0
-    # while ii < len(in_tracks):
-    #     print (in_tracks[ii:ii+3])
-    #     ii += 3
-    # exit(0)
-
-    #first get rid of all of the zeros
-    in_tracks = [x for x in in_tracks if x]
-    in_ems    = [x for x in in_ems    if x]
-    in_calos  = [x for x in in_calos  if x]
-    for tk in in_tracks:
-        pt, pte, eta, phi, z0, qual = GetTrackParams(tk)
-        #print("Input tracks", pt, eta, phi, "{:0>16x}".format(tk))
-
-    # do we find EM only in the inputs?
-    all_in = set(in_tracks)
-    em_no_input = em_only.difference(all_in)
-    print("We find a total of {} input tracks ({} unique),".format(len(in_tracks),len(all_in)))
-    print(" and we find that {} of the {} emulated-but-not-simulated tracks".format(len(em_no_input),len(em_only)))
-    print(" do not match any input track!!")
-
-
-    # print(len(em_tups))
-    # print(len(set(em_tups)))
-    # print(set(em_tups))
-
-    # print(len(sim_tups))
-    # print(len(set(sim_tups)))
-    # print(set(sim_tups))
                 
     # # truncate according to the emulator setup
     # NTRACK=15
