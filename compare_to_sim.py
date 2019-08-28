@@ -5,7 +5,7 @@ import argparse
 
 #CLKMAX=150
 #CLKMAX=108
-CLKMAX=18
+CLKMAX=18*2
 #CLKMAX=1
 
 def GetEmulationData(parser):
@@ -188,8 +188,12 @@ def ComparePerEvent(em_tracks,sim_tracks):
     '''
     Loop over each event / tmuxed region and compare the outputs for each
     '''
+    print("\n"+"="*80)
+    print("""Test: Compare output tracks for all events
+    The comparison is shown in 'steps', out of #EVENTS*(TMUX_OUT=18) total""")
+    print("="*80)
     for ii in range(CLKMAX):
-        print("\nStep {}".format(ii))
+        print("Step {}".format(ii))
         # remove zero entries from the track lists
         em_tracks[ii] = [x for x in em_tracks[ii] if x]
         sim_tracks[ii] = [x for x in sim_tracks[ii] if x]
@@ -200,16 +204,22 @@ def ComparePerEvent(em_tracks,sim_tracks):
         sim_only = set(sim_tracks[ii]).difference(common_tks)
         if(len(set(em_tracks[ii])) != len(em_tracks[ii])): Warn("Warning! duplicate emulation track in this event!!")
         if(len(set(sim_tracks[ii])) != len(sim_tracks[ii])): Warn("Warning! duplicate simulation track in this event!!")
-        print("\t {} common tracks, {} only emulation, {} only simulation".format(len(common_tks),len(em_only),len(sim_only)))
+        print("  {} common tracks, {} only emulation, {} only simulation".format(len(common_tks),len(em_only),len(sim_only)))
 
         # dump the information for each of the tracks in this event
         for tk in em_tracks[ii]:
             pt, pte, eta, phi, z0, qual = GetTrackParams(tk)
-            if tk: print("\t\t EM tk",pt,eta,phi,"{:0>16x}".format(tk))
+            if tk: 
+                if tk in em_only: print("    EM only  tk {}\t{}\t{}\t{:0>16x}".format(pt,eta,phi,tk))
+                else: print("    EM       tk {}\t{}\t{}\t{:0>16x}".format(pt,eta,phi,tk))
         for tk in sim_tracks[ii]:
             pt, pte, eta, phi, z0, qual = GetTrackParams(tk)
-            if tk: print("\t\t SIM tk",pt,eta,phi,"{:0>16x}".format(tk))
+            if tk:
+                if tk in sim_only: print("    SIM only tk {}\t{}\t{}\t{:0>16x}".format(pt,eta,phi,tk))
+                else: print("    SIM      tk {}\t{}\t{}\t{:0>16x}".format(pt,eta,phi,tk))
+    print("="*80+"\n")
     return
+
 
 def CheckCommonTracks(em_tracks,sim_tracks):
     '''
@@ -235,12 +245,16 @@ def CheckCommonTracks(em_tracks,sim_tracks):
             sim_links[tk].append(ii)
 
     # print the track characteristics
-    print("Comparing which output links over which the common tracks are sent")
+    print("\n"+"="*80)
+    print("Test: Compare output links over which common tracks are sent (disagreeing only!)")
+    print("="*80)
     for tk in common_tks:
-        pt, pte, eta, phi, z0, qual = GetTrackParams(tk)
-        print("\tFor track (pt,eta,phi, bits)=({}, {}, {}, {:0>16x})".format(pt,eta,phi,tk))
-        print("\t  Emulator links  {}".format(em_links[tk]))
-        print("\t  Simulator links {}".format(sim_links[tk]))
+        if tuple(em_links[tk]) != tuple(sim_links[tk]):
+            pt, pte, eta, phi, z0, qual = GetTrackParams(tk)
+            print("For track (pt,eta,phi, bits)=({}, {}, {}, {:0>16x})".format(pt,eta,phi,tk))
+            print("  Emulator  links: "+", ".join(map(str,em_links[tk])) )
+            print("  Simulator links: "+", ".join(map(str,sim_links[tk])) )
+    print("="*80+"\n")
 
     return
     
@@ -291,6 +305,50 @@ def DumpHistograms(em_tracks,sim_tracks, outfile="out.root"):
     f.Close()                
     return
 
+def CompareOverlap(em_tracks,sim_tracks):
+    '''
+    Loop over each event / tmuxed region and dump a number of outputs into a histogram
+    '''
+
+    # add all non-zero entries to the total track lists
+    all_em=[]
+    all_sim=[]
+    for ii in range(CLKMAX):
+        for tk in [x for x in em_tracks[ii] if x]: all_em.append(tk)
+        for tk in [x for x in sim_tracks[ii] if x]: all_sim.append(tk)
+
+    # categorize
+    common_tks = set(all_em).intersection(set(all_sim))
+    em_only = set(all_em).difference(common_tks)
+    sim_only = set(all_sim).difference(common_tks)
+    
+    print("\n"+"="*80)
+    print("Test: Compare output tracks for all events")
+    print("="*80)
+    print("Emulation-only tracks")
+    print(" obj    pt   eta   phi             bits")
+    for tk in em_only:
+        pt, pte, eta, phi, z0, qual = GetTrackParams(tk)
+        print("  tk {:5} {:5} {:5} {:0>16x}".format(pt,eta,phi,tk))
+    if not len(em_only): print("  (...none found...)")
+
+    print("Simulation-only tracks")
+    print(" obj    pt   eta   phi             bits")
+    for tk in sim_only:
+        pt, pte, eta, phi, z0, qual = GetTrackParams(tk)
+        print("  tk {:5} {:5} {:5} {:0>16x}".format(pt,eta,phi,tk))
+    if not len(sim_only): print("  (...none found...)")
+
+    print("Commonly found tracks")
+    print(" obj    pt   eta   phi             bits")
+    for tk in common_tks:
+        pt, pte, eta, phi, z0, qual = GetTrackParams(tk)
+        print("  tk {:5} {:5} {:5} {:0>16x}".format(pt,eta,phi,tk))
+    if not len(common_tks): print("  (...none found...)")
+    print("="*80+"\n")
+
+    return
+
 def DumpInputs(in_tracks, in_ems, in_calos):
                         
     # Process inputs
@@ -304,10 +362,11 @@ def DumpInputs(in_tracks, in_ems, in_calos):
     in_tracks = [x for x in in_tracks if x]
     in_ems    = [x for x in in_ems    if x]
     in_calos  = [x for x in in_calos  if x]
-    # for tk in in_tracks:
-    #     pt, pte, eta, phi, z0, qual = GetTrackParams(tk)
-    #     print("Input tracks", pt, eta, phi, "{:0>16x}".format(tk))
+    for tk in in_tracks:
+        pt, pte, eta, phi, z0, qual = GetTrackParams(tk)
+        print("Input tracks", pt, eta, phi, "{:0>16x}".format(tk))
 
+    exit(0)
     # do we find EM only in the inputs?
     all_in = set(in_tracks)
     em_no_input = em_only.difference(all_in)
@@ -335,11 +394,14 @@ if __name__ == "__main__":
     if len(parser.input_file): print("Checking inputs from: "+parser.input_file)
 
     in_tracks, in_ems, in_calos = GetInputs(parser)
+#    print (in_tracks)
     em_tracks, em_ems, em_calos = GetEmulationData(parser)
     sim_tracks, sim_ems, sim_calos = GetSimulationData(parser)
 
     # print event-by-event comparisons
     ComparePerEvent(em_tracks,sim_tracks)
+    # cumulative over all events ()
+    CompareOverlap(em_tracks,sim_tracks)
 
     # investigate common tracks
     CheckCommonTracks(em_tracks,sim_tracks)
