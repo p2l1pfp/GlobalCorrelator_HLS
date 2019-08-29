@@ -112,9 +112,13 @@ int main() {
         // fill temp containers
         int etalo = -MAXETA_INT+int(float(2*MAXETA_INT*ie)/float(NETA_TMUX))-ETA_BUFFER;
         int etahi = -MAXETA_INT+int(float(2*MAXETA_INT*(ie+1))/float(NETA_TMUX))+ETA_BUFFER;
-        int philo = -MAXPHI_INT+int(float(2*MAXPHI_INT*ip)/float(NPHI_TMUX))-PHI_BUFFER;
-        int phihi = -MAXPHI_INT+int(float(2*MAXPHI_INT*(ip+1))/float(NPHI_TMUX))+PHI_BUFFER;
+        int philo = MAXPHI_INT-NPHI_INT+int(float(NPHI_INT*ip)/float(NPHI_TMUX))-PHI_BUFFER;
+        int phihi = MAXPHI_INT-NPHI_INT+int(float(NPHI_INT*(ip+1))/float(NPHI_TMUX))+PHI_BUFFER;
         //std::cout<<etalo<<" "<<etahi<<" "<<philo<<" "<<phihi<<" "<<std::endl;
+
+	int etaremainder=(2*MAXETA_INT)%(NETA_TMUX*NETA_SMALL);
+	int phiremainder=NPHI_INT%(NPHI_TMUX*NPHI_SMALL);
+	int e1,e2,p1,p2;
 
         int i_temp[TMUX_OUT] = {0};
         int ireg = 0;
@@ -128,13 +132,15 @@ int main() {
             if (int(track[i].hwPt) == 0) continue;
             std::cout<<"\t"<<track[i].hwEta<<" "<<track[i].hwPhi<<std::endl;
             for (int ies = 0; ies < NETA_SMALL; ies++) {
-                std::cout<<"checking eta: "<<etalo+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*ies<<" "<<etalo+(2*ETA_BUFFER)+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*(ies+1)<<std::endl;
-                if (int(track[i].hwEta) <= etalo+(2*ETA_BUFFER)+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*(ies+1)
-                and int(track[i].hwEta) > etalo+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*ies) {
+                e1=etalo+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*ies +std::min(ies,etaremainder);
+	        e2=etalo+(2*ETA_BUFFER)+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*(ies+1) + std::min(ies+1,etaremainder);
+                std::cout<<"checking eta: "<<e1<<" "<<e2<<" (offsets "<<std::min(ies,etaremainder)<<" "<<std::min(ies+1,etaremainder)<<")"<<std::endl;
+                if (int(track[i].hwEta) <= e2 and int(track[i].hwEta) > e1) {
                     for (int ips = 0; ips < NPHI_SMALL; ips++) {
-                        std::cout<<"checking phi: "<<philo+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*ips<<" "<<philo+(2*PHI_BUFFER)+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*(ips+1)<<std::endl;
-                        if (int(track[i].hwPhi) <= philo+(2*PHI_BUFFER)+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*(ips+1)
-                        and int(track[i].hwPhi) > philo+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*ips) {
+                        p1=philo+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*ips + std::min(ips,phiremainder);
+                        p2=philo+(2*PHI_BUFFER)+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*(ips+1) + std::min(ips+1,phiremainder);
+                        std::cout<<"checking phi: "<<p1<<" "<<p2<<" (offsets "<<std::min(ips,phiremainder)<<" "<<std::min(ips+1,phiremainder)<<")"<<std::endl;
+                        if ( isInPhiRegion(track[i].hwPhi, p1, p2) ) { // check "p1<=test<p2" accounting for phi wraparound
                             if (i_temp[ies*NPHI_SMALL+ips]==NTRACK) continue;
                             std::cout<<"\tX -- ("<<ies<<","<<ips<<")"<<std::endl;
                             track_temp[ies*NPHI_SMALL+ips][i_temp[ies*NPHI_SMALL+ips]] = track[i];

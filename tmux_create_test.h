@@ -20,7 +20,8 @@
 #define NLINKS_PER_REG (NLINKS_PER_TRACK+NLINKS_PER_CALO+NLINKS_PER_EMCALO+NLINKS_PER_MU)
 
 #define MAXETA_INT 243
-#define MAXPHI_INT 510
+#define MAXPHI_INT 512
+#define NPHI_INT 1024
 
 #define ETA_BUFFER 32
 #define PHI_BUFFER 32
@@ -78,4 +79,13 @@ void mp7wrapped_pfalgo3_full_sort(MP7DataWord input[MP7_NCHANN], MP7DataWord out
 
     mp7wrapped_pack_out(pfch_sort, pfpho_sort, pfne_sort, pfmu_sort, output);
 
+}
+
+bool isInPhiRegion(int test, int loBound, int hiBound){
+    // check whether "lowBound < test <= hiBound" while accounting for
+    // "wraparound" when hi/loBound are outside of the (MAXPHI_INT-NPHI_INT,MAXPHI_INT) range    
+    if(loBound<=MAXPHI_INT-NPHI_INT && hiBound>MAXPHI_INT) return true;
+    if(loBound<MAXPHI_INT-NPHI_INT) return (test<= hiBound) || (test>MAXPHI_INT-((MAXPHI_INT-NPHI_INT)-loBound));
+    if(hiBound>MAXPHI_INT) return (test>loBound) || (test<= (MAXPHI_INT-NPHI_INT)+(hiBound-MAXPHI_INT));
+    return (test<=hiBound) && (test>loBound);
 }
