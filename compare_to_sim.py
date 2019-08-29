@@ -3,9 +3,11 @@ import os
 import argparse
 
 
+TMUX_OUT=18
+NEVENTS=6
 #CLKMAX=150
 #CLKMAX=108
-CLKMAX=18*2
+CLKMAX=TMUX_OUT*NEVENTS
 #CLKMAX=1
 
 def GetEmulationData(parser):
@@ -190,7 +192,8 @@ def ComparePerEvent(em_tracks,sim_tracks):
     '''
     print("\n"+"="*80)
     print("""Test: Compare output tracks for all events
-    The comparison is shown in 'steps', out of #EVENTS*(TMUX_OUT=18) total""")
+    The comparison is shown in 'steps', out of #EVENTS*(TMUX_OUT=18) total.
+    Format is 'pt eta phi bits'. """)
     print("="*80)
     for ii in range(CLKMAX):
         print("Step {}".format(ii))
@@ -210,13 +213,13 @@ def ComparePerEvent(em_tracks,sim_tracks):
         for tk in em_tracks[ii]:
             pt, pte, eta, phi, z0, qual = GetTrackParams(tk)
             if tk: 
-                if tk in em_only: print("    EM only  tk {}\t{}\t{}\t{:0>16x}".format(pt,eta,phi,tk))
-                else: print("    EM       tk {}\t{}\t{}\t{:0>16x}".format(pt,eta,phi,tk))
+                if tk in em_only: print("    EM only  tk {:5} {:5} {:5} {:0>16x}".format(pt,eta,phi,tk))
+                else: print("    EM       tk {:5} {:5} {:5} {:0>16x}".format(pt,eta,phi,tk))
         for tk in sim_tracks[ii]:
             pt, pte, eta, phi, z0, qual = GetTrackParams(tk)
             if tk:
-                if tk in sim_only: print("    SIM only tk {}\t{}\t{}\t{:0>16x}".format(pt,eta,phi,tk))
-                else: print("    SIM      tk {}\t{}\t{}\t{:0>16x}".format(pt,eta,phi,tk))
+                if tk in sim_only: print("    SIM only tk {:5} {:5} {:5} {:0>16x}".format(pt,eta,phi,tk))
+                else: print("    SIM      tk {:5} {:5} {:5} {:0>16x}".format(pt,eta,phi,tk))
     print("="*80+"\n")
     return
 
@@ -240,18 +243,19 @@ def CheckCommonTracks(em_tracks,sim_tracks):
 
     for ii in range(CLKMAX):
         for tk in [x for x in em_tracks[ii] if x and x in common_tks]:
-            em_links[tk].append(ii)
+            em_links[tk].append(ii % TMUX_OUT)
         for tk in [x for x in sim_tracks[ii] if x and x in common_tks]:
-            sim_links[tk].append(ii)
+            sim_links[tk].append(ii % TMUX_OUT)
 
     # print the track characteristics
     print("\n"+"="*80)
-    print("Test: Compare output links over which common tracks are sent (disagreeing only!)")
+    print("""Test: Compare output links over which common tracks are sent (disagreeing only!)
+    Format is 'pt eta phi bits'. """)
     print("="*80)
     for tk in common_tks:
         if tuple(em_links[tk]) != tuple(sim_links[tk]):
             pt, pte, eta, phi, z0, qual = GetTrackParams(tk)
-            print("For track (pt,eta,phi, bits)=({}, {}, {}, {:0>16x})".format(pt,eta,phi,tk))
+            print("For track {:5} {:5} {:5} {:0>16x}".format(pt,eta,phi,tk))
             print("  Emulator  links: "+", ".join(map(str,em_links[tk])) )
             print("  Simulator links: "+", ".join(map(str,sim_links[tk])) )
     print("="*80+"\n")
@@ -323,24 +327,22 @@ def CompareOverlap(em_tracks,sim_tracks):
     sim_only = set(all_sim).difference(common_tks)
     
     print("\n"+"="*80)
-    print("Test: Compare output tracks for all events")
+    print("""Test: Compare output tracks for all events
+    Format is 'pt eta phi bits'. """)
     print("="*80)
     print("Emulation-only tracks")
-    print(" obj    pt   eta   phi             bits")
     for tk in em_only:
         pt, pte, eta, phi, z0, qual = GetTrackParams(tk)
         print("  tk {:5} {:5} {:5} {:0>16x}".format(pt,eta,phi,tk))
     if not len(em_only): print("  (...none found...)")
 
     print("Simulation-only tracks")
-    print(" obj    pt   eta   phi             bits")
     for tk in sim_only:
         pt, pte, eta, phi, z0, qual = GetTrackParams(tk)
         print("  tk {:5} {:5} {:5} {:0>16x}".format(pt,eta,phi,tk))
     if not len(sim_only): print("  (...none found...)")
 
     print("Commonly found tracks")
-    print(" obj    pt   eta   phi             bits")
     for tk in common_tks:
         pt, pte, eta, phi, z0, qual = GetTrackParams(tk)
         print("  tk {:5} {:5} {:5} {:0>16x}".format(pt,eta,phi,tk))
