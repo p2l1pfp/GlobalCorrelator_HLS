@@ -120,6 +120,45 @@ int main() {
 	int phiremainder=NPHI_INT%(NPHI_TMUX*NPHI_SMALL);
 	int e1,e2,p1,p2;
 
+
+        {
+            // make table for comparison with ryan (TODO account for buffers to only produce one region assignment)
+            // vivado_hls -f make_tmux_outputs.tcl | grep 'eta=' > lut.txt
+            int DEPTH=1024;
+            for(int k=0;k<2;++k){
+                for(int l=0;l<DEPTH/2;++l){
+                    int i;
+                    if(k==0)//positive numbers
+                        i = l;
+                    else //negative numbers
+                        i = l - DEPTH/2;
+
+                    int eta_reg=-1,phi_reg=-1;
+                    int n_eta=0,n_phi=0;
+                    for (int ies = 0; ies < NETA_SMALL; ies++) {
+                        e1=etalo+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*ies +std::min(ies,etaremainder);
+                        e2=etalo+(2*ETA_BUFFER)+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*(ies+1) + std::min(ies+1,etaremainder);
+                        if(i>e1 && i<=e2){ 
+                            eta_reg=ies;
+                            n_eta++;
+                        }
+                    }
+                    for (int ips = 0; ips < NPHI_SMALL; ips++) {
+                        p1=philo+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*ips + std::min(ips,phiremainder);
+                        p2=philo+(2*PHI_BUFFER)+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*(ips+1) + std::min(ips+1,phiremainder);
+                        if( isInPhiRegion(i, p1, p2) ){
+                            phi_reg=ips;
+                            n_phi++;
+                        }
+                    }
+                    std::cout << i << "\t eta=" << eta_reg << "\t:" << (n_eta>1) <<
+                        "\t phi=" << phi_reg << "\t:" << (n_phi>1) << " \n";
+
+                }
+            }
+        }
+    
+
         int i_temp[TMUX_OUT] = {0};
         int ireg = 0;
         int ntracks[TMUX_OUT] = {0};
