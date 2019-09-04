@@ -138,6 +138,7 @@ int main() {
                     for (int ies = 0; ies < NETA_SMALL; ies++) {
                         e1=etalo+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*ies +std::min(ies,etaremainder);
                         e2=etalo+(2*ETA_BUFFER)+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*(ies+1) + std::min(ies+1,etaremainder);
+                        //std::cout << "TEST " << e1 << " " << e2 << std::endl;
                         if(i>e1 && i<=e2){ 
                             eta_reg=ies;
                             n_eta++;
@@ -146,6 +147,7 @@ int main() {
                     for (int ips = 0; ips < NPHI_SMALL; ips++) {
                         p1=philo+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*ips + std::min(ips,phiremainder);
                         p2=philo+(2*PHI_BUFFER)+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*(ips+1) + std::min(ips+1,phiremainder);
+                        std::cout << "TEST " << p1 << " " << p2 << std::endl;
                         if( isInPhiRegion(i, p1, p2) ){
                             phi_reg=ips;
                             n_phi++;
