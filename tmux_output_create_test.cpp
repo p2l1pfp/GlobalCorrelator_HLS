@@ -109,56 +109,98 @@ int main() {
                 mu_temp[ir][i].hwPt = 0; mu_temp[ir][i].hwPtErr = 0; mu_temp[ir][i].hwEta = 0; mu_temp[ir][i].hwPhi = 0;
             }
         }
-        // fill temp containers
-        int etalo = -MAXETA_INT+int(float(2*MAXETA_INT*ie)/float(NETA_TMUX))-ETA_BUFFER;
-        int etahi = -MAXETA_INT+int(float(2*MAXETA_INT*(ie+1))/float(NETA_TMUX))+ETA_BUFFER;
-        int philo = MAXPHI_INT-NPHI_INT+int(float(NPHI_INT*ip)/float(NPHI_TMUX))-PHI_BUFFER;
-        int phihi = MAXPHI_INT-NPHI_INT+int(float(NPHI_INT*(ip+1))/float(NPHI_TMUX))+PHI_BUFFER;
-        //std::cout<<etalo<<" "<<etahi<<" "<<philo<<" "<<phihi<<" "<<std::endl;
+        // // fill temp containers
+        // int etalo = -MAXETA_INT+int(float(2*MAXETA_INT*ie)/float(NETA_TMUX))-ETA_BUFFER;
+        // int etahi = -MAXETA_INT+int(float(2*MAXETA_INT*(ie+1))/float(NETA_TMUX))+ETA_BUFFER;
+        // int philo = MAXPHI_INT-NPHI_INT+int(float(NPHI_INT*ip)/float(NPHI_TMUX))-PHI_BUFFER;
+        // int phihi = MAXPHI_INT-NPHI_INT+int(float(NPHI_INT*(ip+1))/float(NPHI_TMUX))+PHI_BUFFER;
+        // //std::cout<<etalo<<" "<<etahi<<" "<<philo<<" "<<phihi<<" "<<std::endl;
 
-	int etaremainder=(2*MAXETA_INT)%(NETA_TMUX*NETA_SMALL);
-	int phiremainder=NPHI_INT%(NPHI_TMUX*NPHI_SMALL);
+	// int etaremainder=(2*MAXETA_INT)%(NETA_TMUX*NETA_SMALL);
+	// int phiremainder=NPHI_INT%(NPHI_TMUX*NPHI_SMALL);
+
 	int e1,e2,p1,p2;
 
+        // Determine phi boundaries (include wraparound)
+        std::vector<int> phi_bounds_lo{};
+        std::vector<int> phi_bounds_hi{};
+        const int phi_step = int(NPHI_INT)/int(NPHI_SMALL);
+        const int phi_rmdr = int(NPHI_INT)%int(NPHI_SMALL);
 
-        {
-            // make table for comparison with ryan (TODO account for buffers to only produce one region assignment)
-            // vivado_hls -f make_tmux_outputs.tcl | grep 'eta=' > lut.txt
-            int DEPTH=1024;
-            for(int k=0;k<2;++k){
-                for(int l=0;l<DEPTH/2;++l){
-                    int i;
-                    if(k==0)//positive numbers
-                        i = l;
-                    else //negative numbers
-                        i = l - DEPTH/2;
-
-                    int eta_reg=-1,phi_reg=-1;
-                    int n_eta=0,n_phi=0;
-                    for (int ies = 0; ies < NETA_SMALL; ies++) {
-                        e1=etalo+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*ies +std::min(ies,etaremainder);
-                        e2=etalo+(2*ETA_BUFFER)+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*(ies+1) + std::min(ies+1,etaremainder);
-                        //std::cout << "TEST " << e1 << " " << e2 << std::endl;
-                        if(i>e1 && i<=e2){ 
-                            eta_reg=ies;
-                            n_eta++;
-                        }
-                    }
-                    for (int ips = 0; ips < NPHI_SMALL; ips++) {
-                        p1=philo+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*ips + std::min(ips,phiremainder);
-                        p2=philo+(2*PHI_BUFFER)+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*(ips+1) + std::min(ips+1,phiremainder);
-                        std::cout << "TEST " << p1 << " " << p2 << std::endl;
-                        if( isInPhiRegion(i, p1, p2) ){
-                            phi_reg=ips;
-                            n_phi++;
-                        }
-                    }
-                    std::cout << i << "\t eta=" << eta_reg << "\t:" << (n_eta>1) <<
-                        "\t phi=" << phi_reg << "\t:" << (n_phi>1) << " \n";
-
-                }
-            }
+        for (int ip = 0; ip < NPHI_SMALL; ++ip) {
+            p1 = (MAXPHI_INT-NPHI_INT) - PHI_BUFFER + phi_step*ip + std::min(ip,phi_rmdr);
+            p2 = (MAXPHI_INT-NPHI_INT) + PHI_BUFFER + phi_step*(ip+1) + std::min(ip+1,phi_rmdr);
+            // if (p1 < MAXPHI_INT-NPHI_INT) p1 += NPHI_INT;
+            // if (p2 >= MAXPHI_INT) p2 -= NPHI_INT;
+            phi_bounds_lo.push_back( p1 );
+            phi_bounds_hi.push_back( p2 );
+            std::cout << "TIST " << phi_bounds_lo[ip] << "  to  " << phi_bounds_hi[ip] << std::endl;
         }
+
+        // Determine eta boundaries
+        //   Want eta regions to be +/- symmetric. this implementation and these assumptions 
+        //   only makes sense if ETA_TMUX==2 (all regions are doubled!)
+        assert(NETA_TMUX==2);
+        std::vector<int> pos_eta_bounds_lo{};
+        std::vector<int> pos_eta_bounds_hi{};
+        std::vector<int> eta_bounds_lo{};
+        std::vector<int> eta_bounds_hi{};
+        const int eta_step = int(MAXETA_INT-MINETA_INT)/int(NETA_SMALL);
+        const int eta_rmdr = int(MAXETA_INT-MINETA_INT)%int(NETA_SMALL);
+        for(int ie=0;ie<NETA_SMALL;++ie){
+            pos_eta_bounds_lo.push_back(MINETA_INT-ETA_BUFFER+ie*eta_step+std::min(ie,eta_rmdr));
+            pos_eta_bounds_hi.push_back(MINETA_INT+ETA_BUFFER+(ie+1)*eta_step+std::min(ie+1,eta_rmdr));
+        }
+        for(int ie=0;ie<NETA_SMALL;++ie){
+            eta_bounds_lo.push_back( -pos_eta_bounds_hi[NETA_SMALL-1-ie] );
+            eta_bounds_hi.push_back( -pos_eta_bounds_lo[NETA_SMALL-1-ie] );
+        }
+        for(int ie=0;ie<NETA_SMALL;++ie){
+            eta_bounds_lo.push_back( pos_eta_bounds_lo[ie] );
+            eta_bounds_hi.push_back( pos_eta_bounds_hi[ie] );
+        }
+        for(int i=0;i<eta_bounds_lo.size();i++){
+            std::cout << "TIST " << eta_bounds_lo[i] << "  to  " << eta_bounds_hi[i] << std::endl;
+        }
+
+        // {
+        //     // make table for comparison with ryan (TODO account for buffers to only produce one region assignment)
+        //     // vivado_hls -f make_tmux_outputs.tcl | grep 'eta=' > lut.txt
+        //     int DEPTH=1024;
+        //     for(int k=0;k<2;++k){
+        //         for(int l=0;l<DEPTH/2;++l){
+        //             int i;
+        //             if(k==0)//positive numbers
+        //                 i = l;
+        //             else //negative numbers
+        //                 i = l - DEPTH/2;
+
+        //             int eta_reg=-1,phi_reg=-1;
+        //             int n_eta=0,n_phi=0;
+        //             for (int ies = 0; ies < NETA_SMALL; ies++) {
+        //                 e1=etalo+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*ies +std::min(ies,etaremainder);
+        //                 e2=etalo+(2*ETA_BUFFER)+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*(ies+1) + std::min(ies+1,etaremainder);
+        //                 //std::cout << "TEST " << e1 << " " << e2 << std::endl;
+        //                 if(i>e1 && i<=e2){ 
+        //                     eta_reg=ies;
+        //                     n_eta++;
+        //                 }
+        //             }
+        //             for (int ips = 0; ips < NPHI_SMALL; ips++) {
+        //                 p1=philo+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*ips + std::min(ips,phiremainder);
+        //                 p2=philo+(2*PHI_BUFFER)+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*(ips+1) + std::min(ips+1,phiremainder);
+        //                 std::cout << "TEST " << p1 << " " << p2 << std::endl;
+        //                 if( isInPhiRegion(i, p1, p2) ){
+        //                     phi_reg=ips;
+        //                     n_phi++;
+        //                 }
+        //             }
+        //             std::cout << i << "\t eta=" << eta_reg << "\t:" << (n_eta>1) <<
+        //                 "\t phi=" << phi_reg << "\t:" << (n_phi>1) << " \n";
+
+        //         }
+        //     }
+        // }
     
 
         int i_temp[TMUX_OUT] = {0};
@@ -168,20 +210,17 @@ int main() {
         int nemcalos[TMUX_OUT] = {0};
         int nmus[TMUX_OUT] = {0};
         for (int i = 0; i < NTRACK_TMUX; ++i) {
-            if (int(track[i].hwEta) < etalo or int(track[i].hwEta) > etahi) continue;
-            if (int(track[i].hwPhi) < philo or int(track[i].hwPhi) > phihi) continue;
+            // if (int(track[i].hwEta) < etalo or int(track[i].hwEta) > etahi) continue;
+            // if (int(track[i].hwPhi) < philo or int(track[i].hwPhi) > phihi) continue;
+            if (int(track[i].hwEta) < eta_bounds_lo.front() or int(track[i].hwEta) >= eta_bounds_hi.back()) continue;
+            if (int(track[i].hwPhi) < phi_bounds_lo.front() or int(track[i].hwPhi) >= eta_bounds_hi.back()) continue;
             if (int(track[i].hwPt) == 0) continue;
             std::cout<<"\t"<<track[i].hwEta<<" "<<track[i].hwPhi<<std::endl;
             for (int ies = 0; ies < NETA_SMALL; ies++) {
-                e1=etalo+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*ies +std::min(ies,etaremainder);
-	        e2=etalo+(2*ETA_BUFFER)+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*(ies+1) + std::min(ies+1,etaremainder);
-                std::cout<<"checking eta: "<<e1<<" "<<e2<<" (offsets "<<std::min(ies,etaremainder)<<" "<<std::min(ies+1,etaremainder)<<")"<<std::endl;
-                if (int(track[i].hwEta) <= e2 and int(track[i].hwEta) > e1) {
+                if (int(track[i].hwEta) >= eta_bounds_lo[ies] and int(track[i].hwEta) < eta_bounds_hi[ies]) {
                     for (int ips = 0; ips < NPHI_SMALL; ips++) {
-                        p1=philo+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*ips + std::min(ips,phiremainder);
-                        p2=philo+(2*PHI_BUFFER)+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*(ips+1) + std::min(ips+1,phiremainder);
-                        std::cout<<"checking phi: "<<p1<<" "<<p2<<" (offsets "<<std::min(ips,phiremainder)<<" "<<std::min(ips+1,phiremainder)<<")"<<std::endl;
-                        if ( isInPhiRegion(track[i].hwPhi, p1, p2) ) { // check "p1<=test<p2" accounting for phi wraparound
+                        if ( isInPhiRegion(track[i].hwPhi, phi_bounds_lo[ips], phi_bounds_hi[ips]) ) { 
+                            // checks "p1<=test<p2" accounting for phi wraparound
                             if (i_temp[ies*NPHI_SMALL+ips]==NTRACK) continue;
                             std::cout<<"\tX -- ("<<ies<<","<<ips<<")"<<std::endl;
                             track_temp[ies*NPHI_SMALL+ips][i_temp[ies*NPHI_SMALL+ips]] = track[i];
@@ -192,66 +231,91 @@ int main() {
                 }
             }
         }
-        std::fill(i_temp, i_temp+TMUX_OUT, 0);
-        for (int i = 0; i < NCALO_TMUX; ++i) {
-            if (int(calo[i].hwEta) < etalo or int(calo[i].hwEta) > etahi) continue;
-            if (int(calo[i].hwPhi) < philo or int(calo[i].hwPhi) > phihi) continue;
-            if (int(calo[i].hwPt) == 0) continue;
-            for (int ies = 0; ies < NETA_SMALL; ies++) {
-                if (int(calo[i].hwEta) <= etalo+(2*ETA_BUFFER)+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*(ies+1)
-                and int(calo[i].hwEta) > etalo+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*ies) {
-                    for (int ips = 0; ips < NPHI_SMALL; ips++) {
-                        if (int(calo[i].hwPhi) <= philo+(2*PHI_BUFFER)+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*(ips+1)
-                        and int(calo[i].hwPhi) > philo+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*ips) {
-                            if (i_temp[ies*NPHI_SMALL+ips]==NCALO) continue;
-                            calo_temp[ies*NPHI_SMALL+ips][i_temp[ies*NPHI_SMALL+ips]] = calo[i];
-                            i_temp[ies*NPHI_SMALL+ips] += 1;
-                            ncalos[ies*NPHI_SMALL+ips]++;
-                        }
-                    }
-                }
-            }
-        }
-        std::fill(i_temp, i_temp+TMUX_OUT, 0);
-        for (int i = 0; i < NEMCALO_TMUX; ++i) {
-            if (int(emcalo[i].hwEta) < etalo or int(emcalo[i].hwEta) > etahi) continue;
-            if (int(emcalo[i].hwPhi) < philo or int(emcalo[i].hwPhi) > phihi) continue;
-            if (int(emcalo[i].hwPt) == 0) continue;
-            for (int ies = 0; ies < NETA_SMALL; ies++) {
-                if (int(emcalo[i].hwEta) <= etalo+(2*ETA_BUFFER)+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*(ies+1)
-                and int(emcalo[i].hwEta) > etalo+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*ies) {
-                    for (int ips = 0; ips < NPHI_SMALL; ips++) {
-                        if (int(emcalo[i].hwPhi) <= philo+(2*PHI_BUFFER)+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*(ips+1)
-                        and int(emcalo[i].hwPhi) > philo+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*ips) {
-                            if (i_temp[ies*NPHI_SMALL+ips]==NEMCALO) continue;
-                            emcalo_temp[ies*NPHI_SMALL+ips][i_temp[ies*NPHI_SMALL+ips]] = emcalo[i];
-                            i_temp[ies*NPHI_SMALL+ips] += 1;
-                            nemcalos[ies*NPHI_SMALL+ips]++;
-                        }
-                    }
-                }
-            }
-        }
-        std::fill(i_temp, i_temp+TMUX_OUT, 0);
-        for (int i = 0; i < NMU_TMUX; ++i) {
-            if (int(mu[i].hwEta) < etalo or int(mu[i].hwEta) > etahi) continue;
-            if (int(mu[i].hwPhi) < philo or int(mu[i].hwPhi) > phihi) continue;
-            if (int(mu[i].hwPt) == 0) continue;
-            for (int ies = 0; ies < NETA_SMALL; ies++) {
-                if (int(mu[i].hwEta) <= etalo+(2*ETA_BUFFER)+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*(ies+1)
-                and int(mu[i].hwEta) > etalo+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*ies) {
-                    for (int ips = 0; ips < NPHI_SMALL; ips++) {
-                        if (int(mu[i].hwPhi) <= philo+(2*PHI_BUFFER)+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*(ips+1)
-                        and int(mu[i].hwPhi) > philo+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*ips) {
-                            if (i_temp[ies*NPHI_SMALL+ips]==NMU) continue;
-                            mu_temp[ies*NPHI_SMALL+ips][i_temp[ies*NPHI_SMALL+ips]] = mu[i];
-                            i_temp[ies*NPHI_SMALL+ips] += 1;
-                            nmus[ies*NPHI_SMALL+ips]++;
-                        }
-                    }
-                }
-            }
-        }
+        // for (int i = 0; i < NTRACK_TMUX; ++i) {
+        //     if (int(track[i].hwEta) < etalo or int(track[i].hwEta) > etahi) continue;
+        //     if (int(track[i].hwPhi) < philo or int(track[i].hwPhi) > phihi) continue;
+        //     if (int(track[i].hwPt) == 0) continue;
+        //     std::cout<<"\t"<<track[i].hwEta<<" "<<track[i].hwPhi<<std::endl;
+        //     for (int ies = 0; ies < NETA_SMALL; ies++) {
+        //         e1=etalo+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*ies +std::min(ies,etaremainder);
+	//         e2=etalo+(2*ETA_BUFFER)+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*(ies+1) + std::min(ies+1,etaremainder);
+        //         std::cout<<"checking eta: "<<e1<<" "<<e2<<" (offsets "<<std::min(ies,etaremainder)<<" "<<std::min(ies+1,etaremainder)<<")"<<std::endl;
+        //         if (int(track[i].hwEta) <= e2 and int(track[i].hwEta) > e1) {
+        //             for (int ips = 0; ips < NPHI_SMALL; ips++) {
+        //                 p1=philo+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*ips + std::min(ips,phiremainder);
+        //                 p2=philo+(2*PHI_BUFFER)+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*(ips+1) + std::min(ips+1,phiremainder);
+        //                 std::cout<<"checking phi: "<<p1<<" "<<p2<<" (offsets "<<std::min(ips,phiremainder)<<" "<<std::min(ips+1,phiremainder)<<")"<<std::endl;
+        //                 if ( isInPhiRegion(track[i].hwPhi, p1, p2) ) { // check "p1<=test<p2" accounting for phi wraparound
+        //                     if (i_temp[ies*NPHI_SMALL+ips]==NTRACK) continue;
+        //                     std::cout<<"\tX -- ("<<ies<<","<<ips<<")"<<std::endl;
+        //                     track_temp[ies*NPHI_SMALL+ips][i_temp[ies*NPHI_SMALL+ips]] = track[i];
+        //                     i_temp[ies*NPHI_SMALL+ips] += 1;
+        //                     ntracks[ies*NPHI_SMALL+ips]++;
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+        // std::fill(i_temp, i_temp+TMUX_OUT, 0);
+        // for (int i = 0; i < NCALO_TMUX; ++i) {
+        //     if (int(calo[i].hwEta) < etalo or int(calo[i].hwEta) > etahi) continue;
+        //     if (int(calo[i].hwPhi) < philo or int(calo[i].hwPhi) > phihi) continue;
+        //     if (int(calo[i].hwPt) == 0) continue;
+        //     for (int ies = 0; ies < NETA_SMALL; ies++) {
+        //         if (int(calo[i].hwEta) <= etalo+(2*ETA_BUFFER)+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*(ies+1)
+        //         and int(calo[i].hwEta) > etalo+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*ies) {
+        //             for (int ips = 0; ips < NPHI_SMALL; ips++) {
+        //                 if (int(calo[i].hwPhi) <= philo+(2*PHI_BUFFER)+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*(ips+1)
+        //                 and int(calo[i].hwPhi) > philo+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*ips) {
+        //                     if (i_temp[ies*NPHI_SMALL+ips]==NCALO) continue;
+        //                     calo_temp[ies*NPHI_SMALL+ips][i_temp[ies*NPHI_SMALL+ips]] = calo[i];
+        //                     i_temp[ies*NPHI_SMALL+ips] += 1;
+        //                     ncalos[ies*NPHI_SMALL+ips]++;
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+        // std::fill(i_temp, i_temp+TMUX_OUT, 0);
+        // for (int i = 0; i < NEMCALO_TMUX; ++i) {
+        //     if (int(emcalo[i].hwEta) < etalo or int(emcalo[i].hwEta) > etahi) continue;
+        //     if (int(emcalo[i].hwPhi) < philo or int(emcalo[i].hwPhi) > phihi) continue;
+        //     if (int(emcalo[i].hwPt) == 0) continue;
+        //     for (int ies = 0; ies < NETA_SMALL; ies++) {
+        //         if (int(emcalo[i].hwEta) <= etalo+(2*ETA_BUFFER)+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*(ies+1)
+        //         and int(emcalo[i].hwEta) > etalo+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*ies) {
+        //             for (int ips = 0; ips < NPHI_SMALL; ips++) {
+        //                 if (int(emcalo[i].hwPhi) <= philo+(2*PHI_BUFFER)+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*(ips+1)
+        //                 and int(emcalo[i].hwPhi) > philo+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*ips) {
+        //                     if (i_temp[ies*NPHI_SMALL+ips]==NEMCALO) continue;
+        //                     emcalo_temp[ies*NPHI_SMALL+ips][i_temp[ies*NPHI_SMALL+ips]] = emcalo[i];
+        //                     i_temp[ies*NPHI_SMALL+ips] += 1;
+        //                     nemcalos[ies*NPHI_SMALL+ips]++;
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+        // std::fill(i_temp, i_temp+TMUX_OUT, 0);
+        // for (int i = 0; i < NMU_TMUX; ++i) {
+        //     if (int(mu[i].hwEta) < etalo or int(mu[i].hwEta) > etahi) continue;
+        //     if (int(mu[i].hwPhi) < philo or int(mu[i].hwPhi) > phihi) continue;
+        //     if (int(mu[i].hwPt) == 0) continue;
+        //     for (int ies = 0; ies < NETA_SMALL; ies++) {
+        //         if (int(mu[i].hwEta) <= etalo+(2*ETA_BUFFER)+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*(ies+1)
+        //         and int(mu[i].hwEta) > etalo+int(float(2*MAXETA_INT)/float(NETA_TMUX*NETA_SMALL))*ies) {
+        //             for (int ips = 0; ips < NPHI_SMALL; ips++) {
+        //                 if (int(mu[i].hwPhi) <= philo+(2*PHI_BUFFER)+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*(ips+1)
+        //                 and int(mu[i].hwPhi) > philo+int(float(2*MAXPHI_INT)/float(NPHI_TMUX*NPHI_SMALL))*ips) {
+        //                     if (i_temp[ies*NPHI_SMALL+ips]==NMU) continue;
+        //                     mu_temp[ies*NPHI_SMALL+ips][i_temp[ies*NPHI_SMALL+ips]] = mu[i];
+        //                     i_temp[ies*NPHI_SMALL+ips] += 1;
+        //                     nmus[ies*NPHI_SMALL+ips]++;
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
 
         for (int ir = 0; ir < TMUX_OUT; ir++) {
 
