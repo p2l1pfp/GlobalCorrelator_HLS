@@ -81,11 +81,21 @@ void mp7wrapped_pfalgo3_full_sort(MP7DataWord input[MP7_NCHANN], MP7DataWord out
 
 }
 
+// LEQ LE
 bool isInPhiRegion(int test, int loBound, int hiBound){
-    // check whether "lowBound < test <= hiBound" while accounting for
+    // check whether "lowBound <= test < hiBound" while accounting for
     // "wraparound" when hi/loBound are outside of the (MAXPHI_INT-NPHI_INT,MAXPHI_INT) range    
     if(loBound<=MAXPHI_INT-NPHI_INT && hiBound>MAXPHI_INT) return true;
-    if(loBound<MAXPHI_INT-NPHI_INT) return (test<= hiBound) || (test>MAXPHI_INT-((MAXPHI_INT-NPHI_INT)-loBound));
-    if(hiBound>MAXPHI_INT) return (test>loBound) || (test<= (MAXPHI_INT-NPHI_INT)+(hiBound-MAXPHI_INT));
-    return (test<=hiBound) && (test>loBound);
+    if(loBound<MAXPHI_INT-NPHI_INT) return (test < hiBound) || (test >= MAXPHI_INT-((MAXPHI_INT-NPHI_INT)-loBound));
+    if(hiBound>MAXPHI_INT) return (test >= loBound) || (test < (MAXPHI_INT-NPHI_INT)+(hiBound-MAXPHI_INT));
+    return (test < hiBound) && (test >= loBound);
 }
+// LE LEQ
+/* bool isInPhiRegion(int test, int loBound, int hiBound){ */
+/*     // check whether "lowBound < test <= hiBound" while accounting for */
+/*     // "wraparound" when hi/loBound are outside of the (MAXPHI_INT-NPHI_INT,MAXPHI_INT) range     */
+/*     if(loBound<=MAXPHI_INT-NPHI_INT && hiBound>MAXPHI_INT) return true; */
+/*     if(loBound<MAXPHI_INT-NPHI_INT) return (test<= hiBound) || (test>MAXPHI_INT-((MAXPHI_INT-NPHI_INT)-loBound)); */
+/*     if(hiBound>MAXPHI_INT) return (test>loBound) || (test<= (MAXPHI_INT-NPHI_INT)+(hiBound-MAXPHI_INT)); */
+/*     return (test<=hiBound) && (test>loBound); */
+/* } */
