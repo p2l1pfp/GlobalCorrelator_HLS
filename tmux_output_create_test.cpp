@@ -28,8 +28,8 @@ int main() {
     //RandomPFInputs inputs(37); // 37 is a good random number
     //DiscretePFInputs inputs("regions_TTbar_PU140.dump");
     //DiscretePFInputs inputs("barrel_sectors_1x1_TTbar_PU140.dump");
-    //DiscretePFInputs inputs("barrel_sectors_1x1_TTbar_PU200.dump");
-    DiscretePFInputs inputs("dummy.dump");
+    DiscretePFInputs inputs("barrel_sectors_1x1_TTbar_PU200.dump");
+    // DiscretePFInputs inputs("dummy.dump");
     
     // input TP objects
     HadCaloObj calo[NCALO_TMUX]; EmCaloObj emcalo[NEMCALO_TMUX]; TkObj track[NTRACK_TMUX]; z0_t hwZPV;
@@ -116,7 +116,7 @@ int main() {
         std::vector<int> phi_bounds_hi{};
         const int phi_step = int(NPHI_INT)/int(NPHI_SMALL);
         const int phi_rmdr = int(NPHI_INT)%int(NPHI_SMALL);
-
+        int p1,p2;
         for (int ip = 0; ip < NPHI_SMALL; ++ip) {
             p1 = (MAXPHI_INT-NPHI_INT) - PHI_BUFFER + phi_step*ip + std::min(ip,phi_rmdr);
             p2 = (MAXPHI_INT-NPHI_INT) + PHI_BUFFER + phi_step*(ip+1) + std::min(ip+1,phi_rmdr);
