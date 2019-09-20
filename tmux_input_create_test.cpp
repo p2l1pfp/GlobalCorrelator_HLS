@@ -16,8 +16,8 @@ int main() {
     //RandomPFInputs inputs(37); // 37 is a good random number
     //DiscretePFInputs inputs("regions_TTbar_PU140.dump");
     //DiscretePFInputs inputs("barrel_sectors_1x1_TTbar_PU140.dump");
-    //DiscretePFInputs inputs("barrel_sectors_1x1_TTbar_PU200.dump");
-    DiscretePFInputs inputs("dummy.dump");
+    DiscretePFInputs inputs("barrel_sectors_1x1_TTbar_PU200.dump");
+    //DiscretePFInputs inputs("dummy.dump");
     
     // input TP objects
     HadCaloObj calo[NCALO_TMUX]; EmCaloObj emcalo[NEMCALO_TMUX]; TkObj track[NTRACK_TMUX]; z0_t hwZPV;
@@ -146,7 +146,7 @@ int main() {
         }
         i_temp = 0;
         ireg = 0;
-        /*for (int i = 0; i < NMU_TMUX; ++i) {
+        for (int i = 0; i < NMU_TMUX; ++i) {
             if (int(mu[i].hwEta) < etalo or int(mu[i].hwEta) > etahi) continue;
             if (int(mu[i].hwPhi) < philo or int(mu[i].hwPhi) > phihi) continue;
             if (int(mu[i].hwPt) == 0) continue;
@@ -155,8 +155,7 @@ int main() {
             ireg++;
             if (ireg == TMUX_OUT) {i_temp++; ireg=0;}
             if (i_temp == NMU) {break;}
-        }*/
-        //FIXME skipping muons for now, makes link alignment with firmware work out
+        }
 
         /*std::cout<<"Totals:"<<std::endl;
         std::cout<<"\ttrack  = "<<ntracks<<std::endl;
