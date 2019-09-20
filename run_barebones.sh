@@ -33,8 +33,7 @@ PARTID=$7
 echo -e `date +"%h%y %T"` "BB [${LINENO}]  \t PARTID = $PARTID"
 
 # setup Vivado
-. /home/drankin/setup_vivado.sh #setup vivado and vivado_hls (2018.1)
-#. /home/drankin/setup.sh.2016 #setup vivado and vivado_hls (2016.4)
+. /home/drankin/setup_vivado.2018.1.sh #setup vivado and vivado_hls (2018.1)
 
 
 ###################### HLS
