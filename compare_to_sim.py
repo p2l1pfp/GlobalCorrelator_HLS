@@ -4,11 +4,30 @@ import argparse
 
 
 TMUX_OUT=18
-NEVENTS=6
+NEVENTS=1
 #CLKMAX=150
 #CLKMAX=108
 CLKMAX=TMUX_OUT*NEVENTS
-#CLKMAX=1
+CLKMAX=140 # 134 lines in sim out
+
+NTRACK=22
+NEM=13
+NCALO=15
+NMU=2
+
+class Region:
+    def __init__(self):
+        self.eta_index = -1
+        self.phi_index = -1
+        self.tracks    = []
+        self.ems       = []
+        self.calos     = []
+        self.mus       = []
+
+class Event:
+    def __init__(self):
+        self.n_regions=18
+        self.small_regions = []
 
 def GetEmulationData(parser):
     '''
@@ -18,13 +37,15 @@ def GetEmulationData(parser):
     The number of lines is equal to TMUX_OUT*NTEST
     This may be 18*6=108
     '''
-    NTRACK=15
-    NEM=15
-    NCALO=15
+    
+    # from ryan. this is the order of (eta,phi) regions output by the emulator
+    # 0,18,36,.. are (0,0), 1,19,37,... are (0,2) and so on...
+    ordering = [(0,0), (0,2), (0,1), (0,3), (1,2), (0,4), (1,3), (0,5), (1,4), (0,6), (1,5), (0,7), (1,6), (0,8), (1,7), (1,0), (1,8), (1,1)]
 
     tracks=[]
     ems=[]
     calos=[]
+    mus=[]
     with open(parser.emulator_output,'r') as f:
         ctr=0
         for l in f:
@@ -33,35 +54,38 @@ def GetEmulationData(parser):
             tracks += [arr[1:NTRACK+1]]
             ems    += [arr[1+NTRACK:NTRACK+NEM+1]]
             calos  += [arr[1+NTRACK+NEM:NTRACK+NEM+NCALO+1]]
+            mus    += [arr[1+NTRACK+NEM+NCALO:NTRACK+NEM+NCALO+NMU+1]]
             ctr+=1
+            # print(step)
             if ctr>CLKMAX:
                 #print("em: reset clock max")
                 pass
             # print( (tracks), (ems), (calos) )
 
-    return tracks, ems, calos
+    #'serialized' list of 18 tmux regions * however many events...
+    return tracks, ems, calos, mus
 
 def GetSimulationData(parser):
     '''
     Simulation data is stored across multiple files,
     each corresponding to a time series of single-object outputs.
     #files is #em+#calo+#track, which may equal 15+20+25=60.
+      --> 22+13+15+2=52?
     Each line corresonds to a 'step' of the output and...
     TODO add comment on length of each file.
     '''
-    NEM=15
-    NCALO=20
-    NTRACK=25
 
     ems=[]
     calos=[]
     tracks=[]
+    mus=[]
     for i in range(CLKMAX):
         ems.append([0]*NEM)
         calos.append([0]*NCALO)
         tracks.append([0]*NTRACK)
+        mus.append([0]*NMU)
 
-    for ii in range(NEM+NCALO+NTRACK):
+    for ii in range(NEM+NCALO+NTRACK+NMU):
         with open("{}/sim_HLS_input_object_{}.dat".format(parser.sim_output_dir,ii),'r') as f:
             ctr=0
             for l in f:
@@ -77,16 +101,18 @@ def GetSimulationData(parser):
                     calos[ctr][ii-NEM]=val
                 elif ii<NEM+NCALO+NTRACK:
                     tracks[ctr][ii-NEM-NCALO]=val
+                elif ii<NEM+NCALO+NTRACK+NMU:
+                    tracks[ctr][ii-NEM-NCALO-NMU]=val
                 # if ctr==5: 
                 #     print(l)
                 ctr += 1
 
     # hack to shorten the max # of sim outputs to match the emulation
-    for x in ems: x = x[:15]
-    for x in calos: x = x[:15]
-    for x in tracks: x = x[:15]
+    # for x in ems: x = x[:15]
+    # for x in calos: x = x[:15]
+    # for x in tracks: x = x[:15]
 
-    return tracks, ems, calos
+    return tracks, ems, calos, mus
 
 
 def SelectBits(x, nbits, shift):
@@ -317,9 +343,18 @@ def CompareOverlap(em_tracks,sim_tracks):
     # add all non-zero entries to the total track lists
     all_em=[]
     all_sim=[]
-    for ii in range(CLKMAX):
-        for tk in [x for x in em_tracks[ii] if x]: all_em.append(tk)
-        for tk in [x for x in sim_tracks[ii] if x]: all_sim.append(tk)
+    # for ii in range(CLKMAX):
+    #     for tk in [x for x in em_tracks[ii] if x]: all_em.append(tk)
+    #     for tk in [x for x in sim_tracks[ii] if x]: all_sim.append(tk)
+    for em in em_tracks:
+        #print(em)
+        for tk in [x for x in em if x]: 
+            all_em.append(tk)
+            #print(hex(tk))
+    for sim in sim_tracks:
+        for tk in [x for x in sim if x]: all_sim.append(tk)
+
+    exit(0)
 
     # categorize
     common_tks = set(all_em).intersection(set(all_sim))
@@ -386,8 +421,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--input", default="",  dest = "input_file", help = "regionizer input from emulator")
-    parser.add_argument("-e", "--emulation-output", default="output.txt",  dest = "emulator_output", help = "regionizer output from emulator")
-    parser.add_argument("-s", "--simulation-data-dir", default="/home/therwig/sandbox/otsdaq-cms-firmware/regionizer_full/sim/sim_data/", dest = "sim_output_dir", 
+    parser.add_argument("-e", "--emulation-output", default="outputs.txt",  dest = "emulator_output", help = "regionizer output from emulator")
+    parser.add_argument("-s", "--simulation-data-dir", default="/home/therwig/sandbox/otsdaq-cms-firmware/regionizer_full_small/sim/sim_data/", dest = "sim_output_dir", 
                         help = "regionizer output directory from simulation")
     parser = parser.parse_args(sys.argv[1:])
     print()
@@ -395,16 +430,27 @@ if __name__ == "__main__":
     print("Reading from simulation output: "+parser.sim_output_dir)
     if len(parser.input_file): print("Checking inputs from: "+parser.input_file)
 
-    in_tracks, in_ems, in_calos = GetInputs(parser)
-#    print (in_tracks)
-    em_tracks, em_ems, em_calos = GetEmulationData(parser)
-    sim_tracks, sim_ems, sim_calos = GetSimulationData(parser)
+    if len(parser.input_file):
+        in_tracks, in_ems, in_calos = GetInputs(parser)
+        print (in_tracks)
+
+    em_tracks, em_ems, em_calos, em_mus = GetEmulationData(parser)
+    # for em_track in em_tracks:
+    #     print("em_tracks", em_track,"\n")
+    # print("em_tracks", em_tracks,"\n")
+    # print("em_ems   ", em_ems   ,"\n")
+    # print("em_calos ", em_calos ,"\n")
+    # print("em_mus   ", em_mus   ,"\n")
+    # print(len(em_tracks),len(em_tracks[0]))
+    sim_tracks, sim_ems, sim_calos, sim_mus = GetSimulationData(parser)
+    # print("sim_tracks", sim_tracks,"\n")
+    # exit(0)
 
     # print event-by-event comparisons
-    ComparePerEvent(em_tracks,sim_tracks)
+    #ComparePerEvent(em_tracks,sim_tracks)
     # cumulative over all events ()
     CompareOverlap(em_tracks,sim_tracks)
-
+    exit(0)
     # investigate common tracks
     CheckCommonTracks(em_tracks,sim_tracks)
 
