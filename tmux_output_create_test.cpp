@@ -28,8 +28,8 @@ int main() {
     //RandomPFInputs inputs(37); // 37 is a good random number
     //DiscretePFInputs inputs("regions_TTbar_PU140.dump");
     //DiscretePFInputs inputs("barrel_sectors_1x1_TTbar_PU140.dump");
-    DiscretePFInputs inputs("barrel_sectors_1x1_TTbar_PU200.dump");
-    // DiscretePFInputs inputs("dummy.dump");
+    //DiscretePFInputs inputs("barrel_sectors_1x1_TTbar_PU200.dump");
+    DiscretePFInputs inputs("dummy.dump");
     
     // input TP objects
     HadCaloObj calo[NCALO_TMUX]; EmCaloObj emcalo[NEMCALO_TMUX]; TkObj track[NTRACK_TMUX]; z0_t hwZPV;
@@ -227,6 +227,7 @@ int main() {
             if (int(calo[i].hwEta) < eta_bounds_lo.front() or int(calo[i].hwEta) >= eta_bounds_hi.back()) continue;
             if (int(calo[i].hwPhi) < phi_bounds_lo.front() or int(calo[i].hwPhi) >= eta_bounds_hi.back()) continue;
             if (int(calo[i].hwPt) == 0) continue;
+            std::cout<<"\t"<<calo[i].hwEta<<" "<<calo[i].hwPhi<<std::endl;
             for (int ies = 0; ies < NETA_SMALL; ies++) {
                 if (int(calo[i].hwEta) >= eta_bounds_lo[ies] and int(calo[i].hwEta) < eta_bounds_hi[ies]) {
                     for (int ips = 0; ips < NPHI_SMALL; ips++) {
@@ -245,6 +246,7 @@ int main() {
             if (int(emcalo[i].hwEta) < eta_bounds_lo.front() or int(emcalo[i].hwEta) >= eta_bounds_hi.back()) continue;
             if (int(emcalo[i].hwPhi) < phi_bounds_lo.front() or int(emcalo[i].hwPhi) >= eta_bounds_hi.back()) continue;
             if (int(emcalo[i].hwPt) == 0) continue;
+            std::cout<<"\t"<<emcalo[i].hwEta<<" "<<emcalo[i].hwPhi<<std::endl;
             for (int ies = 0; ies < NETA_SMALL; ies++) {
                 if (int(emcalo[i].hwEta) >= eta_bounds_lo[ies] and int(emcalo[i].hwEta) < eta_bounds_hi[ies]) {
                     for (int ips = 0; ips < NPHI_SMALL; ips++) {

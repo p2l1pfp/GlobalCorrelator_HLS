@@ -127,8 +127,21 @@ int main(int argc, char **argv)
       fwrite(&t_hwPhi, 2, 1, fRegionDump);
     }
 
-    uint32_t nmuon = 0;
+    uint32_t nmuon = 1;
     fwrite(&nmuon, 4, 1, fRegionDump);//number of muon in event
+
+    for (uint32_t im = 0; im < nmuon; im++) {
+        int16_t  m_hwPt=10;   
+        int16_t  m_hwEta=-80;
+        int16_t  m_hwPhi=80;
+        uint16_t m_hwFlags=1;
+        bool     m_hwCharge=0;
+        fwrite(&m_hwPt, 2, 1, fRegionDump);
+        fwrite(&m_hwEta, 2, 1, fRegionDump);
+        fwrite(&m_hwPhi, 2, 1, fRegionDump);
+        fwrite(&m_hwFlags, 2, 1, fRegionDump);
+        fwrite(&m_hwCharge, 1, 1, fRegionDump); 
+    }
 
     float z0 = 0.;
     fwrite(&z0, sizeof(float), 1, fRegionDump);

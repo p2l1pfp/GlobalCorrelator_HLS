@@ -92,7 +92,8 @@ class DiscretePFInputs {
 				if (event_.event == 0 || iregion_ == event_.regions.size()) {
 					if (feof(file_)) return false;
 					if (!event_.readFromFile(file_)) return false;
-					printf("Beginning of run %u, lumi %u, event %lu \n", event_.run, event_.lumi, event_.event);
+					printf("Beginning of run %u, lumi %u, event %lu (%u regions) \n", 
+                                               event_.run, event_.lumi, event_.event, event_.regions.size());
 					iregion_ = 0;
 				}
 				const Region &r = event_.regions[iregion_];
