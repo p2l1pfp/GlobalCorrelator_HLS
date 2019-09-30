@@ -15,19 +15,51 @@ NEM=13
 NCALO=15
 NMU=2
 
+class Object:
+    def __init__(self, 
+                 pt   = 0,
+                 pte  = 0,
+                 eta  = 0,
+                 phi  = 0,
+                 z0   = 0,
+                 qual = 0):
+        self.pt   = pt  
+        self.pte  = pte 
+        self.eta  = eta 
+        self.phi  = phi 
+        self.z0   = z0  
+        self.qual = qual
+
 class Region:
-    def __init__(self):
+    def __init__(self, n_sub=0):
+        #add subregions if applicable
+        self.n_subregions = n_sub
+        self.subregions = []
+        for i in range(self.n_subregions):
+            smallR = Region()
+            smallR.reg_type = "small"
+            self.subregions.append(smallR)
+
+        self.reg_type  = None
         self.eta_index = -1
         self.phi_index = -1
         self.tracks    = []
         self.ems       = []
         self.calos     = []
         self.mus       = []
+        self.ID        = -1 #unique input ID
 
 class Event:
-    def __init__(self):
-        self.n_regions=18
-        self.small_regions = []
+    def __init__(self, n_large = 1, n_small = 1):
+        self.n_small_regions = n_small
+        self.n_big_regions   = n_large
+        self.large_regions   = []
+        for i in range(self.n_big_regions):
+            bigR = Region(n_sub = self.n_small_regions)
+            bigR.reg_type = "large"
+            self.large_regions.append(bigR)
+    # def AddLargeRegion(self):
+    #     pass #self.small_regions = []
 
 def GetEmulationData(parser):
     '''
@@ -46,24 +78,64 @@ def GetEmulationData(parser):
     ems=[]
     calos=[]
     mus=[]
+
+    # local vars
+    EM_NEVENTS=6
+    EM_NLARGE=1
+    EM_NSMALL=18
+
+    evts = []
+
+    # setup for the first region
+    evt = Event(EM_NLARGE, EM_NSMALL)
+    # large_reg = Region(n_sub=EM_NSMALL)
+    # evt.large_regions.append( large_reg )
+
+    # for l in evt.large_regions:
+    #     print(' new LR with {} SRs'.format(len(l.subregions)),l.reg_type)
+    #     for s in l.subregions:
+    #         print('  new SR {}'.format(s.ID),s.reg_type)
+            
+    # exit(0)
+    # for em_track in em_tracks:
+
+
     with open(parser.emulator_output,'r') as f:
-        ctr=0
+        ctr = 0
+        sreg_ctr = 0
+        lreg_ctr = 0
+        evt_ctr  = 0
         for l in f:
+
+            # retrieve the small region
+            sr = evt.large_regions[lreg_ctr].subregions[sreg_ctr]
+
+            # extract data and fill
             arr = list(map(lambda x : int(x,16), l.split()))
-            step = arr[0]
-            tracks += [arr[1:NTRACK+1]]
-            ems    += [arr[1+NTRACK:NTRACK+NEM+1]]
-            calos  += [arr[1+NTRACK+NEM:NTRACK+NEM+NCALO+1]]
-            mus    += [arr[1+NTRACK+NEM+NCALO:NTRACK+NEM+NCALO+NMU+1]]
-            ctr+=1
-            # print(step)
-            if ctr>CLKMAX:
-                #print("em: reset clock max")
-                pass
-            # print( (tracks), (ems), (calos) )
+            step = arr[0] # unused
+            sr.tracks = list(filter(lambda x: x, arr[1:NTRACK+1]                               ))
+            sr.ems    = list(filter(lambda x: x, arr[1+NTRACK:NTRACK+NEM+1]                    ))
+            sr.calos  = list(filter(lambda x: x, arr[1+NTRACK+NEM:NTRACK+NEM+NCALO+1]          ))
+            sr.mus    = list(filter(lambda x: x, arr[1+NTRACK+NEM+NCALO:NTRACK+NEM+NCALO+NMU+1]))
+            sr.ID     = step
+
+            # increment counters
+            # (add support for large region ctr later)
+            ctr = ctr+1
+            sreg_ctr = ctr % EM_NSMALL
+            if ctr and (ctr % EM_NSMALL)==0: 
+                evt_ctr = evt_ctr+1
+                # create new event
+                evts.append( evt )
+                evt = Event(EM_NLARGE, EM_NSMALL)
+                # large_reg = Region(n_sub=EM_NSMALL)
+                # evt.large_regions.append( large_reg )
+
+
 
     #'serialized' list of 18 tmux regions * however many events...
-    return tracks, ems, calos, mus
+    #return tracks, ems, calos, mus
+    return evts
 
 def GetSimulationData(parser):
     '''
@@ -75,44 +147,44 @@ def GetSimulationData(parser):
     TODO add comment on length of each file.
     '''
 
-    ems=[]
-    calos=[]
-    tracks=[]
-    mus=[]
-    for i in range(CLKMAX):
-        ems.append([0]*NEM)
-        calos.append([0]*NCALO)
-        tracks.append([0]*NTRACK)
-        mus.append([0]*NMU)
+    # local vars
+    SIM_NEVENTS=6
+    SIM_NLARGE=1
+    SIM_NSMALL=18
+
+    evts = []
+    for i in range(SIM_NEVENTS):
+        evts.append( Event(SIM_NLARGE, SIM_NSMALL) )
+
+    sreg_ctr = 0
+    lreg_ctr = 0
+    evt_ctr  = 0
 
     for ii in range(NEM+NCALO+NTRACK+NMU):
         with open("{}/sim_HLS_input_object_{}.dat".format(parser.sim_output_dir,ii),'r') as f:
             ctr=0
             for l in f:
                 val = int(l,base=16)
-                if ctr >= CLKMAX:
-                    #print("sim: reset clock max")
-                    continue
-                    #break
-                if ii<NEM:
-                    #print(ctr,ii)
-                    ems[ctr][ii]=val
-                elif ii<NEM+NCALO:
-                    calos[ctr][ii-NEM]=val
-                elif ii<NEM+NCALO+NTRACK:
-                    tracks[ctr][ii-NEM-NCALO]=val
-                elif ii<NEM+NCALO+NTRACK+NMU:
-                    tracks[ctr][ii-NEM-NCALO-NMU]=val
-                # if ctr==5: 
-                #     print(l)
+                # ignore empty lines
+                sreg_ctr = ctr % SIM_NSMALL
+                evt_ctr  = int(ctr / SIM_NSMALL)
+                if evt_ctr>=SIM_NEVENTS: continue
+                # (assume only one large region for now)
+                print(evt_ctr,lreg_ctr,sreg_ctr)
+                sr = evts[evt_ctr].large_regions[lreg_ctr].subregions[sreg_ctr]                    
+                if(ii==0): sr.ID=ctr
+                if val:
+                    if ii<NEM:
+                        sr.ems.append(val)
+                    elif ii<NEM+NCALO: 
+                        sr.calos.append(val)
+                    elif ii<NEM+NCALO+NTRACK:
+                        sr.tracks.append(val)
+                    elif ii<NEM+NCALO+NTRACK+NMU:
+                        sr.mus.append(val)
                 ctr += 1
 
-    # hack to shorten the max # of sim outputs to match the emulation
-    # for x in ems: x = x[:15]
-    # for x in calos: x = x[:15]
-    # for x in tracks: x = x[:15]
-
-    return tracks, ems, calos, mus
+    return evts
 
 
 def SelectBits(x, nbits, shift):
@@ -131,8 +203,8 @@ def GetTrackParams(x):
     phi  =  SelectBitsInt(x,10,42)
     z0   =  SelectBitsInt(x,10,52)
     qual =  SelectBitsInt(x, 1,62)
-    #print("track: pt={}, pte={}, eta={}, phi={}, z0={}, qual={} ({})".format(pt, pte, eta, phi, z0, qual, x))
     return pt, pte, eta, phi, z0, qual
+    #print("track: pt={}, pte={}, eta={}, phi={}, z0={}, qual={} ({})".format(pt, pte, eta, phi, z0, qual, x))
 
 def GetCaloParams(x):
     pt   =  SelectBits(x,16, 0)
@@ -140,16 +212,16 @@ def GetCaloParams(x):
     eta  =  SelectBits(x,10,32)#-2**10 # allow negative
     phi  =  SelectBits(x,10,42)
     isEM =  SelectBits(x, 1,52)
-    #print("calo: pt={}, empt={}, eta={}, phi={}, isEM={} ({})".format(pt, empt, eta, phi, isEM, x))
     return pt, empt, eta, phi, isEM
+    #print("calo: pt={}, empt={}, eta={}, phi={}, isEM={} ({})".format(pt, empt, eta, phi, isEM, x))
 
 def GetEMParams(x):
     pt   =  SelectBits(x,16, 0)
     pte  =  SelectBits(x,16,16)
     eta  =  SelectBits(x,10,32)#-2**10 # allow negative
     phi  =  SelectBits(x,10,42)
-    #print("EM: pt={}, pte={}, eta={}, phi={} ({})".format(pt, pte, eta, phi, x))
     return pt, pte, eta, phi
+    #print("EM: pt={}, pte={}, eta={}, phi={} ({})".format(pt, pte, eta, phi, x))
 
 
 def GetInputs(parser, dump=True):
@@ -212,7 +284,7 @@ def GetInputs(parser, dump=True):
 # print in red
 def Warn(x): print('\033[91m'+x+'\033[0m')
 
-def ComparePerEvent(em_tracks,sim_tracks):
+def ComparePerEvent(em_events,sim_events):
     '''
     Loop over each event / tmuxed region and compare the outputs for each
     '''
@@ -434,7 +506,24 @@ if __name__ == "__main__":
         in_tracks, in_ems, in_calos = GetInputs(parser)
         print (in_tracks)
 
-    em_tracks, em_ems, em_calos, em_mus = GetEmulationData(parser)
+    em_events  = GetEmulationData(parser)
+    sim_events = GetSimulationData(parser)
+
+    if 1: #debugging
+        for e in em_events:
+            print('new event with {} LRs'.format(len(e.large_regions)))
+            for l in e.large_regions:
+                print(' new LR with {} SRs'.format(len(l.subregions)),l.reg_type)
+                for s in l.subregions:
+                    print('  new SR {}'.format(s.ID),s.reg_type)
+                    print('  ',len(s.tracks))
+                    print('  ',len(s.ems   ))
+                    print('  ',len(s.calos ))
+                    print('  ',len(s.mus   ))
+
+    exit(0)
+    ComparePerEvent(em_events,sim_events)
+
     # for em_track in em_tracks:
     #     print("em_tracks", em_track,"\n")
     # print("em_tracks", em_tracks,"\n")
