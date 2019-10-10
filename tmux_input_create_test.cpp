@@ -222,7 +222,7 @@ int main() {
                 }
 
                 //std::cout<<"index="<<index<<" id"<<id<<std::endl;
-        
+
                 // put the data on the link number = link_ctr;
                 while (index < NFRAMES_APX_GEN0*TMUX_IN) {
                     stream1.str("");

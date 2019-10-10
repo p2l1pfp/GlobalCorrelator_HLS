@@ -48,6 +48,7 @@ class Region:
         self.calos     = []
         self.mus       = []
         self.ID        = -1 #unique input ID
+        self.track_clks= {} # record clock assoc w each track
 
 class Event:
     def __init__(self, n_large = 1, n_small = 1):
@@ -81,6 +82,7 @@ def GetEmulationData(parser):
 
     # local vars
     EM_NEVENTS=6
+    EM_NEVENTS=21
     EM_NLARGE=1
     EM_NSMALL=18
 
@@ -132,7 +134,11 @@ def GetEmulationData(parser):
                 # evt.large_regions.append( large_reg )
 
 
-
+    # add empty events for now
+    while len(evts) < EM_NEVENTS:
+        evt = Event(EM_NLARGE, EM_NSMALL)
+        evts.append( evt )
+        
     #'serialized' list of 18 tmux regions * however many events...
     #return tracks, ems, calos, mus
     return evts
@@ -149,6 +155,7 @@ def GetSimulationData(parser):
 
     # local vars
     SIM_NEVENTS=6
+    SIM_NEVENTS=21
     SIM_NLARGE=1
     SIM_NSMALL=18
 
@@ -170,7 +177,7 @@ def GetSimulationData(parser):
                 evt_ctr  = int(ctr / SIM_NSMALL)
                 if evt_ctr>=SIM_NEVENTS: continue
                 # (assume only one large region for now)
-                print(evt_ctr,lreg_ctr,sreg_ctr)
+                #print(evt_ctr,lreg_ctr,sreg_ctr)
                 sr = evts[evt_ctr].large_regions[lreg_ctr].subregions[sreg_ctr]                    
                 if(ii==0): sr.ID=ctr
                 if val:
@@ -180,6 +187,7 @@ def GetSimulationData(parser):
                         sr.calos.append(val)
                     elif ii<NEM+NCALO+NTRACK:
                         sr.tracks.append(val)
+                        sr.track_clks[val]=ctr
                     elif ii<NEM+NCALO+NTRACK+NMU:
                         sr.mus.append(val)
                 ctr += 1
@@ -284,7 +292,7 @@ def GetInputs(parser, dump=True):
 # print in red
 def Warn(x): print('\033[91m'+x+'\033[0m')
 
-def ComparePerEvent(em_events,sim_events):
+def ComparePerEvent(em_events,sim_events,nevts=1):
     '''
     Loop over each event / tmuxed region and compare the outputs for each
     '''
@@ -293,6 +301,25 @@ def ComparePerEvent(em_events,sim_events):
     The comparison is shown in 'steps', out of #EVENTS*(TMUX_OUT=18) total.
     Format is 'pt eta phi bits'. """)
     print("="*80)
+
+    
+    for ievt in range(nevts):
+        print("\nEvent %u"%ievt)
+        em_evt = em_events[ievt]
+        sim_evt = sim_events[ievt]
+        nsub = len(em_evt.large_regions[0].subregions)
+        if nsub != len(sim_evt.large_regions[0].subregions):
+            print("nsubreg mismatch!")
+        for isr in range(nsub):
+            em_sr = em_evt.large_regions[0].subregions[isr]
+            sim_sr = sim_evt.large_regions[0].subregions[isr]
+            # print(">em",isr,em_sr.tracks)
+            # print("sim",isr,sim_sr.tracks)
+            print(">em",isr,[GetTrackParams(t) for t in em_sr.tracks])
+            print("sim",isr,[GetTrackParams(t) for t in sim_sr.tracks])
+            print(">em",isr,["{:0>16x}".format(t) for t in em_sr.tracks])
+            print("sim",isr,["{:0>16x}".format(t) for t in sim_sr.tracks])
+    return
     for ii in range(CLKMAX):
         print("Step {}".format(ii))
         # remove zero entries from the track lists
@@ -322,10 +349,55 @@ def ComparePerEvent(em_events,sim_events):
     return
 
 
-def CheckCommonTracks(em_tracks,sim_tracks):
+def CheckAllObjects(em_events,sim_events):
     '''
     Compare the links that the common tracks arrive on
     '''
+    all_em_tks=set()
+    all_sim_tks=set()
+    nevts = max(len(em_events),len(sim_events))
+    if len(em_events) != len(sim_events):
+        print("mismatch event length")
+        #return
+    else: print("checking",nevts,"events")
+    #for ievt in range(1):
+    for ievt in range(nevts):
+        em_evt = em_events[ievt]
+        sim_evt = sim_events[ievt]
+        nsub = len(em_evt.large_regions[0].subregions)
+        if nsub != len(sim_evt.large_regions[0].subregions):
+            print("nsubreg mismatch!")
+        for isr in range(nsub):
+            em_sr = em_evt.large_regions[0].subregions[isr]
+            sim_sr = sim_evt.large_regions[0].subregions[isr]
+            for t in em_sr.tracks:
+                all_em_tks.add(t)
+            for t in sim_sr.tracks:
+                all_sim_tks.add(t)
+            
+            # print(">em",isr,em_sr.tracks)
+            # print("sim",isr,sim_sr.tracks)
+            # print(">em",isr,[GetTrackParams(t) for t in em_sr.tracks])
+            # print("sim",isr,[GetTrackParams(t) for t in sim_sr.tracks])
+            # print(">em",isr,["{:0>16x}".format(t) for t in em_sr.tracks])
+            # print("sim",isr,["{:0>16x}".format(t) for t in sim_sr.tracks])
+
+    common_tks = all_em_tks.intersection(all_sim_tks)
+    em_only = all_em_tks.difference(common_tks)
+    sim_only = all_sim_tks.difference(common_tks)
+    print()
+    print("common_tks",["{:0>16X}".format(t) for t in common_tks])
+    print()
+    print("em_only   ",["{:0>16X}".format(t) for t in em_only   ])
+    print()
+    print("sim_only  ",["{:0>16X}".format(t) for t in sim_only  ])
+    print()
+    #print("em_only   ",[GetTrackParams(t) for t in em_only   ])
+    print("sim_only   ",[GetTrackParams(t) for t in sim_only   ])
+
+    return
+
+    return
     all_em=[]
     all_sim=[]
     for ii in range(CLKMAX):
@@ -359,7 +431,87 @@ def CheckCommonTracks(em_tracks,sim_tracks):
     print("="*80+"\n")
 
     return
-    
+
+def TrackEmInSim(em_events,sim_events):
+    '''
+    Compare the links that the common tracks arrive on
+    '''
+    all_em_tks=set()
+    sim_tks={} # maps tracks to event
+    nevts = max(len(em_events),len(sim_events))
+    if len(em_events) != len(sim_events):
+        print("mismatch event length")
+        #return
+    else: print("checking",nevts,"events")
+    #for ievt in range(1):
+
+    import ROOT
+    from collections import OrderedDict
+    hists=OrderedDict()
+    for i in range(6):
+        n = "sim_clk_em_evt"+str(i)
+        hists[n] = ROOT.TH1F(n,"",400,0,400)
+
+    for evt in sim_events:
+        for sr in evt.large_regions[0].subregions:
+            for t in sr.tracks:
+                # fill map with clock, maybe other things as well (ckl->tuple)
+                clk = sr.track_clks[t]
+                sim_tks[t] = clk
+
+    for evt in em_events:
+        for sr in evt.large_regions[0].subregions:
+            for t in sr.tracks:
+                if t in sim_tks:
+                    #check where the tracks go...
+                    l = sim_tks[t]
+                    n = "sim_clk_em_evt"+str(i)
+                    hists[n].Fill(float(l))
+                else:
+                    #print("emulation is missing a track")
+                    pass
+            
+    f = ROOT.TFile("out.root","recreate")
+    for i in range(len(em_events)):
+        n = "sim_clk_em_evt"+str(i)
+        hists[n].Write()
+    f.Close()
+                    
+    return
+    for ievt in range(nevts):
+        em_evt = em_events[ievt]
+        sim_evt = sim_events[ievt]
+        nsub = len(em_evt.large_regions[0].subregions)
+        if nsub != len(sim_evt.large_regions[0].subregions):
+            print("nsubreg mismatch!")
+        for isr in range(nsub):
+            em_sr = em_evt.large_regions[0].subregions[isr]
+            sim_sr = sim_evt.large_regions[0].subregions[isr]
+            for t in em_sr.tracks:
+                all_em_tks.add(t)
+            for t in sim_sr.tracks:
+                all_sim_tks.add(t)
+            
+            # print(">em",isr,em_sr.tracks)
+            # print("sim",isr,sim_sr.tracks)
+            # print(">em",isr,[GetTrackParams(t) for t in em_sr.tracks])
+            # print("sim",isr,[GetTrackParams(t) for t in sim_sr.tracks])
+            # print(">em",isr,["{:0>16x}".format(t) for t in em_sr.tracks])
+            # print("sim",isr,["{:0>16x}".format(t) for t in sim_sr.tracks])
+
+    common_tks = all_em_tks.intersection(all_sim_tks)
+    em_only = all_em_tks.difference(common_tks)
+    sim_only = all_sim_tks.difference(common_tks)
+    print()
+    print("common_tks",["{:0>16X}".format(t) for t in common_tks])
+    print()
+    print("em_only   ",["{:0>16X}".format(t) for t in em_only   ])
+    print()
+    print("sim_only  ",["{:0>16X}".format(t) for t in sim_only  ])
+    print()
+    #print("em_only   ",[GetTrackParams(t) for t in em_only   ])
+    print("sim_only   ",[GetTrackParams(t) for t in sim_only   ])
+
 def DumpHistograms(em_tracks,sim_tracks, outfile="out.root"):
     '''
     Loop over each event / tmuxed region and dump a number of outputs into a histogram
@@ -509,7 +661,7 @@ if __name__ == "__main__":
     em_events  = GetEmulationData(parser)
     sim_events = GetSimulationData(parser)
 
-    if 1: #debugging
+    if 0: #debugging
         for e in em_events:
             print('new event with {} LRs'.format(len(e.large_regions)))
             for l in e.large_regions:
@@ -520,9 +672,11 @@ if __name__ == "__main__":
                     print('  ',len(s.ems   ))
                     print('  ',len(s.calos ))
                     print('  ',len(s.mus   ))
+    #ComparePerEvent(em_events,sim_events,nevts=6)
+    #CheckAllObjects(em_events,sim_events)
 
+    TrackEmInSim(em_events,sim_events)
     exit(0)
-    ComparePerEvent(em_events,sim_events)
 
     # for em_track in em_tracks:
     #     print("em_tracks", em_track,"\n")

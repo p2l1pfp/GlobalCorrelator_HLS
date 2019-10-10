@@ -148,6 +148,9 @@ int main() {
             eta_bounds_hi.push_back( pos_eta_bounds_hi[ie] );
         }
 
+        // todo - for barrel, manually implemening eta throwout
+        if (eta_bounds_lo.front() < -243) eta_bounds_lo.front() = -243;
+        if (eta_bounds_hi.back() > 243) eta_bounds_hi.back() = 243;
 
         if(false){
             // make table for comparison with ryan's LUT
