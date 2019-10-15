@@ -9,9 +9,11 @@
 #include "utils/test_utils.h"
 #include "firmware/mp7pf_encoding.h"
 
-#define NTEST 6
+#define NTEST 3
 #define NLINKS_APX_GEN0 96
-#define NFRAMES_APX_GEN0 3
+//#define NFRAMES_APX_GEN0 3
+#define NFRAMES_APX_GEN0 8
+// NFRAMES_APX_GEN0 is the number of frames per bx (320 mhz / 40mhz)
 
 #define NLINKS_PER_TRACK 10
 #define NLINKS_PER_CALO 10
