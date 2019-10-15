@@ -26,8 +26,9 @@ int main() {
 
     //printf("NTRACK = %i, NEMCALO = %i, NCALO = %i, NMU = %i, MP7_NCHANN = %i \n", NTRACK, NEMCALO, NCALO, NMU, MP7_NCHANN);
 
-    //std::cout<<mp7DataLength<<std::endl;
-    const int listLength = NFRAMES_APX_GEN0*((NTEST*TMUX_OUT)+(TMUX_IN-TMUX_OUT));
+    // NFRAMES_APX_GEN0 is the number of frames per bx (320 mhz / 40mhz)
+    // (320 mhz / 40mhz) * (Nevts * TM6 + (TM18-TM6))
+    const int listLength = NFRAMES_APX_GEN0*((NTEST*TMUX_REG_OUT)+(TMUX_REG_IN-TMUX_REG_OUT));
     //std::cout<<listLength<<std::endl;
     std::string datawords [NLINKS_APX_GEN0][listLength];
     for (int ia = 0; ia < NLINKS_APX_GEN0; ia++){
@@ -58,8 +59,26 @@ int main() {
             mu[i].hwPt = 0; mu[i].hwPtErr = 0; mu[i].hwEta = 0; mu[i].hwPhi = 0;
         }
 
-        // get the inputs from the input object
-        if (!inputs.nextRegion_tmux(calo, emcalo, track, mu, hwZPV)) break;
+
+        // insert some test data on the fly
+        if(1){
+            // get the inputs from the input object
+            if (!inputs.nextRegion_tmux(calo, emcalo, track, mu, hwZPV)) break;
+            // if (!inputs.nextRegion_tmux(calo, emcalo, track, mu, hwZPV)) break;
+            // if (!inputs.nextRegion_tmux(calo, emcalo, track, mu, hwZPV)) break;
+            // if (!inputs.nextRegion_tmux(calo, emcalo, track, mu, hwZPV)) break;
+            // if (!inputs.nextRegion_tmux(calo, emcalo, track, mu, hwZPV)) break;
+            // if (!inputs.nextRegion_tmux(calo, emcalo, track, mu, hwZPV)) break;
+        } else if(0) {
+            track[0].hwPt  = 1 + test * 16; // one of each object per event
+            calo[0].hwPt   = 2 + test * 16;
+            emcalo[0].hwPt = 3 + test * 16;
+            mu[0].hwPt     = 4 + test * 16;
+            hwZPV          = 7 + test * 16;
+            //hwZPV          = 0;
+        }
+
+
 
         /*for (int i = 0; i < NTRACK_TMUX; ++i) {
             std::cout<<track[i].hwPt<<"\t "<<track[i].hwEta<<"\t "<<track[i].hwPhi<<std::endl;
@@ -110,52 +129,71 @@ int main() {
         int ncalos = 0;
         int nemcalos = 0;
         int nmus = 0;
-        for (int i = 0; i < NTRACK_TMUX; ++i) {
-            if (int(track[i].hwEta) < etalo or int(track[i].hwEta) > etahi) continue;
-            if (int(track[i].hwPhi) < philo or int(track[i].hwPhi) > phihi) continue;
-            if (int(track[i].hwPt) == 0) continue;
-            track_temp[ireg][i_temp] = track[i];
-            ntracks++;
-            ireg++;
-            if (ireg == TMUX_OUT) {i_temp++; ireg=0;}
-            if (i_temp == NTRACK) {break;}
+        if(1){
+            for (int i = 0; i < NTRACK_TMUX; ++i) {
+                if (int(track[i].hwEta) < etalo or int(track[i].hwEta) > etahi) continue;
+                if (int(track[i].hwPhi) < philo or int(track[i].hwPhi) > phihi) continue;
+                if (int(track[i].hwPt) == 0) continue;
+                track_temp[ireg][i_temp] = track[i];
+                ntracks++;
+                ireg++;
+                if (ireg == TMUX_OUT) {i_temp++; ireg=0;}
+                if (i_temp == NTRACK) {break;}
+            }
+            i_temp = 0;
+            ireg = 0;
+            for (int i = 0; i < NCALO_TMUX; ++i) {
+                if (int(calo[i].hwEta) < etalo or int(calo[i].hwEta) > etahi) continue;
+                if (int(calo[i].hwPhi) < philo or int(calo[i].hwPhi) > phihi) continue;
+                if (int(calo[i].hwPt) == 0) continue;
+                calo_temp[ireg][i_temp] = calo[i];
+                ncalos++;
+                ireg++;
+                if (ireg == TMUX_OUT) {i_temp++; ireg=0;}
+                if (i_temp == NCALO) {break;}
+            }
+            i_temp = 0;
+            ireg = 0;
+            for (int i = 0; i < NEMCALO_TMUX; ++i) {
+                if (int(emcalo[i].hwEta) < etalo or int(emcalo[i].hwEta) > etahi) continue;
+                if (int(emcalo[i].hwPhi) < philo or int(emcalo[i].hwPhi) > phihi) continue;
+                if (int(emcalo[i].hwPt) == 0) continue;
+                emcalo_temp[ireg][i_temp] = emcalo[i];
+                nemcalos++;
+                ireg++;
+                if (ireg == TMUX_OUT) {i_temp++; ireg=0;}
+                if (i_temp == NEMCALO) {break;}
+            }
+            i_temp = 0;
+            ireg = 0;
+            for (int i = 0; i < NMU_TMUX; ++i) {
+                if (int(mu[i].hwEta) < etalo or int(mu[i].hwEta) > etahi) continue;
+                if (int(mu[i].hwPhi) < philo or int(mu[i].hwPhi) > phihi) continue;
+                if (int(mu[i].hwPt) == 0) continue;
+                mu_temp[ireg][i_temp] = mu[i];
+                nmus++;
+                ireg++;
+                if (ireg == TMUX_OUT) {i_temp++; ireg=0;}
+                if (i_temp == NMU) {break;}
+            }
+
+        } else {
+            // FOR TESTING MULTIPLE INPUTS IN ONE TMUX REGION
+            // ntracks and so on aren't used later, so don't bother to set them
+            if(0 && test==0){
+                for (int ir = 0; ir < TMUX_OUT; ir++) {
+                    track_temp [ir][0].hwPt = 1 + ir * 16; // one of each object per TMUX_OUT
+                    calo_temp  [ir][0].hwPt = 2 + ir * 16;
+                    emcalo_temp[ir][0].hwPt = 3 + ir * 16;
+                    mu_temp    [ir][0].hwPt = 4 + ir * 16;
+                }
+            }
+            if(0 && test==0){
+                for(int it=0;it<NTRACK;it++)
+                    track_temp [0][it].hwPt = 1 + (it%16) * 16 + (it/16) * 16*16; // one of each object per TMUX_OUT
+            }
         }
-        i_temp = 0;
-        ireg = 0;
-        for (int i = 0; i < NCALO_TMUX; ++i) {
-            if (int(calo[i].hwEta) < etalo or int(calo[i].hwEta) > etahi) continue;
-            if (int(calo[i].hwPhi) < philo or int(calo[i].hwPhi) > phihi) continue;
-            if (int(calo[i].hwPt) == 0) continue;
-            calo_temp[ireg][i_temp] = calo[i];
-            ncalos++;
-            ireg++;
-            if (ireg == TMUX_OUT) {i_temp++; ireg=0;}
-            if (i_temp == NCALO) {break;}
-        }
-        i_temp = 0;
-        ireg = 0;
-        for (int i = 0; i < NEMCALO_TMUX; ++i) {
-            if (int(emcalo[i].hwEta) < etalo or int(emcalo[i].hwEta) > etahi) continue;
-            if (int(emcalo[i].hwPhi) < philo or int(emcalo[i].hwPhi) > phihi) continue;
-            if (int(emcalo[i].hwPt) == 0) continue;
-            emcalo_temp[ireg][i_temp] = emcalo[i];
-            nemcalos++;
-            ireg++;
-            if (ireg == TMUX_OUT) {i_temp++; ireg=0;}
-            if (i_temp == NEMCALO) {break;}
-        }
-        i_temp = 0;
-        ireg = 0;
-        for (int i = 0; i < NMU_TMUX; ++i) {
-            if (int(mu[i].hwEta) < etalo or int(mu[i].hwEta) > etahi) continue;
-            if (int(mu[i].hwPhi) < philo or int(mu[i].hwPhi) > phihi) continue;
-            if (int(mu[i].hwPt) == 0) continue;
-            mu_temp[ireg][i_temp] = mu[i];
-            nmus++;
-            ireg++;
-            if (ireg == TMUX_OUT) {i_temp++; ireg=0;}
-            if (i_temp == NMU) {break;}
-        }
+
 
         /*std::cout<<"Totals:"<<std::endl;
         std::cout<<"\ttrack  = "<<ntracks<<std::endl;
@@ -171,13 +209,13 @@ int main() {
             //    printf("data_in[%i] = %i \n", in, (int) data_in[in]);
             //}
     
-            offset = NFRAMES_APX_GEN0*TMUX_OUT*test;
+            offset = NFRAMES_APX_GEN0*TMUX_REG_OUT*test; // 8 * 6
             //std::cout<<offset<<std::endl;
 
             float tot_perc[4];
             int link_start[4];
             int add_off[4];
-            
+
             tot_perc[0] = float(ir*NLINKS_PER_TRACK)/float(TMUX_OUT);
             tot_perc[1] = float(ir*NLINKS_PER_EMCALO)/float(TMUX_OUT);
             tot_perc[2] = float(ir*NLINKS_PER_CALO)/float(TMUX_OUT);
@@ -186,10 +224,10 @@ int main() {
             link_start[1] = int(tot_perc[1]);
             link_start[2] = int(tot_perc[2]);
             link_start[3] = int(tot_perc[3]);
-            add_off[0] = int(float(NFRAMES_APX_GEN0*TMUX_IN)*tot_perc[0])%(NFRAMES_APX_GEN0*TMUX_IN);
-            add_off[1] = int(float(NFRAMES_APX_GEN0*TMUX_IN)*tot_perc[1])%(NFRAMES_APX_GEN0*TMUX_IN);
-            add_off[2] = int(float(NFRAMES_APX_GEN0*TMUX_IN)*tot_perc[2])%(NFRAMES_APX_GEN0*TMUX_IN);
-            add_off[3] = int(float(NFRAMES_APX_GEN0*TMUX_IN)*tot_perc[3])%(NFRAMES_APX_GEN0*TMUX_IN);
+            add_off[0] = int(float(NFRAMES_APX_GEN0*TMUX_REG_IN)*tot_perc[0])%(NFRAMES_APX_GEN0*TMUX_REG_IN); // 8 * 18
+            add_off[1] = int(float(NFRAMES_APX_GEN0*TMUX_REG_IN)*tot_perc[1])%(NFRAMES_APX_GEN0*TMUX_REG_IN);
+            add_off[2] = int(float(NFRAMES_APX_GEN0*TMUX_REG_IN)*tot_perc[2])%(NFRAMES_APX_GEN0*TMUX_REG_IN);
+            add_off[3] = int(float(NFRAMES_APX_GEN0*TMUX_REG_IN)*tot_perc[3])%(NFRAMES_APX_GEN0*TMUX_REG_IN);
 
             int id = 0;
             unsigned int link_type = 0; //0=track, 1=emcalo, 2=calo, 3=mu
@@ -206,8 +244,8 @@ int main() {
                 if (link_ctr < link_min[link_type]+link_start[link_type]) {continue;}
                 
                 std::stringstream stream1;
-                int index = add_off[link_type];
-                if (index==0) {
+                int index = add_off[link_type]; // 0 for small region 0, else (ir/18*10)*(8*18) mod 8*18 or whatever
+                if (index==0) { // if first entry (clk of TMIN*CLKpBX) of any of any link
                     stream1 << "0x";
                     stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]);
                     stream1 << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(hwZPV.range(9,0))) << 14) << "00";
@@ -216,6 +254,7 @@ int main() {
                     index++;
                 }
                 else {
+                    //else if(0) { // why send the vertex again...?
                     stream1 << datawords[link_off+link_ctr][offset].substr(0,10);
                     stream1 << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(hwZPV.range(9,0))) << 14) << "00";
                     datawords[link_off+link_ctr][offset] = stream1.str();
@@ -224,14 +263,14 @@ int main() {
                 //std::cout<<"index="<<index<<" id"<<id<<std::endl;
 
                 // put the data on the link number = link_ctr;
-                while (index < NFRAMES_APX_GEN0*TMUX_IN) {
+                while (index < NFRAMES_APX_GEN0*TMUX_REG_IN) { // 8*18
                     stream1.str("");
                     stream1 << "0x";
-                    if (index%NFRAMES_APX_GEN0==0) {
+                    if (index%NFRAMES_APX_GEN0==0) { // Idk why we do this, but fine
                         stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]) << "00000000";
                         id+=1;
                     }
-                    else if (id == objDataLength[link_type]-1) {
+                    else if (id == objDataLength[link_type]-1) { // here theres only a half-word (32b) to write
                         stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]) << "00000000";
                         id+=1;
                     }
@@ -257,7 +296,7 @@ int main() {
             //std::cout<<"-----------"<<std::endl;
         }
         link_off += NLINKS_PER_REG;
-        if (link_off>= NLINKS_PER_REG*TMUX_IN/TMUX_OUT) link_off = 0;
+        if (link_off>= NLINKS_PER_REG*TMUX_REG_IN/TMUX_REG_OUT) link_off = 0;
         //std::cout<<"\t"<<test<<std::endl;
     
     }
