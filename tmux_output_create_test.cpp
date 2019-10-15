@@ -39,7 +39,7 @@ int main() {
     //printf("NTRACK = %i, NEMCALO = %i, NCALO = %i, NMU = %i, MP7_NCHANN = %i \n", NTRACK, NEMCALO, NCALO, NMU, MP7_NCHANN);
 
     //std::cout<<mp7DataLength<<std::endl;
-    const int listLength = NFRAMES_APX_GEN0*((NTEST*TMUX_OUT)+(TMUX_IN-TMUX_OUT));
+    // const int listLength = NFRAMES_APX_GEN0*((NTEST*TMUX_OUT)+(TMUX_IN-TMUX_OUT));
     //std::cout<<listLength<<std::endl;
     std::string datawords[NTEST*TMUX_OUT][mp7DataLength+1];
     for (int ia = 0; ia < NTEST*TMUX_OUT; ia++){
@@ -205,6 +205,12 @@ int main() {
         int ncalos[TMUX_OUT] = {0};
         int nemcalos[TMUX_OUT] = {0};
         int nmus[TMUX_OUT] = {0};
+
+        int Ntracks=0;
+        int Ncalos=0;
+        int Nemcalos=0;
+        int Nmus=0;
+
         for (int i = 0; i < NTRACK_TMUX; ++i) {
             if (int(track[i].hwEta) < eta_bounds_lo.front() or int(track[i].hwEta) >= eta_bounds_hi.back()) continue;
             if (int(track[i].hwPhi) < phi_bounds_lo.front() or int(track[i].hwPhi) >= eta_bounds_hi.back()) continue;
@@ -220,6 +226,7 @@ int main() {
                             track_temp[ies*NPHI_SMALL+ips][i_temp[ies*NPHI_SMALL+ips]] = track[i];
                             i_temp[ies*NPHI_SMALL+ips] += 1;
                             ntracks[ies*NPHI_SMALL+ips]++;
+                            Ntracks++;
                         }
                     }
                 }
@@ -239,6 +246,7 @@ int main() {
                             calo_temp[ies*NPHI_SMALL+ips][i_temp[ies*NPHI_SMALL+ips]] = calo[i];
                             i_temp[ies*NPHI_SMALL+ips] += 1;
                             ncalos[ies*NPHI_SMALL+ips]++;
+                            Ncalos++;
                         }
                     }
                 }
@@ -258,6 +266,7 @@ int main() {
                             emcalo_temp[ies*NPHI_SMALL+ips][i_temp[ies*NPHI_SMALL+ips]] = emcalo[i];
                             i_temp[ies*NPHI_SMALL+ips] += 1;
                             nemcalos[ies*NPHI_SMALL+ips]++;
+                            Nemcalos++;
                         }
                     }
                 }
@@ -276,12 +285,18 @@ int main() {
                             mu_temp[ies*NPHI_SMALL+ips][i_temp[ies*NPHI_SMALL+ips]] = mu[i];
                             i_temp[ies*NPHI_SMALL+ips] += 1;
                             nmus[ies*NPHI_SMALL+ips]++;
+                            Nmus++;
                         }
                     }
                 }
             }
         }
 
+            std::cout<<"\ttrack  = "<<Ntracks<<std::endl;
+            std::cout<<"\tcalo   = "<<Ncalos<<std::endl;
+            std::cout<<"\temcalo = "<<Nemcalos<<std::endl;
+            std::cout<<"\tmu     = "<<Nmus<<std::endl;
+ 
         for (int ir = 0; ir < TMUX_OUT; ir++) {
 
             /*std::cout<<"Totals: ("<<test<<", "<<ir<<")"<<std::endl;
