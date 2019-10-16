@@ -9,7 +9,7 @@ unsigned int thePhiRegion = 0;
 
 int main() {
 
-    bool doSimple = true;
+    bool doSimple = false;
     bool debugWords = false;
 
     if (theEtaRegion>=NETA_TMUX) theEtaRegion = NETA_TMUX-1;
@@ -29,10 +29,11 @@ int main() {
 
     //printf("NTRACK = %i, NEMCALO = %i, NCALO = %i, NMU = %i, MP7_NCHANN = %i \n", NTRACK, NEMCALO, NCALO, NMU, MP7_NCHANN);
 
-    // NFRAMES_APX_GEN0 is the number of frames per bx (320 mhz / 40mhz)
-    // (320 mhz / 40mhz) * (Nevts * TM6 + (TM18-TM6))
-    const int listLength = NFRAMES_APX_GEN0*((NTEST*TMUX_REG_OUT)+(TMUX_REG_IN-TMUX_REG_OUT));
-    //std::cout<<listLength<<std::endl;
+    // NCLK_PER_BX is the number of frames per bx (320 mhz / 40mhz)
+    // (320 mhz / 40mhz) * (Nevts * TM18 + (TM36-TM18)) assuming we alternate between two link groups
+    //   Though the math is identical if instead we leave the links 1/3 empty and use all 3 groups
+    const int listLength = NCLK_PER_BX*((NTEST*TMUX_OUT)+(TMUX_IN-TMUX_OUT));
+    //std::cout<<"listLength = "<<listLength<<std::endl;
     std::string datawords [NLINKS_APX_GEN0][listLength];
     for (int ia = 0; ia < NLINKS_APX_GEN0; ia++){
         for (int ib = 0; ib < listLength; ib++){
@@ -212,8 +213,8 @@ int main() {
             //for (unsigned int in = 0; in < MP7_NCHANN; in++){
             //    printf("data_in[%i] = %i \n", in, (int) data_in[in]);
             //}
-    
-            offset = NFRAMES_APX_GEN0*TMUX_REG_OUT*test; // 8 * 6
+
+            offset = NCLK_PER_BX*TMUX_OUT*test; // 8 * 18 * nevt
             //std::cout<<offset<<std::endl;
 
             float tot_perc[4];
@@ -228,10 +229,10 @@ int main() {
             link_start[1] = int(tot_perc[1]);
             link_start[2] = int(tot_perc[2]);
             link_start[3] = int(tot_perc[3]);
-            add_off[0] = int(float(NFRAMES_APX_GEN0*TMUX_REG_IN)*tot_perc[0])%(NFRAMES_APX_GEN0*TMUX_REG_IN); // 8 * 18
-            add_off[1] = int(float(NFRAMES_APX_GEN0*TMUX_REG_IN)*tot_perc[1])%(NFRAMES_APX_GEN0*TMUX_REG_IN);
-            add_off[2] = int(float(NFRAMES_APX_GEN0*TMUX_REG_IN)*tot_perc[2])%(NFRAMES_APX_GEN0*TMUX_REG_IN);
-            add_off[3] = int(float(NFRAMES_APX_GEN0*TMUX_REG_IN)*tot_perc[3])%(NFRAMES_APX_GEN0*TMUX_REG_IN);
+            add_off[0] = int(float(NCLK_PER_BX*TMUX_IN)*tot_perc[0])%(NCLK_PER_BX*TMUX_IN); // 8 * 36
+            add_off[1] = int(float(NCLK_PER_BX*TMUX_IN)*tot_perc[1])%(NCLK_PER_BX*TMUX_IN);
+            add_off[2] = int(float(NCLK_PER_BX*TMUX_IN)*tot_perc[2])%(NCLK_PER_BX*TMUX_IN);
+            add_off[3] = int(float(NCLK_PER_BX*TMUX_IN)*tot_perc[3])%(NCLK_PER_BX*TMUX_IN);
 
             int id = 0;
             unsigned int link_type = 0; //0=track, 1=emcalo, 2=calo, 3=mu
@@ -261,9 +262,10 @@ int main() {
                     if (index==0) { // if first entry (clk of TMIN*CLKpBX) of any of any link
                         tmp1.str(""); tmp2.str("");
                         stream1 << "0x";
-                        stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]);
+                        stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]); 
                         tmp1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]);
-                        stream1 << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(hwZPV.range(9,0))) << 14) << "00";
+                        // zero first 8b for beginning of frame!
+                        stream1 << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(hwZPV.range(9,0))) << 14) << "00"; 
                         tmp2 << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(hwZPV.range(9,0))) << 14) << "00";
                         datawords[link_off+link_ctr][offset] = stream1.str();
                         if(debugWords) printf("datawords[%d][%d] = %s (%s + %s) <-- index 0\n",link_off+link_ctr,offset,datawords[link_off+link_ctr][offset].c_str(),tmp1.str().c_str(),tmp2.str().c_str());
@@ -285,7 +287,7 @@ int main() {
                 //std::cout<<"index="<<index<<" id"<<id<<std::endl;
 
                 // put the data on the link number = link_ctr;
-                while (index < NFRAMES_APX_GEN0*TMUX_REG_IN) { // 8*18
+                while (index < NCLK_PER_BX*TMUX_IN) { // 8*36
                     stream1.str("");
                     tmp1.str(""); tmp2.str("");
                     stream1 << "0x";
@@ -295,13 +297,15 @@ int main() {
                         stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]);
                         id+=2;
                     } else {
-                        if (index%NFRAMES_APX_GEN0==0) { // Idk why we do this, but fine
+                        if (index%NFRAMES_APX_GEN0==0) {
+                            // 1 frame = 3 x 64b words. First 8b of a frame is reserved for header. 
+                            // Zero the first 32b for simplicity.
                             stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]) << "00000000";
                             tmp1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]);
                             tmp2.str("00000000 A");
                             id+=1;
                         }
-                        else if (id == objDataLength[link_type]-1) { // here theres only a half-word (32b) to write
+                        else if (id == objDataLength[link_type]-1) { // here theres only a half-word (32b) to write? (or trailer bits?)
                             stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]) << "00000000";
                             tmp1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]);
                             tmp2.str("00000000 B");
@@ -333,7 +337,10 @@ int main() {
             //std::cout<<"-----------"<<std::endl;
         }
         link_off += NLINKS_PER_REG;
-        if (link_off>= NLINKS_PER_REG*TMUX_REG_IN/TMUX_REG_OUT) link_off = 0;
+        // in this scheme, the first link is maximally saturated
+        if (0 && link_off>= NLINKS_PER_REG*TMUX_IN/TMUX_OUT) link_off = 0;
+        // in this scheme, inputs are spread across all links
+        if (1 && link_off+NLINKS_PER_REG > NLINKS_APX_GEN0) link_off = 0;
         //std::cout<<"\t"<<test<<std::endl;
     
     }

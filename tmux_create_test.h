@@ -11,9 +11,11 @@
 
 #define NTEST 6
 #define NLINKS_APX_GEN0 96
-//#define NFRAMES_APX_GEN0 3
-#define NFRAMES_APX_GEN0 8
-// NFRAMES_APX_GEN0 is the number of frames per bx (320 mhz / 40mhz)
+#define NFRAMES_APX_GEN0 3
+#define NCLK_PER_BX 8
+// NFRAMES_APX_GEN0 is the number of 64b words per frame. 
+//   Must reserve leading 8b for header, but we simply zero first 32b
+// NCLK_PER_BX is the number of frames per bx (320 mhz / 40mhz)
 
 #define NLINKS_PER_TRACK 10
 #define NLINKS_PER_CALO 10
