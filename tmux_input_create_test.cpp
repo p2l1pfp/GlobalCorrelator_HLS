@@ -9,6 +9,9 @@ unsigned int thePhiRegion = 0;
 
 int main() {
 
+    bool doSimple = true;
+    bool debugWords = false;
+
     if (theEtaRegion>=NETA_TMUX) theEtaRegion = NETA_TMUX-1;
     if (thePhiRegion>=NPHI_TMUX) thePhiRegion = NPHI_TMUX-1;
 
@@ -78,6 +81,7 @@ int main() {
             //hwZPV          = 0;
         }
 
+        hwZPV          = 7;
 
 
         /*for (int i = 0; i < NTRACK_TMUX; ++i) {
@@ -244,20 +248,38 @@ int main() {
                 if (link_ctr < link_min[link_type]+link_start[link_type]) {continue;}
                 
                 std::stringstream stream1;
+                std::stringstream tmp1,tmp2;
                 int index = add_off[link_type]; // 0 for small region 0, else (ir/18*10)*(8*18) mod 8*18 or whatever
-                if (index==0) { // if first entry (clk of TMIN*CLKpBX) of any of any link
+                if(doSimple){
+                    // don't send 32b data in this word along with the vertex. (keeps things aligned later on)
                     stream1 << "0x";
-                    stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]);
+                    stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (0);
                     stream1 << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(hwZPV.range(9,0))) << 14) << "00";
                     datawords[link_off+link_ctr][offset] = stream1.str();
-                    id++;
                     index++;
-                }
-                else {
-                    //else if(0) { // why send the vertex again...?
-                    stream1 << datawords[link_off+link_ctr][offset].substr(0,10);
-                    stream1 << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(hwZPV.range(9,0))) << 14) << "00";
-                    datawords[link_off+link_ctr][offset] = stream1.str();
+                } else {
+                    if (index==0) { // if first entry (clk of TMIN*CLKpBX) of any of any link
+                        tmp1.str(""); tmp2.str("");
+                        stream1 << "0x";
+                        stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]);
+                        tmp1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]);
+                        stream1 << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(hwZPV.range(9,0))) << 14) << "00";
+                        tmp2 << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(hwZPV.range(9,0))) << 14) << "00";
+                        datawords[link_off+link_ctr][offset] = stream1.str();
+                        if(debugWords) printf("datawords[%d][%d] = %s (%s + %s) <-- index 0\n",link_off+link_ctr,offset,datawords[link_off+link_ctr][offset].c_str(),tmp1.str().c_str(),tmp2.str().c_str());
+                        id++;
+                        index++;
+                    }
+                    else {
+                        // this seems like it does nothing since the same thing is written to the same data word as above...
+                        tmp1.str(""); tmp2.str("");
+                        stream1 << datawords[link_off+link_ctr][offset].substr(0,10);
+                        tmp1 << datawords[link_off+link_ctr][offset].substr(0,10);
+                        stream1 << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(hwZPV.range(9,0))) << 14) << "00";
+                        tmp2 << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(hwZPV.range(9,0))) << 14) << "00";
+                        datawords[link_off+link_ctr][offset] = stream1.str();
+                        if(debugWords) printf("datawords[%d][%d] = %s (%s + %s) <-- copied?? 0\n",link_off+link_ctr,offset,datawords[link_off+link_ctr][offset].c_str(),tmp1.str().c_str(),tmp2.str().c_str());
+                    }
                 }
 
                 //std::cout<<"index="<<index<<" id"<<id<<std::endl;
@@ -265,21 +287,36 @@ int main() {
                 // put the data on the link number = link_ctr;
                 while (index < NFRAMES_APX_GEN0*TMUX_REG_IN) { // 8*18
                     stream1.str("");
+                    tmp1.str(""); tmp2.str("");
                     stream1 << "0x";
-                    if (index%NFRAMES_APX_GEN0==0) { // Idk why we do this, but fine
-                        stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]) << "00000000";
-                        id+=1;
-                    }
-                    else if (id == objDataLength[link_type]-1) { // here theres only a half-word (32b) to write
-                        stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]) << "00000000";
-                        id+=1;
-                    }
-                    else {
+                    if(doSimple){
+                        // do simple, aligned inputs :)
                         stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id+1]);
                         stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]);
                         id+=2;
+                    } else {
+                        if (index%NFRAMES_APX_GEN0==0) { // Idk why we do this, but fine
+                            stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]) << "00000000";
+                            tmp1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]);
+                            tmp2.str("00000000 A");
+                            id+=1;
+                        }
+                        else if (id == objDataLength[link_type]-1) { // here theres only a half-word (32b) to write
+                            stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]) << "00000000";
+                            tmp1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]);
+                            tmp2.str("00000000 B");
+                            id+=1;
+                        }
+                        else {
+                            stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id+1]);
+                            stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]);
+                            tmp1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id+1]);
+                            tmp2 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]) << " C";
+                            id+=2;
+                        }
                     }
                     datawords[link_off+link_ctr][offset+index] = stream1.str();
+                    if(debugWords) printf("datawords[%d][%d] = %s (%s + %s) id=%d\n",link_off+link_ctr,offset+index,datawords[link_off+link_ctr][offset+index].c_str(),tmp1.str().c_str(),tmp2.str().c_str(),id);
                     index++;
                     // std::cout << stream1.str() << std::endl;
                     // std::cout << datawords[link_ctr][offset+(id/2)] << std::endl;
@@ -300,7 +337,7 @@ int main() {
         //std::cout<<"\t"<<test<<std::endl;
     
     }
-
+    //std::cout<<std::endl;
     for (int ib = 0; ib < listLength; ib++){
         // std::cout << ib << " ";
         std::cout << "0x" << std::setfill('0') << std::setw(4) << std::hex << ib << "   " <<std::dec;
