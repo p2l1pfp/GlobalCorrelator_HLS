@@ -18,6 +18,11 @@ NEM=13
 NCALO=15
 NMU=2
 
+ORDERING = [(0,0), (0,2), (0,1), (0,3), (1,2),
+            (0,4), (1,3), (0,5), (1,4), (0,6),
+            (1,5), (0,7), (1,6), (0,8), (1,7), 
+            (1,0), (1,8), (1,1)]
+
 class Object:
     def __init__(self, 
                  pt   = 0,
@@ -75,6 +80,8 @@ class Event:
         self.nems    = 0
         self.ncalos  = 0
         self.nmus    = 0
+        self.obj_to_regions={}
+        self.obj_to_regions_filled=False
     def counts(self): return (
             self.ntracks,
             self.nems   ,
@@ -100,6 +107,17 @@ class Event:
         for l in self.large_regions: 
             for s in l.subregions: x += s.mus
         return x
+    def findRegions(self,x):
+        if(self.obj_to_regions_filled==False):
+            for li,l in enumerate(self.large_regions): 
+                for si,s in enumerate(l.subregions): 
+                    for x in s.tracks: self.obj_to_regions[x]=(li,si)
+                    for x in s.calos: self.obj_to_regions[x]=(li,si)
+                    for x in s.ems: self.obj_to_regions[x]=(li,si)
+                    for x in s.mus: self.obj_to_regions[x]=(li,si)            
+            self.obj_to_regions_filled=True
+        if x in self.obj_to_regions: return self.obj_to_regions[x]
+        else: return (-1,-1)
 
     # def AddLargeRegion(self):
     #     pass #self.small_regions = []
@@ -115,7 +133,6 @@ def GetEmulationData(parser):
     
     # from ryan. this is the order of (eta,phi) regions output by the emulator
     # 0,18,36,.. are (0,0), 1,19,37,... are (0,2) and so on...
-    ordering = [(0,0), (0,2), (0,1), (0,3), (1,2), (0,4), (1,3), (0,5), (1,4), (0,6), (1,5), (0,7), (1,6), (0,8), (1,7), (1,0), (1,8), (1,1)]
 
     tracks=[]
     ems=[]
@@ -788,7 +805,8 @@ def GetCommonEmSim(emlist, simlist):
     common= em.intersection(sim)
     return common, em.difference(common), sim.difference(common)
 
-def DumpCollection(xlist, title, tag, mult=True):
+def DumpCollection(parser, xlist, title, tag, mult=True, inLink=True,
+                   printReg=False, sim_evt=None, em_evt=None):
     record=title
     if mult: record += " ({})".format(len(xlist))
     record += ":\n"
@@ -796,14 +814,27 @@ def DumpCollection(xlist, title, tag, mult=True):
     while title[nblank]==" ": nblank+=1
     for x in xlist:
         pt, eta, phi = GetPtEtaPhi(x, tag)
-        record += " "*nblank + "{:5} {:5} {:5} {:0>16x}\n".format(pt,eta,phi,x)
+        record += " "*nblank + "{:5} {:5} {:5} {:0>16x}".format(pt,eta,phi,x)
+        if inLink: 
+            record += " (link {:2}, clock {:4})".format(*GetInputLink(x, parser))
+        if printReg and sim_evt and em_evt:
+            sim_sr = sim_evt.findRegions(x)[1]
+            em_sr = em_evt.findRegions(x)[1]
+            if sim_sr>=len(ORDERING) or em_sr>=len(ORDERING): print ("ERROR TOO LARGE SR!!!")
+            record += " (SR sim {:2}={} vs em {:2}={}) match?={}".format(sim_sr,ORDERING[sim_sr],em_sr,ORDERING[em_sr],int(sim_sr==em_sr))
+        record += "\n"
     return record
 
-def DumpEventComparison(em_evts, sim_evts, fname, 
+def DumpCollectionReg(parser, xlist, title, tag, sim_evt, em_evt, mult=True, inLink=True):
+    return DumpCollection(parser, xlist, title, tag, mult=mult, inLink=inLink,
+                          printReg=True, sim_evt=sim_evt, em_evt=em_evt)
+
+def DumpEventComparison(parser, em_evts, sim_evts, fname, 
                         nevts=1, compareSmallRegion=False, compareEvent=True, tracksOnly=True):
     
     with open(fname,'w') as f:
         f.write("Dumping comparison to file: {}\n".format(fname))
+        f.write("    (object outputs are all: pt  eta  phi  64bID)\n")
 
         f.write("Found {} events in sim, {} in emulation \n".format(len(sim_evts),len(em_evts)))
         if len(sim_evts) != len(em_evts): 
@@ -818,33 +849,34 @@ def DumpEventComparison(em_evts, sim_evts, fname,
             if len(sim_lrs) != len(em_lrs): 
                 f.write("Large region mismatch!\n")
                 return
-            f.write("Event {} has EM {} and SIM {}\n".format(ei,em_evts[ei].counts(),sim_evts[ei].counts()))
+            f.write("Event {} has (#track,em,calo,mu) = EM {} vs SIM {}\n".format(ei,em_evts[ei].counts(),sim_evts[ei].counts()))
 
             if compareEvent:
                 tag="tk"
                 com_tracks, em_tracks, sim_tracks = GetCommonEmSim(em_e.allTracks(), sim_e.allTracks())
-                f.write( DumpCollection(com_tracks,"      Common Tracks",tag) )
-                f.write( DumpCollection( em_tracks,"      Emulation-only Tracks",tag) )
-                f.write( DumpCollection(sim_tracks,"      Simulation-only Tracks",tag) )
-            
+                f.write( DumpCollectionReg(parser, com_tracks,"      Common Tracks",tag,sim_e, em_e) )
+                f.write( DumpCollection(parser,  em_tracks,"      Emulation-only Tracks",tag) )
+                f.write( DumpCollection(parser, sim_tracks,"      Simulation-only Tracks",tag) )
+                #findRegions()
+
                 if not tracksOnly:
                     tag="em"
                     com_ems, em_ems, sim_ems = GetCommonEmSim(em_e.allEMs(), sim_e.allEMs())
-                    f.write( DumpCollection(com_ems,"      Common EMs",tag) )
-                    f.write( DumpCollection( em_ems,"      Emulation-only EMs",tag) )
-                    f.write( DumpCollection(sim_ems,"      Simulation-only EMs",tag) )
+                    f.write( DumpCollection(parser, com_ems,"      Common EMs",tag) )
+                    f.write( DumpCollection(parser,  em_ems,"      Emulation-only EMs",tag) )
+                    f.write( DumpCollection(parser, sim_ems,"      Simulation-only EMs",tag) )
                     
                     tag="calo"
                     com_calos, em_calos, sim_calos = GetCommonEmSim(em_e.allCalos(), sim_e.allCalos())
-                    f.write( DumpCollection(com_calos,"      Common Calos",tag) )
-                    f.write( DumpCollection( em_calos,"      Emulation-only Calos",tag) )
-                    f.write( DumpCollection(sim_calos,"      Simulation-only Calos",tag) )
+                    f.write( DumpCollection(parser, com_calos,"      Common Calos",tag) )
+                    f.write( DumpCollection(parser,  em_calos,"      Emulation-only Calos",tag) )
+                    f.write( DumpCollection(parser, sim_calos,"      Simulation-only Calos",tag) )
                     
                     tag="mu"
                     com_mus, em_mus, sim_mus = GetCommonEmSim(em_e.allMuons(), sim_e.allMuons())
-                    f.write( DumpCollection(com_mus,"      Common Muonss",tag) )
-                    f.write( DumpCollection( em_mus,"      Emulation-only Muons",tag) )
-                    f.write( DumpCollection(sim_mus,"      Simulation-only Muons",tag) )
+                    f.write( DumpCollection(parser, com_mus,"      Common Muonss",tag) )
+                    f.write( DumpCollection(parser,  em_mus,"      Emulation-only Muons",tag) )
+                    f.write( DumpCollection(parser, sim_mus,"      Simulation-only Muons",tag) )
 
 
                    
@@ -854,40 +886,40 @@ def DumpEventComparison(em_evts, sim_evts, fname,
                 if len(sim_srs) != len(em_srs): 
                     f.write("Small region mismatch!\n")
                     return
-                f.write("  Large region {} has EM {} and SIM {}\n".format(
+                f.write("  Large region {} has (#track,em,calo,mu) = EM {} vs SIM {}\n".format(
                     li,em_lrs[li].counts(),sim_lrs[li].counts()))
 
                 for si in range(len(sim_srs)):
                     sim_sr = sim_srs[si]
                     em_sr  = em_srs[si]
-                    f.write("    Small region {} has EM {} and SIM {}\n".format(
-                        li,em_sr.counts(),sim_sr.counts()))
+                    f.write("    Small region {} has (#track,em,calo,mu) = EM {} vs SIM {}\n".format(
+                        si,em_sr.counts(),sim_sr.counts()))
 
                     if compareSmallRegion:
                         tag="tk"
                         com_tracks, em_tracks, sim_tracks = GetCommonEmSim(em_sr.tracks, sim_sr.tracks)
-                        f.write( DumpCollection(com_tracks,"      Common Tracks",tag) )
-                        f.write( DumpCollection( em_tracks,"      Emulation-only Tracks",tag) )
-                        f.write( DumpCollection(sim_tracks,"      Simulation-only Tracks",tag) )
+                        f.write( DumpCollection(parser, com_tracks,"      Common Tracks",tag) )
+                        f.write( DumpCollection(parser,  em_tracks,"      Emulation-only Tracks",tag) )
+                        f.write( DumpCollection(parser, sim_tracks,"      Simulation-only Tracks",tag) )
 
                         if not tracksOnly:
                             tag="em"
                             com_ems, em_ems, sim_ems = GetCommonEmSim(em_sr.ems, sim_sr.ems)
-                            f.write( DumpCollection(com_ems,"      Common EMs",tag) )
-                            f.write( DumpCollection( em_ems,"      Emulation-only EMs",tag) )
-                            f.write( DumpCollection(sim_ems,"      Simulation-only EMs",tag) )
+                            f.write( DumpCollection(parser, com_ems,"      Common EMs",tag) )
+                            f.write( DumpCollection(parser,  em_ems,"      Emulation-only EMs",tag) )
+                            f.write( DumpCollection(parser, sim_ems,"      Simulation-only EMs",tag) )
                             
                             tag="calo"
                             com_calos, em_calos, sim_calos = GetCommonEmSim(em_sr.calos, sim_sr.calos)
-                            f.write( DumpCollection(com_calos,"      Common Calos",tag) )
-                            f.write( DumpCollection( em_calos,"      Emulation-only Calos",tag) )
-                            f.write( DumpCollection(sim_calos,"      Simulation-only Calos",tag) )
+                            f.write( DumpCollection(parser, com_calos,"      Common Calos",tag) )
+                            f.write( DumpCollection(parser,  em_calos,"      Emulation-only Calos",tag) )
+                            f.write( DumpCollection(parser, sim_calos,"      Simulation-only Calos",tag) )
                             
                             tag="mu"
                             com_mus, em_mus, sim_mus = GetCommonEmSim(em_sr.mus, sim_sr.mus)
-                            f.write( DumpCollection(com_mus,"      Common Muonss",tag) )
-                            f.write( DumpCollection( em_mus,"      Emulation-only Muons",tag) )
-                            f.write( DumpCollection(sim_mus,"      Simulation-only Muons",tag) )
+                            f.write( DumpCollection(parser, com_mus,"      Common Muonss",tag) )
+                            f.write( DumpCollection(parser,  em_mus,"      Emulation-only Muons",tag) )
+                            f.write( DumpCollection(parser, sim_mus,"      Simulation-only Muons",tag) )
 
 
         f.write("\n")
@@ -933,16 +965,15 @@ if __name__ == "__main__":
     DumpEventsToTextFine(sim_events,dname+"/events_sim_fine.txt")
     
     #check which object overlap, by event and region
-    DumpEventComparison(em_events,sim_events,dname+"/comp_event_tracks.txt",nevts=NEVENTS,
+    DumpEventComparison(parser, em_events,sim_events,dname+"/comp_event_tracks.txt",nevts=NEVENTS,
                         compareSmallRegion=False, compareEvent=True, tracksOnly=True)
-    DumpEventComparison(em_events,sim_events,dname+"/comp_smallregion_tracks.txt",nevts=NEVENTS,
+    DumpEventComparison(parser, em_events,sim_events,dname+"/comp_smallregion_tracks.txt",nevts=NEVENTS,
                         compareSmallRegion=True, compareEvent=False, tracksOnly=True)
-    DumpEventComparison(em_events,sim_events,dname+"/comp_event_all.txt",nevts=NEVENTS,
-                        compareSmallRegion=False, compareEvent=True, tracksOnly=False)
-    DumpEventComparison(em_events,sim_events,dname+"/comp_smallregion_all.txt",nevts=NEVENTS,
-                        compareSmallRegion=True, compareEvent=False, tracksOnly=False)
-
-    #CheckAllObjects(em_events,sim_events)
+    if False: #skip for now
+        DumpEventComparison(parser, em_events,sim_events,dname+"/comp_event_all.txt",nevts=NEVENTS,
+                            compareSmallRegion=False, compareEvent=True, tracksOnly=False)
+        DumpEventComparison(parser, em_events,sim_events,dname+"/comp_smallregion_all.txt",nevts=NEVENTS,
+                            compareSmallRegion=True, compareEvent=False, tracksOnly=False)
 
 
 
