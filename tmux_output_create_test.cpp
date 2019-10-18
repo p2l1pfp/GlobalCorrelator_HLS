@@ -10,9 +10,9 @@ int link_min[4] = {0, NLINKS_PER_TRACK, NLINKS_PER_TRACK+NLINKS_PER_EMCALO, NLIN
 unsigned int theEtaRegion = 0;
 unsigned int thePhiRegion = 0;
 
-//unsigned int outputOrder[TMUX_OUT] = {0,2,4,6,8,10,12,14,16,15,17,1,3,5,7,9,11,13};//NPHI x NETA
-//unsigned int outputOrder[TMUX_OUT] = {0,11,1,12,2,13,3,14,4,15,5,16,6,17,7,9,8,10};//NPHI x NETA
-unsigned int outputOrder[TMUX_OUT] = {0,2,1,3,11,4,12,5,13,6,14,7,15,8,16,9,17,10};//NPHI x NETA
+//unsigned int outputOrder[TMUX_IN] = {0,2,4,6,8,10,12,14,16,15,17,1,3,5,7,9,11,13};//NPHI x NETA
+//unsigned int outputOrder[TMUX_IN] = {0,11,1,12,2,13,3,14,4,15,5,16,6,17,7,9,8,10};//NPHI x NETA
+unsigned int outputOrder[TMUX_IN] = {0,2,1,3,11,4,12,5,13,6,14,7,15,8,16,9,17,10};//NPHI x NETA
 //  mapping from Ryan:
 //  eta, phi — 0,0 --- 1,8 
 //  0,0 - 0,2 - 0,1 - 0,3 - 1,2 - 0,4 - 1,3 - 0,5 - 1,4 - 0,6 - 1,5 - 0,7 - 1,6 - 0,8 - 1,7 - 1,0 - 1,8 - 1,1
@@ -41,8 +41,8 @@ int main() {
     //std::cout<<mp7DataLength<<std::endl;
     // const int listLength = NFRAMES_APX_GEN0*((NTEST*TMUX_OUT)+(TMUX_IN-TMUX_OUT));
     //std::cout<<listLength<<std::endl;
-    std::string datawords[NTEST*TMUX_OUT][mp7DataLength+1];
-    for (int ia = 0; ia < NTEST*TMUX_OUT; ia++){
+    std::string datawords[NTEST*TMUX_IN][mp7DataLength+1];
+    for (int ia = 0; ia < NTEST*TMUX_IN; ia++){
         for (int ib = 0; ib < mp7DataLength+1; ib++){
             datawords[ia][ib] = "0000000000000000";
         }
@@ -93,8 +93,8 @@ int main() {
         unsigned int ie = theEtaRegion;
         unsigned int ip = thePhiRegion;
         //std::cout<<"ie"<<ie<<" ip"<<ip<<std::endl;
-        HadCaloObj calo_temp[TMUX_OUT][NCALO]; EmCaloObj emcalo_temp[TMUX_OUT][NEMCALO]; TkObj track_temp[TMUX_OUT][NTRACK]; MuObj mu_temp[TMUX_OUT][NMU];
-        for (int ir = 0; ir < TMUX_OUT; ir++) {
+        HadCaloObj calo_temp[TMUX_IN][NCALO]; EmCaloObj emcalo_temp[TMUX_IN][NEMCALO]; TkObj track_temp[TMUX_IN][NTRACK]; MuObj mu_temp[TMUX_IN][NMU];
+        for (int ir = 0; ir < TMUX_IN; ir++) {
             // initialize temp objects
             for (int i = 0; i < NTRACK; ++i) {
                 track_temp[ir][i].hwPt = 0; track_temp[ir][i].hwPtErr = 0; track_temp[ir][i].hwEta = 0; track_temp[ir][i].hwPhi = 0; track_temp[ir][i].hwZ0 = 0; 
@@ -199,12 +199,12 @@ int main() {
 
 
 
-        int i_temp[TMUX_OUT] = {0};
+        int i_temp[TMUX_IN] = {0};
         int ireg = 0;
-        int ntracks[TMUX_OUT] = {0};
-        int ncalos[TMUX_OUT] = {0};
-        int nemcalos[TMUX_OUT] = {0};
-        int nmus[TMUX_OUT] = {0};
+        int ntracks[TMUX_IN] = {0};
+        int ncalos[TMUX_IN] = {0};
+        int nemcalos[TMUX_IN] = {0};
+        int nmus[TMUX_IN] = {0};
 
         int Ntracks=0;
         int Ncalos=0;
@@ -232,7 +232,7 @@ int main() {
                 }
             }
         }
-        std::fill(i_temp, i_temp+TMUX_OUT, 0);
+        std::fill(i_temp, i_temp+TMUX_IN, 0);
         for (int i = 0; i < NCALO_TMUX; ++i) {
             if (int(calo[i].hwEta) < eta_bounds_lo.front() or int(calo[i].hwEta) >= eta_bounds_hi.back()) continue;
             if (int(calo[i].hwPhi) < phi_bounds_lo.front() or int(calo[i].hwPhi) >= eta_bounds_hi.back()) continue;
@@ -252,7 +252,7 @@ int main() {
                 }
             }
         }
-        std::fill(i_temp, i_temp+TMUX_OUT, 0);
+        std::fill(i_temp, i_temp+TMUX_IN, 0);
         for (int i = 0; i < NEMCALO_TMUX; ++i) {
             if (int(emcalo[i].hwEta) < eta_bounds_lo.front() or int(emcalo[i].hwEta) >= eta_bounds_hi.back()) continue;
             if (int(emcalo[i].hwPhi) < phi_bounds_lo.front() or int(emcalo[i].hwPhi) >= eta_bounds_hi.back()) continue;
@@ -272,7 +272,7 @@ int main() {
                 }
             }
         }
-        std::fill(i_temp, i_temp+TMUX_OUT, 0);
+        std::fill(i_temp, i_temp+TMUX_IN, 0);
         for (int i = 0; i < NMU_TMUX; ++i) {
             if (int(mu[i].hwEta) < eta_bounds_lo.front() or int(mu[i].hwEta) >= eta_bounds_hi.back()) continue;
             if (int(mu[i].hwPhi) < phi_bounds_lo.front() or int(mu[i].hwPhi) >= eta_bounds_hi.back()) continue;
@@ -297,7 +297,7 @@ int main() {
             std::cout<<"\temcalo = "<<Nemcalos<<std::endl;
             std::cout<<"\tmu     = "<<Nmus<<std::endl;
  
-        for (int ir = 0; ir < TMUX_OUT; ir++) {
+        for (int ir = 0; ir < TMUX_IN; ir++) {
 
             /*std::cout<<"Totals: ("<<test<<", "<<ir<<")"<<std::endl;
             std::cout<<"\ttrack  = "<<ntracks[ir]<<std::endl;
@@ -316,12 +316,12 @@ int main() {
                 std::stringstream stream1;
                 stream1 << std::uppercase << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id*2+1]);
                 stream1 << std::uppercase << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id*2+0]);
-                datawords[test*TMUX_OUT+ir][id] = stream1.str();
+                datawords[test*TMUX_IN+ir][id] = stream1.str();
             }
             std::stringstream stream1;
             stream1 << "00000000";
             stream1 << std::uppercase << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(hwZPV.range(9,0))) << 14) << "00";
-            datawords[test*TMUX_OUT+ir][mp7DataLength] = stream1.str();
+            datawords[test*TMUX_IN+ir][mp7DataLength] = stream1.str();
             
         }
     
@@ -330,10 +330,10 @@ int main() {
 
     int iclk = 0;
     for (int ia = 0; ia < NTEST; ia++){
-        for (int io = 0; io < TMUX_OUT; io++){
+        for (int io = 0; io < TMUX_IN; io++){
             std::cout << "0x" << std::setfill('0') << std::setw(4) << std::hex << iclk << "   " <<std::dec;
             for (int ib = 0; ib < mp7DataLength+1; ib++){
-                std::cout << datawords[ia*TMUX_OUT+outputOrder[io]][ib] << "    ";
+                std::cout << datawords[ia*TMUX_IN+outputOrder[io]][ib] << "    ";
             }
             std::cout << std::endl;
             iclk++;

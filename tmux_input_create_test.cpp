@@ -11,6 +11,10 @@ int main() {
 
     bool doSimple = false;
     bool debugWords = false;
+    int n_alltracks = 0;
+    int n_allcalos = 0;
+    int n_allemcalos = 0;
+    int n_allmus = 0;
 
     if (theEtaRegion>=NETA_TMUX) theEtaRegion = NETA_TMUX-1;
     if (thePhiRegion>=NPHI_TMUX) thePhiRegion = NPHI_TMUX-1;
@@ -82,7 +86,7 @@ int main() {
             //hwZPV          = 0;
         }
 
-        hwZPV          = 7;
+        //hwZPV          = 7;
 
 
         /*for (int i = 0; i < NTRACK_TMUX; ++i) {
@@ -205,6 +209,10 @@ int main() {
         std::cout<<"\tcalo   = "<<ncalos<<std::endl;
         std::cout<<"\temcalo = "<<nemcalos<<std::endl;
         std::cout<<"\tmu     = "<<nmus<<std::endl;*/
+        n_alltracks  += ntracks;
+        n_allcalos   += ncalos;
+        n_allemcalos += nemcalos;
+        n_allmus     += nmus;    
 
         for (int ir = 0; ir < TMUX_OUT; ir++) {
 
@@ -354,6 +362,12 @@ int main() {
         }
         std::cout << std::endl;
     }
+
+    std::cout<<"For all events: "<<std::endl;
+    std::cout<<"\ttrack  = "<<n_alltracks<<std::endl;
+    std::cout<<"\tcalo   = "<<n_allcalos<<std::endl;
+    std::cout<<"\temcalo = "<<n_allemcalos<<std::endl;
+    std::cout<<"\tmu     = "<<n_allmus<<std::endl;
 
     return 0;
 }
