@@ -22,7 +22,7 @@ open_solution -reset "solution"
 #set_part {xc7vx690tffg1927-2}
 set_part {xcvu9p-flgb2104-2-i}
 #create_clock -period 3.125 -name default
-create_clock -period 8.333333 -name default
+create_clock -period 2.857 -name default
 set_clock_uncertainty 1.5
 
 config_interface -trim_dangling_port
