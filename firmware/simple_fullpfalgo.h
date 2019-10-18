@@ -2,6 +2,7 @@
 #define SIMPLE_PFALGO3_H
 
 #include "data.h"
+#include <hls_stream.h>
 
 bool match_box(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2, etaphi_t boxSize) ;
 etaphi_t dr_box(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2) ;

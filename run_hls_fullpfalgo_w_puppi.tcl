@@ -21,6 +21,7 @@ add_files -tb vertexing/simple_vtx_ref.cpp -cflags "-DTESTMP7"
 open_solution -reset "solution"
 #set_part {xc7vx690tffg1927-2}
 set_part {xcvu9p-flgb2104-2-i}
+#set_part {xcvu13p-fhgb2104-2-i}
 #create_clock -period 3.125 -name default
 create_clock -period 2.857 -name default
 set_clock_uncertainty 1.5
@@ -31,6 +32,7 @@ csim_design
 csynth_design
 cosim_design -trace_level all
 export_design -format ip_catalog -vendor "cern-cms" -version ${l1pfIPVersion} -description "${l1pfTopFunc}"
+#export_design -flow syn -format ip_catalog -vendor "cern-cms" -version ${l1pfIPVersion} -description "${l1pfTopFunc}"
 
 # exit Vivado HLS
 exit
