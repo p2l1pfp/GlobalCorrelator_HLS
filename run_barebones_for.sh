@@ -29,7 +29,7 @@ PARTID=$5
 echo -e `date +"%h%y %T"` "BB [${LINENO}]  \t PARTID = $PARTID"
 
 # setup Vivado
-. /home/drankin/setup_vivado.sh #setup vivado and vivado_hls (2018.1)
+. /home/drankin/setup_vivado.2018.1.sh #setup vivado and vivado_hls (2018.1)
 #. /home/drankin/setup.sh.2016 #setup vivado and vivado_hls (2016.4)
 
 
@@ -48,9 +48,9 @@ if true; then #for debugging
 	cp $SRC_HLS_DIR $DEST_HLS_DIR
 
 	sed -i "s/NCALO [0-9]*$/NCALO ${NCALOS}/g" $DEST_HLS_DIR
-	sed -i "s/NEMCALO [0-9]*$/NEMCALO `expr ${NCALOS} - 5`/g" $DEST_HLS_DIR
-	sed -i "s/NSELCALO [0-9]*$/NSELCALO `expr ${NCALOS} - 5`/g" $DEST_HLS_DIR
-	sed -i "s/MP7_NCHANN [0-9]*$/MP7_NCHANN `expr ${NCALOS} + ${NCALOS} + ${NCALOS} + ${NCALOS} + ${NCALOS} + ${NCALOS} + ${NCALOS} + ${NCALOS} - 20 + 4`/g" $DEST_HLS_DIR
+	sed -i "s/NEMCALO [0-9]*$/NEMCALO `expr ${NCALOS}`/g" $DEST_HLS_DIR
+	sed -i "s/NSELCALO [0-9]*$/NSELCALO `expr ${NCALOS}`/g" $DEST_HLS_DIR
+	sed -i "s/MP7_NCHANN [0-9]*$/MP7_NCHANN `expr ${NCALOS} + ${NCALOS} + ${NCALOS} + ${NCALOS} + ${NCALOS} + ${NCALOS} + ${NCALOS} + ${NCALOS} + 4`/g" $DEST_HLS_DIR
 	
 	echo -e `date +"%h%y %T"` "BB [${LINENO}]  \t Running HLS..."
 	echo
@@ -90,7 +90,7 @@ if true; then #for debugging
 
 #-------FORWARD
 	sed -i s/XX_NINPUTS_XX/$(((2 * ${NCALOS}) + 4))/g $DEST_BUILD_DIR
-	sed -i s/XX_NOUTPUTS_XX/$(((4 * ${NCALOS}) - 20 + 4))/g $DEST_BUILD_DIR
+	sed -i s/XX_NOUTPUTS_XX/$(((4 * ${NCALOS}) + 4))/g $DEST_BUILD_DIR
 
         sed -i s/XX_CLOCK_XX/${CLOCK_FREQ}/g $DEST_BUILD_DIR
         sed -i s/XX_PART_XX/${PARTID}/g $DEST_BUILD_DIR

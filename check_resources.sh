@@ -18,20 +18,21 @@ mkdir -p reports_reg
 #clock=(2.000)
 #clock_freq=(300.000)
 
-clock=(3.3333)
-clock_freq=(240.000)
+#clock=(3.3333)
+clock=(8.333)
+clock_freq=(120.000)
 
-ntrk=(25 24 26 22)
-ncalo=(20 17 20 15)
-nemcalo=(15 13 14 13)
+#ntrk=(25 24 26 22)
+#ncalo=(20 17 20 15)
+#nemcalo=(15 13 14 13)
 
-#ntrk=(25)
-#ncalo=(20)
-#nemcalo=(15)
+ntrk=(22)
+ncalo=(15)
+nemcalo=(13)
 
-for ip in 1 2 3
+for ip in 0
 do
-  for ii in 3 4
+  for ii in 1
   do
     for iclk in 0
     do
