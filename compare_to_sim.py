@@ -111,10 +111,17 @@ class Event:
         if(self.obj_to_regions_filled==False):
             for li,l in enumerate(self.large_regions): 
                 for si,s in enumerate(l.subregions): 
-                    for x in s.tracks: self.obj_to_regions[x]=(li,si)
-                    for x in s.calos: self.obj_to_regions[x]=(li,si)
-                    for x in s.ems: self.obj_to_regions[x]=(li,si)
-                    for x in s.mus: self.obj_to_regions[x]=(li,si)            
+                   for x in s.tracks+s.calos+s.ems+s.mus: 
+                        if x in self.obj_to_regions: self.obj_to_regions[x] += [ (li,si) ]
+                        else: self.obj_to_regions[x] = [ (li,si) ]
+                    # for x in s.tracks: 
+                    #     self.obj_to_regions[x]=(li,si)
+                    # for x in s.calos: 
+                    #     self.obj_to_regions[x]=(li,si)
+                    # for x in s.ems: 
+                    #     self.obj_to_regions[x]=(li,si)
+                    # for x in s.mus: 
+                    #     self.obj_to_regions[x]=(li,si)            
             self.obj_to_regions_filled=True
         if x in self.obj_to_regions: return self.obj_to_regions[x]
         else: return (-1,-1)
@@ -243,7 +250,7 @@ def GetSimulationData(parser):
                 if evt_ctr>=SIM_NEVENTS: continue
                 # (assume only one large region for now)
                 #print(evt_ctr,lreg_ctr,sreg_ctr)
-                sr = evts[evt_ctr].large_regions[lreg_ctr].subregions[sreg_ctr]                    
+                sr = evts[evt_ctr].large_regions[lreg_ctr].subregions[sreg_ctr]
                 if(ii==0): sr.ID=ctr
                 if val:
                     if ii<NEM:
@@ -817,10 +824,11 @@ def DumpCollection(parser, xlist, title, tag, mult=True, inLink=True,
         if inLink: 
             record += " (link {:2}, clock {:4})".format(*GetInputLink(x, parser))
         if printReg and sim_evt and em_evt:
-            sim_sr = sim_evt.findRegions(x)[1]
-            em_sr = em_evt.findRegions(x)[1]
-            if sim_sr>=len(ORDERING) or em_sr>=len(ORDERING): print ("ERROR TOO LARGE SR!!!")
-            record += " (SR sim {:2}={} vs em {:2}={}) match?={}".format(sim_sr,ORDERING[sim_sr],em_sr,ORDERING[em_sr],int(sim_sr==em_sr))
+            sim_srs = tuple(sorted([ xx[1] for xx in sim_evt.findRegions(x)]))
+            em_srs =  tuple(sorted([ xx[1] for xx in em_evt.findRegions(x) ]))
+            sim_srs2 = [ORDERING[x] for x in sim_srs]
+            em_srs2 =  [ORDERING[x] for x in  em_srs]
+            record += " match?={} (SRs emulator vs sim are  {} vs {} OR IN ETA/PHI {} vs {})".format(int(sim_srs==em_srs),sim_srs,em_srs,sim_srs2,em_srs2)
         record += "\n"
     return record
 
