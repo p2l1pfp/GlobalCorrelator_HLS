@@ -72,12 +72,8 @@ int main() {
         if(1){
             // get the inputs from the input object
             if (!inputs.nextRegion_tmux(calo, emcalo, track, mu, hwZPV)) break;
-            // if (!inputs.nextRegion_tmux(calo, emcalo, track, mu, hwZPV)) break;
-            // if (!inputs.nextRegion_tmux(calo, emcalo, track, mu, hwZPV)) break;
-            // if (!inputs.nextRegion_tmux(calo, emcalo, track, mu, hwZPV)) break;
-            // if (!inputs.nextRegion_tmux(calo, emcalo, track, mu, hwZPV)) break;
-            // if (!inputs.nextRegion_tmux(calo, emcalo, track, mu, hwZPV)) break;
         } else if(0) {
+            // quickly set some fake data
             track[0].hwPt  = 1 + test * 16; // one of each object per event
             calo[0].hwPt   = 2 + test * 16;
             emcalo[0].hwPt = 3 + test * 16;
@@ -85,9 +81,6 @@ int main() {
             hwZPV          = 7 + test * 16;
             //hwZPV          = 0;
         }
-
-        //hwZPV          = 7;
-
 
         /*for (int i = 0; i < NTRACK_TMUX; ++i) {
             std::cout<<track[i].hwPt<<"\t "<<track[i].hwEta<<"\t "<<track[i].hwPhi<<std::endl;
@@ -108,7 +101,6 @@ int main() {
 
         unsigned int ie = theEtaRegion;
         unsigned int ip = thePhiRegion;
-        //std::cout<<"ie"<<ie<<" ip"<<ip<<std::endl;
         HadCaloObj calo_temp[TMUX_OUT][NCALO]; EmCaloObj emcalo_temp[TMUX_OUT][NEMCALO]; TkObj track_temp[TMUX_OUT][NTRACK]; MuObj mu_temp[TMUX_OUT][NMU];
         for (int ir = 0; ir < TMUX_OUT; ir++) {
             // initialize temp objects
@@ -130,7 +122,6 @@ int main() {
         int etahi = -MAXETA_INT+int(float(2*MAXETA_INT*(ie+1))/float(NETA_TMUX))+ETA_BUFFER;
         int philo = -MAXPHI_INT+int(float(2*MAXPHI_INT*ip)/float(NPHI_TMUX))-PHI_BUFFER;
         int phihi = -MAXPHI_INT+int(float(2*MAXPHI_INT*(ip+1))/float(NPHI_TMUX))+PHI_BUFFER;
-        //std::cout<<etalo<<" "<<etahi<<" "<<philo<<" "<<phihi<<" "<<std::endl;
 
         int i_temp = 0;
         int ireg = 0;
@@ -255,39 +246,21 @@ int main() {
                 if (link_ctr < link_min[link_type]+link_start[link_type]) {continue;}
                 
                 std::stringstream stream1;
-                std::stringstream tmp1,tmp2;
                 int index = add_off[link_type]; // 0 for small region 0, else (ir/18*10)*(8*18) mod 8*18 or whatever
-                if(doSimple){
-                    // don't send 32b data in this word along with the vertex. (keeps things aligned later on)
+                if (index==0) { // if first entry (clk of TMIN*CLKpBX) of any of any link
                     stream1 << "0x";
-                    stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (0);
+                    stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]); 
+                    // zero first 8b for beginning of frame!
+                    stream1 << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(hwZPV.range(9,0))) << 14) << "00"; 
+                    datawords[link_off+link_ctr][offset] = stream1.str();
+                    id++;
+                    index++;
+                }
+                else {
+                    // this seems like it does nothing since the same thing is written to the same data word as above...
+                    stream1 << datawords[link_off+link_ctr][offset].substr(0,10);
                     stream1 << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(hwZPV.range(9,0))) << 14) << "00";
                     datawords[link_off+link_ctr][offset] = stream1.str();
-                    index++;
-                } else {
-                    if (index==0) { // if first entry (clk of TMIN*CLKpBX) of any of any link
-                        tmp1.str(""); tmp2.str("");
-                        stream1 << "0x";
-                        stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]); 
-                        tmp1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]);
-                        // zero first 8b for beginning of frame!
-                        stream1 << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(hwZPV.range(9,0))) << 14) << "00"; 
-                        tmp2 << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(hwZPV.range(9,0))) << 14) << "00";
-                        datawords[link_off+link_ctr][offset] = stream1.str();
-                        if(debugWords) printf("datawords[%d][%d] = %s (%s + %s) <-- index 0\n",link_off+link_ctr,offset,datawords[link_off+link_ctr][offset].c_str(),tmp1.str().c_str(),tmp2.str().c_str());
-                        id++;
-                        index++;
-                    }
-                    else {
-                        // this seems like it does nothing since the same thing is written to the same data word as above...
-                        tmp1.str(""); tmp2.str("");
-                        stream1 << datawords[link_off+link_ctr][offset].substr(0,10);
-                        tmp1 << datawords[link_off+link_ctr][offset].substr(0,10);
-                        stream1 << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(hwZPV.range(9,0))) << 14) << "00";
-                        tmp2 << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(hwZPV.range(9,0))) << 14) << "00";
-                        datawords[link_off+link_ctr][offset] = stream1.str();
-                        if(debugWords) printf("datawords[%d][%d] = %s (%s + %s) <-- copied?? 0\n",link_off+link_ctr,offset,datawords[link_off+link_ctr][offset].c_str(),tmp1.str().c_str(),tmp2.str().c_str());
-                    }
                 }
 
                 //std::cout<<"index="<<index<<" id"<<id<<std::endl;
@@ -295,44 +268,24 @@ int main() {
                 // put the data on the link number = link_ctr;
                 while (index < NCLK_PER_BX*TMUX_IN) { // 8*36
                     stream1.str("");
-                    tmp1.str(""); tmp2.str("");
                     stream1 << "0x";
-                    if(doSimple){
-                        // do simple, aligned inputs :)
+                    if (index%NFRAMES_APX_GEN0==0) {
+                        // 1 frame = 3 x 64b words. First 8b of a frame is reserved for header. 
+                        // Zero the first 32b for simplicity.
+                        stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]) << "00000000";
+                        id+=1;
+                    }
+                    else if (id == objDataLength[link_type]-1) { // here theres only a half-word (32b) to write? (or trailer bits?)
+                        stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]) << "00000000";
+                        id+=1;
+                    }
+                    else {
                         stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id+1]);
                         stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]);
                         id+=2;
-                    } else {
-                        if (index%NFRAMES_APX_GEN0==0) {
-                            // 1 frame = 3 x 64b words. First 8b of a frame is reserved for header. 
-                            // Zero the first 32b for simplicity.
-                            stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]) << "00000000";
-                            tmp1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]);
-                            tmp2.str("00000000 A");
-                            id+=1;
-                        }
-                        else if (id == objDataLength[link_type]-1) { // here theres only a half-word (32b) to write? (or trailer bits?)
-                            stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]) << "00000000";
-                            tmp1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]);
-                            tmp2.str("00000000 B");
-                            id+=1;
-                        }
-                        else {
-                            stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id+1]);
-                            stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]);
-                            tmp1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id+1]);
-                            tmp2 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]) << " C";
-                            id+=2;
-                        }
                     }
                     datawords[link_off+link_ctr][offset+index] = stream1.str();
-                    if(debugWords) printf("datawords[%d][%d] = %s (%s + %s) id=%d\n",link_off+link_ctr,offset+index,datawords[link_off+link_ctr][offset+index].c_str(),tmp1.str().c_str(),tmp2.str().c_str(),id);
                     index++;
-                    // std::cout << stream1.str() << std::endl;
-                    // std::cout << datawords[link_ctr][offset+(id/2)] << std::endl;
-                    //printf("test = %i, link ctr = %i, clock = %i, offset = %i \n", test, link_ctr, offset+((id+1)/2), offset);
-                    //std::cout<<"link_ctr = "<<link_ctr<<" link_off = "<<link_off<<" offset = "<<offset<<" index = "<<index;
-                    //std::cout<<"  "<<datawords[link_off+link_ctr][offset+index-1]<<std::endl;
                     if (id >= objDataLength[link_type]) {
                         break;
                     }
@@ -343,11 +296,11 @@ int main() {
             //std::cout<<"-----------"<<std::endl;
         }
         link_off += NLINKS_PER_REG;
+        // 2 schemes should be equivalent in 18 / 6 setup
         // in this scheme, the first link is maximally saturated
         if (0 && link_off>= NLINKS_PER_REG*TMUX_IN/TMUX_OUT) link_off = 0;
         // in this scheme, inputs are spread across all links
         if (1 && link_off+NLINKS_PER_REG > NLINKS_APX_GEN0) link_off = 0;
-        //std::cout<<"\t"<<test<<std::endl;
     
     }
     //std::cout<<std::endl;
@@ -361,11 +314,11 @@ int main() {
         std::cout << std::endl;
     }
 
-    std::cout<<"For all events: "<<std::endl;
-    std::cout<<"\ttrack  = "<<n_alltracks<<std::endl;
-    std::cout<<"\tcalo   = "<<n_allcalos<<std::endl;
-    std::cout<<"\temcalo = "<<n_allemcalos<<std::endl;
-    std::cout<<"\tmu     = "<<n_allmus<<std::endl;
+    // std::cout<<"For all events: "<<std::endl;
+    // std::cout<<"\ttrack  = "<<n_alltracks<<std::endl;
+    // std::cout<<"\tcalo   = "<<n_allcalos<<std::endl;
+    // std::cout<<"\temcalo = "<<n_allemcalos<<std::endl;
+    // std::cout<<"\tmu     = "<<n_allmus<<std::endl;
 
     return 0;
 }
