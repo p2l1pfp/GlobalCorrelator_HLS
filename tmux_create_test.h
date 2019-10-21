@@ -9,9 +9,13 @@
 #include "utils/test_utils.h"
 #include "firmware/mp7pf_encoding.h"
 
-#define NTEST 6
+#define NTEST 1
 #define NLINKS_APX_GEN0 96
 #define NFRAMES_APX_GEN0 3
+#define NCLK_PER_BX 8
+// NFRAMES_APX_GEN0 is the number of 64b words per frame. 
+//   Must reserve leading 8b for header, but we simply zero first 32b
+// NCLK_PER_BX is the number of frames per bx (320 mhz / 40mhz)
 
 #define NLINKS_PER_TRACK 10
 #define NLINKS_PER_CALO 10
@@ -20,7 +24,9 @@
 #define NLINKS_PER_REG (NLINKS_PER_TRACK+NLINKS_PER_CALO+NLINKS_PER_EMCALO+NLINKS_PER_MU)
 
 #define MAXETA_INT 243
-#define MAXPHI_INT 510
+#define MINETA_INT 0
+#define MAXPHI_INT 512
+#define NPHI_INT 1024
 
 #define ETA_BUFFER 32
 #define PHI_BUFFER 32
@@ -78,4 +84,21 @@ void mp7wrapped_pfalgo3_full_sort(MP7DataWord input[MP7_NCHANN], MP7DataWord out
 
     mp7wrapped_pack_out(pfch_sort, pfpho_sort, pfne_sort, pfmu_sort, output);
 
+}
+
+bool isInPhiRegion(int test, int loBound, int hiBound, int MAXPHI=MAXPHI_INT, int MINPHI=MAXPHI_INT-NPHI_INT){
+    // place all values on the circle 
+    while (test <MINPHI) test += (MAXPHI-MINPHI);
+    while (test>=MAXPHI) test -= (MAXPHI-MINPHI);
+    while (loBound <MINPHI) loBound += (MAXPHI-MINPHI);
+    while (loBound>=MAXPHI) loBound -= (MAXPHI-MINPHI);
+    while (hiBound <MINPHI) hiBound += (MAXPHI-MINPHI);
+    while (hiBound>=MAXPHI) hiBound -= (MAXPHI-MINPHI);
+    // consider both orderings
+    if (loBound <= hiBound) {
+        return (test < hiBound) && (test >= loBound);
+    }
+    else {
+        return (test < hiBound) || (test >= loBound);
+    }
 }
