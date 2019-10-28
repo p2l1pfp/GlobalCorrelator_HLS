@@ -3,7 +3,7 @@ import os
 import argparse
 import subprocess
 
-NEVENTS=1
+NEVENTS=6
 NLARGE=1
 NSMALL=18
 
@@ -129,6 +129,54 @@ class Event:
     # def AddLargeRegion(self):
     #     pass #self.small_regions = []
 
+def SelectBits(x, nbits, shift):
+    return ((2**nbits-1 << shift) & x) >> shift
+def BitsToInt(x,nbits):
+    if x < 2**(nbits-1): return x
+    else: return x - 2**nbits
+
+def SelectBitsInt(x, nbits, shift):
+    return BitsToInt(SelectBits(x, nbits, shift),nbits)
+
+def GetTrackParams(x):
+    pt   =  SelectBitsInt(x,16, 0)
+    pte  =  SelectBitsInt(x,16,16)
+    eta  =  SelectBitsInt(x,10,32)#-2**10 # allow negative
+    phi  =  SelectBitsInt(x,10,42)
+    z0   =  SelectBitsInt(x,10,52)
+    qual =  SelectBitsInt(x, 1,62)
+    return pt, pte, eta, phi, z0, qual
+    #print("track: pt={}, pte={}, eta={}, phi={}, z0={}, qual={} ({})".format(pt, pte, eta, phi, z0, qual, x))
+
+def GetCaloParams(x):
+    pt   =  SelectBitsInt(x,16, 0)
+    empt =  SelectBitsInt(x,16,16)
+    eta  =  SelectBitsInt(x,10,32)#-2**10 # allow negative
+    phi  =  SelectBitsInt(x,10,42)
+    isEM =  SelectBitsInt(x, 1,52)
+    return pt, empt, eta, phi, isEM
+    #print("calo: pt={}, empt={}, eta={}, phi={}, isEM={} ({})".format(pt, empt, eta, phi, isEM, x))
+
+def GetEMParams(x):
+    pt   =  SelectBitsInt(x,16, 0)
+    pte  =  SelectBitsInt(x,16,16)
+    eta  =  SelectBitsInt(x,10,32)#-2**10 # allow negative
+    phi  =  SelectBitsInt(x,10,42)
+    return pt, pte, eta, phi
+    #print("EM: pt={}, pte={}, eta={}, phi={} ({})".format(pt, pte, eta, phi, x))
+
+def GetPtEtaPhi(x,tag):
+    if tag=="track" or tag=="tk" or tag=="mu":
+        pt, pte, eta, phi, z0, qual = GetTrackParams(x)
+        return pt, eta, phi
+    if tag=="calo":
+        pt, empt, eta, phi, isEM = GetCaloParams(x)
+        return pt, eta, phi
+    if tag=="em":
+        pt, pte, eta, phi = GetEMParams(x)
+        return pt, eta, phi
+    return None
+
 def GetEmulationData(parser):
     '''
     Emulation data is in a single file.
@@ -174,6 +222,11 @@ def GetEmulationData(parser):
             sr.ems    = list(filter(lambda x: x, arr[1+NTRACK:NTRACK+NEM+1]                    ))
             sr.calos  = list(filter(lambda x: x, arr[1+NTRACK+NEM:NTRACK+NEM+NCALO+1]          ))
             sr.mus    = list(filter(lambda x: x, arr[1+NTRACK+NEM+NCALO:NTRACK+NEM+NCALO+NMU+1]))
+            #remove 0 pt
+            sr.tracks = list(filter(lambda x: GetPtEtaPhi(x,"track")[0], sr.tracks))
+            sr.ems    = list(filter(lambda x: GetPtEtaPhi(x,"em")   [0], sr.ems   ))
+            sr.calos  = list(filter(lambda x: GetPtEtaPhi(x,"calo") [0], sr.calos ))
+            sr.mus    = list(filter(lambda x: GetPtEtaPhi(x,"mu")   [0], sr.mus   ))
             sr.ID     = step
 
             sr.ntracks  += len(sr.tracks)
@@ -301,53 +354,6 @@ def GetInputLink(xin, parser):
     return link,clk
 
 
-def SelectBits(x, nbits, shift):
-    return ((2**nbits-1 << shift) & x) >> shift
-def BitsToInt(x,nbits):
-    if x < 2**(nbits-1): return x
-    else: return x - 2**nbits
-
-def SelectBitsInt(x, nbits, shift):
-    return BitsToInt(SelectBits(x, nbits, shift),nbits)
-
-def GetTrackParams(x):
-    pt   =  SelectBitsInt(x,16, 0)
-    pte  =  SelectBitsInt(x,16,16)
-    eta  =  SelectBitsInt(x,10,32)#-2**10 # allow negative
-    phi  =  SelectBitsInt(x,10,42)
-    z0   =  SelectBitsInt(x,10,52)
-    qual =  SelectBitsInt(x, 1,62)
-    return pt, pte, eta, phi, z0, qual
-    #print("track: pt={}, pte={}, eta={}, phi={}, z0={}, qual={} ({})".format(pt, pte, eta, phi, z0, qual, x))
-
-def GetCaloParams(x):
-    pt   =  SelectBits(x,16, 0)
-    empt =  SelectBits(x,16,16)
-    eta  =  SelectBits(x,10,32)#-2**10 # allow negative
-    phi  =  SelectBits(x,10,42)
-    isEM =  SelectBits(x, 1,52)
-    return pt, empt, eta, phi, isEM
-    #print("calo: pt={}, empt={}, eta={}, phi={}, isEM={} ({})".format(pt, empt, eta, phi, isEM, x))
-
-def GetEMParams(x):
-    pt   =  SelectBits(x,16, 0)
-    pte  =  SelectBits(x,16,16)
-    eta  =  SelectBits(x,10,32)#-2**10 # allow negative
-    phi  =  SelectBits(x,10,42)
-    return pt, pte, eta, phi
-    #print("EM: pt={}, pte={}, eta={}, phi={} ({})".format(pt, pte, eta, phi, x))
-
-def GetPtEtaPhi(x,tag):
-    if tag=="track" or tag=="tk" or tag=="mu":
-        pt, pte, eta, phi, z0, qual = GetTrackParams(x)
-        return pt, eta, phi
-    if tag=="calo":
-        pt, empt, eta, phi, isEM = GetCaloParams(x)
-        return pt, eta, phi
-    if tag=="em":
-        pt, pte, eta, phi = GetEMParams(x)
-        return pt, eta, phi
-    return None
 
 def GetInputs(parser, dump=True):
     NLINKS_TRACK=10
@@ -814,22 +820,27 @@ def GetCommonEmSim(emlist, simlist):
 def DumpCollection(parser, xlist, title, tag, mult=True, inLink=True,
                    printReg=False, sim_evt=None, em_evt=None):
     record=title
+    suff=""
     if mult: record += " ({})".format(len(xlist))
     record += ":\n"
     nblank = 0
+    match = True
     while title[nblank]==" ": nblank+=1
     for x in xlist:
+        suff=""
         pt, eta, phi = GetPtEtaPhi(x, tag)
         record += " "*nblank + "{:5} {:5} {:5} {:0>16x}".format(pt,eta,phi,x)
-        if inLink: 
-            record += " (link {:2}, clock {:4})".format(*GetInputLink(x, parser))
         if printReg and sim_evt and em_evt:
             sim_srs = tuple(sorted([ xx[1] for xx in sim_evt.findRegions(x)]))
             em_srs =  tuple(sorted([ xx[1] for xx in em_evt.findRegions(x) ]))
             sim_srs2 = [ORDERING[x] for x in sim_srs]
             em_srs2 =  [ORDERING[x] for x in  em_srs]
-            record += " match?={} (SRs emulator vs sim are  {} vs {} OR IN ETA/PHI {} vs {})".format(int(sim_srs==em_srs),sim_srs,em_srs,sim_srs2,em_srs2)
-        record += "\n"
+            match = (sim_srs==em_srs)
+            suff = " match?={} (SRs emulator vs sim are  {} vs {} OR IN ETA/PHI {} vs {})".format(int(match),sim_srs,em_srs,sim_srs2,em_srs2)
+        if inLink and ((("ommon" in title) and not match) or ("mulation" in title)): 
+        # adding this criterion so that the grepping is only run if needed
+            suff = " (link {:2}, clock {:4})".format(*GetInputLink(x, parser)) + suff
+        record += suff+"\n"
     return record
 
 def DumpCollectionReg(parser, xlist, title, tag, sim_evt, em_evt, mult=True, inLink=True):
@@ -837,7 +848,7 @@ def DumpCollectionReg(parser, xlist, title, tag, sim_evt, em_evt, mult=True, inL
                           printReg=True, sim_evt=sim_evt, em_evt=em_evt)
 
 def DumpEventComparison(parser, em_evts, sim_evts, fname, 
-                        nevts=1, compareSmallRegion=False, compareEvent=True, tracksOnly=True):
+                        nevts=1, compareSmallRegion=False, compareEvent=True, tracksOnly=True, summary=True):
     
     with open(fname,'w') as f:
         f.write("Dumping comparison to file: {}\n".format(fname))
@@ -858,6 +869,21 @@ def DumpEventComparison(parser, em_evts, sim_evts, fname,
                 return
             f.write("Event {} has (#track,em,calo,mu) = EM {} vs SIM {}\n".format(ei,em_evts[ei].counts(),sim_evts[ei].counts()))
 
+            if summary:
+                com_tracks, em_tracks, sim_tracks = GetCommonEmSim(em_e.allTracks(), sim_e.allTracks())
+                f.write("     {} Common, {} Emulation-only, {} Simulation-only Tracks".format(
+                    len(com_tracks),len(em_tracks),len(sim_tracks)))
+                com_ems, em_ems, sim_ems = GetCommonEmSim(em_e.allEMs(), sim_e.allEMs())
+                f.write("     {} Common, {} Emulation-only, {} Simulation-only EM Calos".format(
+                    len(com_ems),len(em_ems),len(sim_ems)))
+                com_calos, em_calos, sim_calos = GetCommonEmSim(em_e.allCalos(), sim_e.allCalos())
+                f.write("     {} Common, {} Emulation-only, {} Simulation-only Calos".format(
+                    len(com_calos),len(em_calos),len(sim_calos)))
+                com_muons, em_muons, sim_muons = GetCommonEmSim(em_e.allMuons(), sim_e.allMuons())
+                f.write("     {} Common, {} Emulation-only, {} Simulation-only Muons".format(
+                    len(com_muons),len(em_muons),len(sim_muons)))
+                continue
+        
             if compareEvent:
                 tag="tk"
                 com_tracks, em_tracks, sim_tracks = GetCommonEmSim(em_e.allTracks(), sim_e.allTracks())
@@ -881,7 +907,7 @@ def DumpEventComparison(parser, em_evts, sim_evts, fname,
                     
                     tag="mu"
                     com_mus, em_mus, sim_mus = GetCommonEmSim(em_e.allMuons(), sim_e.allMuons())
-                    f.write( DumpCollection(parser, com_mus,"      Common Muonss",tag) )
+                    f.write( DumpCollection(parser, com_mus,"      Common Muons",tag) )
                     f.write( DumpCollection(parser,  em_mus,"      Emulation-only Muons",tag) )
                     f.write( DumpCollection(parser, sim_mus,"      Simulation-only Muons",tag) )
 
@@ -924,14 +950,133 @@ def DumpEventComparison(parser, em_evts, sim_evts, fname,
                             
                             tag="mu"
                             com_mus, em_mus, sim_mus = GetCommonEmSim(em_sr.mus, sim_sr.mus)
-                            f.write( DumpCollection(parser, com_mus,"      Common Muonss",tag) )
+                            f.write( DumpCollection(parser, com_mus,"      Common Muons",tag) )
                             f.write( DumpCollection(parser,  em_mus,"      Emulation-only Muons",tag) )
                             f.write( DumpCollection(parser, sim_mus,"      Simulation-only Muons",tag) )
 
 
         f.write("\n")
     print("Wrote "+fname)
+
+
+def HistogramEventComparisons(parser, em_evts, sim_evts, fname):
     
+    import ROOT
+    from collections import OrderedDict
+    hists=OrderedDict()
+
+    # helper func (no errors)
+    def book(h,name,n,a,b,title=""):
+        h[name]=ROOT.TH1F(name,title,n,a,b)
+    def book2(h,name,nx,ax,bx,ny,ay,by,title=""):
+        h[name]=ROOT.TH2F(name,title,nx,ax,bx,ny,ay,by)
+    def bookp(h,name,nx,ax,bx,ay,by,title="",err="s"):
+        h[name]=ROOT.TProfile(name,title,nx,ax,bx,ay,by,err)
+    def IncrementBinContent(h, b, x):
+        h.SetBinContent(b, h.GetBinContent(b) + x)
+    
+    #plots
+    objs = ["track","em","calo","mu"]
+    for obj in objs:
+        for x in ["sim","em"]:
+            # number of objects found versus event number
+            book(hists,"{}_{}_perEvent".format(x,obj),NEVENTS,-0.5,NEVENTS-0.5,";Event #")
+            # number of objects found versus small region
+            book(hists,"{}_{}_perSmallRegion".format(x,obj),NSMALL,-0.5,NSMALL-0.5,";Region index")
+        # number of objects found versus input link
+        book(hists,"{}_perInputLink".format(obj),96,-0.5,96-0.5,";Input link index")
+        # number of objects found versus clock
+        book(hists,"{}_perInputClock".format(obj),400,-0.5,399.5,";Input clock") # 384 = 6 events
+        # number of objects found versus clock
+        book2(hists,"{}_perLink_perInputClock".format(obj),96,-0.5,96-0.5, 400,-0.5,399.5,";Link index;Input clock") # 384 = 6 events
+    
+
+    for ei in range(len(sim_evts)):
+        sim_e = sim_evts[ei]
+        em_e = em_evts[ei]
+        sim_lrs = sim_e.large_regions
+        em_lrs = em_e.large_regions
+        if len(sim_lrs) != len(em_lrs): 
+            print("Large region mismatch!\n")
+            return
+
+        # note: assumed 'counts()' is indexed same as 'objs'
+        for oi, obj in enumerate(objs):
+            hists["em_{}_perEvent".format(obj)].SetBinContent(ei+1, em_evts[ei].counts()[oi])
+            hists["sim_{}_perEvent".format(obj)].SetBinContent(ei+1, sim_evts[ei].counts()[oi])
+            
+        # just one LR for now
+        for li in range(len(sim_lrs)):
+            sim_srs = sim_lrs[li].subregions
+            em_srs  = em_lrs[li].subregions
+            if len(sim_srs) != len(em_srs): 
+                print("Small region mismatch!\n")
+                return
+
+            for si in range(len(sim_srs)):
+                sim_sr = sim_srs[si]
+                em_sr  = em_srs[si]
+
+                for oi, obj in enumerate(objs):
+                    # small region counts
+                    IncrementBinContent(hists["em_{}_perSmallRegion".format(obj)],si+1, em_sr.counts()[oi])
+                    IncrementBinContent(hists["sim_{}_perSmallRegion".format(obj)],si+1, sim_sr.counts()[oi])
+                    
+                    common_collection=None
+                    #try eval here :) ?
+                    if obj=="track": common_collection = GetCommonEmSim(em_sr.tracks, sim_sr.tracks)[0]
+                    if obj=="em"   : common_collection = GetCommonEmSim(em_sr.ems, sim_sr.ems)[0]
+                    if obj=="calo" : common_collection = GetCommonEmSim(em_sr.calos, sim_sr.calos)[0]
+                    if obj=="mu"   : common_collection = GetCommonEmSim(em_sr.mus, sim_sr.mus)[0]
+                    
+                    for link, clk in [GetInputLink(x,parser) for x in common_collection]:
+                        hists["{}_perInputLink".format(obj)].Fill(link)
+                        hists["{}_perInputClock".format(obj)].Fill(clk)
+                        hists["{}_perLink_perInputClock".format(obj)].Fill(link,clk)
+
+
+    f = ROOT.TFile(fname,"recreate")
+    for n in hists:
+        hists[n].Write()
+    f.Close()
+    print("Wrote file: "+fname)
+
+    
+def PlotEventComparisons(fin_name, fout_name,outdir):
+    import ROOT
+    from collections import OrderedDict
+    hists=OrderedDict()
+    
+    #get hists from file
+    f = ROOT.TFile(fin_name,"read")
+    objs = ["track","em","calo","mu"]
+    for obj in objs:
+        for x in ["sim","em"]:
+            for n in ["perEvent","perSmallRegion"]:
+                s = "{}_{}_{}".format(x,obj,n)
+                hists[s] = f.Get(s)
+        for n in ["perInputLink","perInputClock","perLink_perInputClock"]:
+            s = "{}_{}".format(obj,n)
+            hists[s] = f.Get(s)
+
+    from histtools import DrawHistsEmSim,DrawHistsLinkClk,DrawHistsLinkClk2D
+    em_hists  = [hists[ "em_{}_perEvent".format(obj)] for obj in objs]
+    sim_hists = [hists["sim_{}_perEvent".format(obj)] for obj in objs]
+    DrawHistsEmSim(em_hists, sim_hists,outdir+"/perEvent")
+    em_hists  = [hists[ "em_{}_perSmallRegion".format(obj)] for obj in objs]
+    sim_hists = [hists["sim_{}_perSmallRegion".format(obj)] for obj in objs]
+    DrawHistsEmSim(em_hists, sim_hists,outdir+"/perSmallRegion")
+
+    DrawHistsLinkClk( [hists[o+"_perInputLink"] for o in objs], outdir+"/perInputLink")
+    DrawHistsLinkClk( [hists[o+"_perInputClock"] for o in objs], outdir+"/perInputClock")
+
+    DrawHistsLinkClk2D( [hists[o+"_perLink_perInputClock"] for o in objs], outdir+"/perLinkperInputClock")
+
+    fout = ROOT.TFile(fout_name,"recreate")
+    fout.Close()
+    f.Close()
+    print("Wrote file: "+fout_name)
+
 
 if __name__ == "__main__":
 
@@ -944,6 +1089,9 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--input", default="",  dest = "input_file", help = "regionizer input from emulator")
     parser.add_argument("-e", "--emulation-output", default="outputs.txt",  dest = "emulator_output", help = "regionizer output from emulator")
     parser.add_argument("-s", "--simulation-data-dir", default="/home/therwig/sandbox/otsdaq-cms-firmware/regionizer_full_small/sim/sim_data/", dest = "sim_output_dir", help = "regionizer output directory from simulation")
+    parser.add_argument("-a", "--all", action='store_true', default=False,  dest = "all_dumps", help = "produce object dumps for all object types")
+    parser.add_argument("-r", "--root", action='store_true', default=False, help = "produce root histograms from logs")
+    parser.add_argument("-p", "--plot", action='store_true', default=False, help = "produce root plots from hists")
     parser = parser.parse_args(sys.argv[1:])
     print()
     print("Reading from emulation output: "+parser.emulator_output)
@@ -954,15 +1102,20 @@ if __name__ == "__main__":
         in_tracks, in_ems, in_calos = GetInputs(parser)
         print (in_tracks)
 
-    em_events  = GetEmulationData(parser)
-    sim_events = GetSimulationData(parser)
-
-    link,clk = GetInputLink(1069419247*(2**32), parser) 
-    print (link,clk)
-
     # information is dumped here
     dname = "dumps"
     os.system("mkdir -p "+dname)
+
+    if parser.plot:
+        import sys 
+        sys.argv.append( '-b' )
+        PlotEventComparisons(dname+"/verification_hists.root",dname+"/verification_plots.root",dname)
+        print("Finished plotting, exiting now...")
+        exit(0)
+
+    # fill objects from log files
+    em_events  = GetEmulationData(parser)
+    sim_events = GetSimulationData(parser)
 
     #basic event information w/ and w/o object details
     DumpEventsToText(em_events,dname+"/events_emu.txt")
@@ -971,17 +1124,23 @@ if __name__ == "__main__":
     DumpEventsToTextFine(sim_events,dname+"/events_sim_fine.txt")
     
     #check which object overlap, by event and region
+    DumpEventComparison(parser, em_events,sim_events,dname+"/summary_comp_event_tracks.txt",nevts=NEVENTS,
+                        compareSmallRegion=False, compareEvent=True, tracksOnly=True, summary=True)
     DumpEventComparison(parser, em_events,sim_events,dname+"/comp_event_tracks.txt",nevts=NEVENTS,
-                        compareSmallRegion=False, compareEvent=True, tracksOnly=True)
+                        compareSmallRegion=False, compareEvent=True, tracksOnly=True, summary=False)
     DumpEventComparison(parser, em_events,sim_events,dname+"/comp_smallregion_tracks.txt",nevts=NEVENTS,
-                        compareSmallRegion=True, compareEvent=False, tracksOnly=True)
-    if False: #skip for now
+                        compareSmallRegion=True, compareEvent=False, tracksOnly=True, summary=False)
+
+    DumpEventComparison(parser, em_events,sim_events,dname+"/summary_comp_event_all.txt",nevts=NEVENTS,
+                        compareSmallRegion=False, compareEvent=True, tracksOnly=False, summary=True)
+    if parser.all_dumps:
         DumpEventComparison(parser, em_events,sim_events,dname+"/comp_event_all.txt",nevts=NEVENTS,
-                            compareSmallRegion=False, compareEvent=True, tracksOnly=False)
+                            compareSmallRegion=False, compareEvent=True, tracksOnly=False, summary=False)
         DumpEventComparison(parser, em_events,sim_events,dname+"/comp_smallregion_all.txt",nevts=NEVENTS,
-                            compareSmallRegion=True, compareEvent=False, tracksOnly=False)
+                            compareSmallRegion=True, compareEvent=False, tracksOnly=False, summary=False)
 
-
+    if parser.root:
+        HistogramEventComparisons(parser, em_events,sim_events,dname+"/verification_hists.root")
 
 
     if False: # quick hack to make plots
