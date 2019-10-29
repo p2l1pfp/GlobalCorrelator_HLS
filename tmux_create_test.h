@@ -9,7 +9,7 @@
 #include "utils/test_utils.h"
 #include "firmware/mp7pf_encoding.h"
 
-#define NTEST 1
+#define NTEST 10
 #define NLINKS_APX_GEN0 96
 #define NFRAMES_APX_GEN0 3
 #define NCLK_PER_BX 8

@@ -50,8 +50,9 @@ int main() {
 
     int link_off = 0;
     int offset = 0;
+    //int tmpctr=0;
     for (int test = 0; test < NTEST; ++test) {
-        
+        //  tmpctr++;
 
         // initialize TP objects
         for (int i = 0; i < NTRACK_TMUX; ++i) {
@@ -319,6 +320,6 @@ int main() {
     // std::cout<<"\tcalo   = "<<n_allcalos<<std::endl;
     // std::cout<<"\temcalo = "<<n_allemcalos<<std::endl;
     // std::cout<<"\tmu     = "<<n_allmus<<std::endl;
-
+    //std::cout << tmpctr << std::endl;
     return 0;
 }

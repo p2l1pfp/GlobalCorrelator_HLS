@@ -3,7 +3,7 @@ import os
 import argparse
 import subprocess
 
-NEVENTS=6
+NEVENTS=10
 NLARGE=1
 NSMALL=18
 
@@ -82,6 +82,7 @@ class Event:
         self.nmus    = 0
         self.obj_to_regions={}
         self.obj_to_regions_filled=False
+        self.index   = -1
     def counts(self): return (
             self.ntracks,
             self.nems   ,
@@ -109,11 +110,12 @@ class Event:
         return x
     def findRegions(self,x):
         if(self.obj_to_regions_filled==False):
+            #if x==0x0463c00d000a000a: print("running findRegions() for 0x0463c00d000a000a. Entry exists? ",x in self.obj_to_regions)
             for li,l in enumerate(self.large_regions): 
                 for si,s in enumerate(l.subregions): 
-                   for x in s.tracks+s.calos+s.ems+s.mus: 
-                        if x in self.obj_to_regions: self.obj_to_regions[x] += [ (li,si) ]
-                        else: self.obj_to_regions[x] = [ (li,si) ]
+                   for obj in s.tracks+s.calos+s.ems+s.mus: 
+                        if obj in self.obj_to_regions: self.obj_to_regions[obj] += [ (li,si) ]
+                        else: self.obj_to_regions[obj] = [ (li,si) ]
                     # for x in s.tracks: 
                     #     self.obj_to_regions[x]=(li,si)
                     # for x in s.calos: 
@@ -122,7 +124,9 @@ class Event:
                     #     self.obj_to_regions[x]=(li,si)
                     # for x in s.mus: 
                     #     self.obj_to_regions[x]=(li,si)            
+            #if x==0x0463c00d000a000a: print("  finished filling: got ",self.obj_to_regions[x])
             self.obj_to_regions_filled=True
+            return self.obj_to_regions[x]
         if x in self.obj_to_regions: return self.obj_to_regions[x]
         else: return (-1,-1)
 
@@ -204,6 +208,7 @@ def GetEmulationData(parser):
 
     # setup for the first region
     evt = Event(EM_NLARGE, EM_NSMALL)
+    evt.index=0
 
     with open(parser.emulator_output,'r') as f:
         ctr = 0
@@ -227,7 +232,14 @@ def GetEmulationData(parser):
             sr.ems    = list(filter(lambda x: GetPtEtaPhi(x,"em")   [0], sr.ems   ))
             sr.calos  = list(filter(lambda x: GetPtEtaPhi(x,"calo") [0], sr.calos ))
             sr.mus    = list(filter(lambda x: GetPtEtaPhi(x,"mu")   [0], sr.mus   ))
+            #remove eta=32 TEMPORARY TEST!!
+            # sr.tracks = list(filter(lambda x: GetPtEtaPhi(x,"track")[1]!=32, sr.tracks))
+            # sr.ems    = list(filter(lambda x: GetPtEtaPhi(x,"em")   [1]!=32, sr.ems   ))
+            # sr.calos  = list(filter(lambda x: GetPtEtaPhi(x,"calo") [1]!=32, sr.calos ))
+            # sr.mus    = list(filter(lambda x: GetPtEtaPhi(x,"mu")   [1]!=32, sr.mus   ))
             sr.ID     = step
+
+            #if 0x0463c00d000a000a in sr.tracks: print("We found it",ctr,sreg_ctr)
 
             sr.ntracks  += len(sr.tracks)
             sr.nems     += len(sr.ems   )
@@ -252,6 +264,7 @@ def GetEmulationData(parser):
                 # create new event
                 evts.append( evt )
                 evt = Event(EM_NLARGE, EM_NSMALL)
+                evt.index=evt_ctr
                 # large_reg = Region(n_sub=EM_NSMALL)
                 # evt.large_regions.append( large_reg )
 
@@ -285,7 +298,9 @@ def GetSimulationData(parser):
 
     evts = []
     for i in range(SIM_NEVENTS):
-        evts.append( Event(SIM_NLARGE, SIM_NSMALL) )
+        e = Event(SIM_NLARGE, SIM_NSMALL) 
+        e.index = i
+        evts.append( e )
 
     sreg_ctr = 0
     lreg_ctr = 0
@@ -307,32 +322,37 @@ def GetSimulationData(parser):
                 if(ii==0): sr.ID=ctr
                 if val:
                     if ii<NEM:
+                        #if GetPtEtaPhi(val,"em")[1]==32: continue # TODO TEMP TEST
                         sr.ems.append(val)
                         sr.nems  += 1
                         evts[evt_ctr].nems  += 1
-                        vals = "{:0>16x}".format(val)
+                        # vals = "{:0>16x}".format(val)
                         # if (vals[0:8]=="00000000" or vals[8:16]=="00000000"): sr.nems -= 0.5
                         # if (vals[0:8]=="00000000" or vals[8:16]=="00000000"): evts[evt_ctr].nems -= 0.5
                     elif ii<NEM+NCALO: 
-                        sr.calos.append(val)
-                        sr.ncalos  += 1
-                        evts[evt_ctr].ncalos  += 1
-                        vals = "{:0>16x}".format(val)
+                        #if GetPtEtaPhi(val,"calo")[1]==32: continue # TODO TEMP TEST
+                        if GetPtEtaPhi(val,"calo")[1]!=32: 
+                            sr.calos.append(val)
+                            sr.ncalos  += 1
+                            evts[evt_ctr].ncalos  += 1
+                        # vals = "{:0>16x}".format(val)
                         # if (vals[0:8]=="00000000" or vals[8:16]=="00000000"): sr.ncalos -= 0.5
                         # if (vals[0:8]=="00000000" or vals[8:16]=="00000000"): evts[evt_ctr].ncalos -= 0.5
                     elif ii<NEM+NCALO+NTRACK:
+                        #if GetPtEtaPhi(val,"tk")[1]==32: continue # TODO TEMP TEST
                         sr.tracks.append(val)
                         sr.track_clks[val]=ctr
                         sr.ntracks  += 1
                         evts[evt_ctr].ntracks  += 1
-                        vals = "{:0>16x}".format(val)
+                        # vals = "{:0>16x}".format(val)
                         # if (vals[0:8]=="00000000" or vals[8:16]=="00000000"): sr.ntracks -= 0.5
                         # if (vals[0:8]=="00000000" or vals[8:16]=="00000000"): evts[evt_ctr].ntracks -= 0.
                     elif ii<NEM+NCALO+NTRACK+NMU:
+                        #if GetPtEtaPhi(val,"mu")[1]==32: continue # TODO TEMP TEST
                         sr.mus.append(val)
                         sr.nmus  += 1
                         evts[evt_ctr].nmus  += 1
-                        vals = "{:0>16x}".format(val)
+                        # vals = "{:0>16x}".format(val)
                         # if (vals[0:8]=="00000000" or vals[8:16]=="00000000"): sr.nmus -= 0.5
                         # if (vals[0:8]=="00000000" or vals[8:16]=="00000000"): evts[evt_ctr].nmus -= 0.5
                 ctr += 1
@@ -831,6 +851,7 @@ def DumpCollection(parser, xlist, title, tag, mult=True, inLink=True,
         pt, eta, phi = GetPtEtaPhi(x, tag)
         record += " "*nblank + "{:5} {:5} {:5} {:0>16x}".format(pt,eta,phi,x)
         if printReg and sim_evt and em_evt:
+            #if x==0x0463c00d000a000a: print("Found it (0463c00d000a000a)",sim_evt.findRegions(x),em_evt.findRegions(x))
             sim_srs = tuple(sorted([ xx[1] for xx in sim_evt.findRegions(x)]))
             em_srs =  tuple(sorted([ xx[1] for xx in em_evt.findRegions(x) ]))
             sim_srs2 = [ORDERING[x] for x in sim_srs]
@@ -925,8 +946,11 @@ def DumpEventComparison(parser, em_evts, sim_evts, fname,
                 for si in range(len(sim_srs)):
                     sim_sr = sim_srs[si]
                     em_sr  = em_srs[si]
-                    f.write("    Small region {} has (#track,em,calo,mu) = EM {} vs SIM {}\n".format(
-                        si,em_sr.counts(),sim_sr.counts()))
+                    f.write("    Small region {} has (#track,em,calo,mu) = EM {} vs SIM {}, (matchSR={})\n".format(
+                        si,em_sr.counts(),sim_sr.counts(),em_sr.counts()==sim_sr.counts()))
+                    if not (em_sr.counts()==sim_sr.counts()):
+                        f.write( DumpCollection(parser,  em_sr.calos, "DEBUG  EM ","calo") )
+                        f.write( DumpCollection(parser, sim_sr.calos, "DEBUG SIM ","calo") )
 
                     if compareSmallRegion:
                         tag="tk"
@@ -983,6 +1007,10 @@ def HistogramEventComparisons(parser, em_evts, sim_evts, fname):
             book(hists,"{}_{}_perEvent".format(x,obj),NEVENTS,-0.5,NEVENTS-0.5,";Event #")
             # number of objects found versus small region
             book(hists,"{}_{}_perSmallRegion".format(x,obj),NSMALL,-0.5,NSMALL-0.5,";Region index")
+            # number of objects found versus eta 
+            book(hists,"{}_{}_eta".format(x,obj),300,-250-0.5,50-0.5,";eta bits")
+            # number of objects found versus phi
+            book(hists,"{}_{}_phi".format(x,obj),1040,-520-0.5,520-0.5,";phi bits")
         # number of objects found versus input link
         book(hists,"{}_perInputLink".format(obj),96,-0.5,96-0.5,";Input link index")
         # number of objects found versus clock
@@ -1021,7 +1049,26 @@ def HistogramEventComparisons(parser, em_evts, sim_evts, fname):
                     # small region counts
                     IncrementBinContent(hists["em_{}_perSmallRegion".format(obj)],si+1, em_sr.counts()[oi])
                     IncrementBinContent(hists["sim_{}_perSmallRegion".format(obj)],si+1, sim_sr.counts()[oi])
+
+                    for x in em_sr.tracks: hists["em_track_eta"].Fill(GetPtEtaPhi(x,"tk")[1])
+                    for x in em_sr.calos: hists["em_calo_eta"].Fill(GetPtEtaPhi(x,"calo")[1])
+                    for x in em_sr.ems: hists["em_em_eta"].Fill(GetPtEtaPhi(x,"em")[1])
+                    for x in em_sr.mus: hists["em_mu_eta"].Fill(GetPtEtaPhi(x,"mu")[1])
+                    for x in sim_sr.tracks: hists["sim_track_eta"].Fill(GetPtEtaPhi(x,"tk")[1])
+                    for x in sim_sr.calos: hists["sim_calo_eta"].Fill(GetPtEtaPhi(x,"calo")[1])
+                    for x in sim_sr.ems: hists["sim_em_eta"].Fill(GetPtEtaPhi(x,"em")[1])
+                    for x in sim_sr.mus: hists["sim_mu_eta"].Fill(GetPtEtaPhi(x,"mu")[1])
+
+                    for x in em_sr.tracks: hists["em_track_phi"].Fill(GetPtEtaPhi(x,"tk")[2])
+                    for x in em_sr.calos: hists["em_calo_phi"].Fill(GetPtEtaPhi(x,"calo")[2])
+                    for x in em_sr.ems: hists["em_em_phi"].Fill(GetPtEtaPhi(x,"em")[2])
+                    for x in em_sr.mus: hists["em_mu_phi"].Fill(GetPtEtaPhi(x,"mu")[2])
+                    for x in sim_sr.tracks: hists["sim_track_phi"].Fill(GetPtEtaPhi(x,"tk")[2])
+                    for x in sim_sr.calos: hists["sim_calo_phi"].Fill(GetPtEtaPhi(x,"calo")[2])
+                    for x in sim_sr.ems: hists["sim_em_phi"].Fill(GetPtEtaPhi(x,"em")[2])
+                    for x in sim_sr.mus: hists["sim_mu_phi"].Fill(GetPtEtaPhi(x,"mu")[2])
                     
+                    # link info for common objects 
                     common_collection=None
                     #try eval here :) ?
                     if obj=="track": common_collection = GetCommonEmSim(em_sr.tracks, sim_sr.tracks)[0]
@@ -1052,7 +1099,7 @@ def PlotEventComparisons(fin_name, fout_name,outdir):
     objs = ["track","em","calo","mu"]
     for obj in objs:
         for x in ["sim","em"]:
-            for n in ["perEvent","perSmallRegion"]:
+            for n in ["perEvent","perSmallRegion","eta","phi"]:
                 s = "{}_{}_{}".format(x,obj,n)
                 hists[s] = f.Get(s)
         for n in ["perInputLink","perInputClock","perLink_perInputClock"]:
@@ -1066,6 +1113,15 @@ def PlotEventComparisons(fin_name, fout_name,outdir):
     em_hists  = [hists[ "em_{}_perSmallRegion".format(obj)] for obj in objs]
     sim_hists = [hists["sim_{}_perSmallRegion".format(obj)] for obj in objs]
     DrawHistsEmSim(em_hists, sim_hists,outdir+"/perSmallRegion")
+
+    em_hists  = [hists[ "em_{}_eta".format(obj)] for obj in objs]
+    sim_hists = [hists["sim_{}_eta".format(obj)] for obj in objs]
+    DrawHistsEmSim(em_hists, sim_hists,outdir+"/eta")
+    em_hists  = [hists[ "em_{}_phi".format(obj)] for obj in objs]
+    sim_hists = [hists["sim_{}_phi".format(obj)] for obj in objs]
+    DrawHistsEmSim(em_hists, sim_hists,outdir+"/phi")
+
+
 
     DrawHistsLinkClk( [hists[o+"_perInputLink"] for o in objs], outdir+"/perInputLink")
     DrawHistsLinkClk( [hists[o+"_perInputClock"] for o in objs], outdir+"/perInputClock")

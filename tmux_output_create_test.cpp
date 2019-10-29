@@ -188,17 +188,22 @@ int main() {
         }
         std::fill(i_temp, i_temp+TMUX_IN, 0);
         for (int i = 0; i < NCALO_TMUX; ++i) {
+            //if(int(calo[i].hwPt)==49 && int(calo[i].hwEta)==32 && int(calo[i].hwPhi)==-131) std::cout << "FOUND IT AA\n"; //"000df42000070031"
             if (int(calo[i].hwPt) == 0) continue;
+            //if(int(calo[i].hwPt)==49 && int(calo[i].hwEta)==32 && int(calo[i].hwPhi)==-131) std::cout << "FOUND IT BB\n"; //"000df42000070031"
             // std::cout<<"\t"<<calo[i].hwEta<<" "<<calo[i].hwPhi<<std::endl;
             for (int ies = 0; ies < NETA_SMALL; ies++) {
                 if (int(calo[i].hwEta) >= eta_bounds_lo[ies] and int(calo[i].hwEta) < eta_bounds_hi[ies]) {
+                    //if(int(calo[i].hwPt)==49 && int(calo[i].hwEta)==32 && int(calo[i].hwPhi)==-131) std::cout << "FOUND IT XX\n"; //"000df42000070031"
                     for (int ips = 0; ips < NPHI_SMALL; ips++) {
                         if ( isInPhiRegion(calo[i].hwPhi, phi_bounds_lo[ips], phi_bounds_hi[ips]) ) { 
+                            //if(int(calo[i].hwPt)==49 && int(calo[i].hwEta)==32 && int(calo[i].hwPhi)==-131) std::cout << "FOUND IT YY\n"; //"000df42000070031"
                             if (i_temp[ies*NPHI_SMALL+ips]==NCALO) continue;
                             calo_temp[ies*NPHI_SMALL+ips][i_temp[ies*NPHI_SMALL+ips]] = calo[i];
                             i_temp[ies*NPHI_SMALL+ips] += 1;
                             ncalos[ies*NPHI_SMALL+ips]++;
                             Ncalos++;
+                            //if(int(calo[i].hwPt)==49 && int(calo[i].hwEta)==32 && int(calo[i].hwPhi)==-131) std::cout << "FOUND IT ZZ\n"; //"000df42000070031"
                         }
                     }
                 }
