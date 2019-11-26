@@ -32,6 +32,7 @@ void mp7wrapped_pfalgo3_full(MP7DataWord input[MP7_NCHANN], MP7DataWord output[M
 #define PFALGO3_DR2MAX_TK_MU   1049
 //#define PFALGO3_DR2MAX_TK_EM   84
 #define PFALGO3_DR2MAX_TK_EM   42
+//for demonstrator, altered encoding to handle large region. will need to modify in any case to handle actual inputs
 #define PFALGO3_TK_MAXINVPT_LOOSE    40
 #define PFALGO3_TK_MAXINVPT_TIGHT    80
 //#define PFPUPPI_DR2MAX 8405

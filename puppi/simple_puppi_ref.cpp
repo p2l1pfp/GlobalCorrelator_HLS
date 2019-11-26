@@ -13,7 +13,7 @@ void simple_puppi_ref(PFChargedObj pfch[NTRACK], PFNeutralObj pfallne[NNEUTRALS]
     lut_puppiweight_init< ap_uint<8>, PUPPI_TABLE_SIZE >( puppiweight_table );
 
     // compute alpha
-    const int DR2MAX = 8404; // 0.4 cone
+    const int DR2MAX = PFPUPPI_DR2MAX; // 0.4 cone
     for (int in = 0; in < NNEUTRALS; ++in) {
         
         if (pfallne[in].hwPt == 0) continue;
