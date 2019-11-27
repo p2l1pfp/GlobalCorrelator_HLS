@@ -95,8 +95,10 @@ bool isInPhiRegion(int test, int loBound, int hiBound, int MAXPHI=MAXPHI_INT, in
     while (hiBound <MINPHI) hiBound += (MAXPHI-MINPHI);
     while (hiBound>=MAXPHI) hiBound -= (MAXPHI-MINPHI);
     // consider both orderings
-    if (loBound <= hiBound) 
+    if (loBound <= hiBound) {
         return (test < hiBound) && (test >= loBound);
-    else 
+    }
+    else {
         return (test < hiBound) || (test >= loBound);
+    }
 }
