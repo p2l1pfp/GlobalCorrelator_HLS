@@ -72,12 +72,15 @@ class HumanReadablePatternSerializer {
         ~HumanReadablePatternSerializer() ;
         
         void operator()(const EmCaloObj emcalo[NEMCALO], const HadCaloObj hadcalo[NCALO], const TkObj track[NTRACK], const MuObj mu[NMU], const PFChargedObj outch[NTRACK], const PFNeutralObj outpho[NPHOTON], const PFNeutralObj outne[NSELCALO], const PFChargedObj outmu[NMU]) ;
+        void operator()(const HadCaloObj calo[NCALO], const TkObj track[NTRACK], const MuObj mu[NMU], const PFChargedObj outch[NTRACK], const PFNeutralObj outne[NSELCALO], const PFChargedObj outmu[NMU]) ;
         void dump_inputs(const EmCaloObj emcalo[NEMCALO], const HadCaloObj hadcalo[NCALO], const TkObj track[NTRACK], const MuObj mu[NMU]) ;
+        void dump_inputs(const HadCaloObj calo[NCALO], const TkObj track[NTRACK], const MuObj mu[NMU]) ;
         void dump_emcalo(const EmCaloObj emcalo[NEMCALO], unsigned int N = NEMCALO) ;
         void dump_hadcalo(const HadCaloObj hadcalo[NCALO], unsigned int N = NCALO) ;
         void dump_track(const TkObj track[NTRACK], unsigned int N = NTRACK) ;
         void dump_mu(const MuObj mu[NMU], unsigned int N = NMU) ;
         void dump_outputs(const PFChargedObj outch[NTRACK], const PFNeutralObj outpho[NPHOTON], const PFNeutralObj outne[NSELCALO], const PFChargedObj outmu[NMU]) ;
+        void dump_outputs(const PFChargedObj outch[NTRACK], const PFNeutralObj outne[NSELCALO], const PFChargedObj outmu[NMU]) ;
 
     protected:
         const std::string fname_; 
