@@ -11,6 +11,8 @@ typedef ap_int<10> z0_t;  // 40cm / 0.1
 	
 typedef ap_uint<14> tk2em_dr_t;
 typedef ap_uint<14> tk2calo_dr_t;
+typedef ap_uint<10> em2calo_dr_t;
+typedef ap_uint<12> tk2calo_dq_t;
 
 enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=4 };
 
@@ -27,10 +29,6 @@ enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=
    #define NCALO 15
    #define NEMCALO 13
    #define NMU 2
-   /* #define NTRACK 15 */
-   /* #define NCALO 15 */
-   /* #define NMU 2 */
-   /* #define NEMCALO 15 */
    #define NPHOTON NEMCALO
    #define NSELCALO 10
 #elif TESTCTP7  // reduced input size to fit in a board

@@ -7,11 +7,6 @@
 #include <cstdio>
 #endif
 
-//typedef ap_uint<7> tk2em_dr_t;
-//typedef ap_uint<10> tk2calo_dr_t;
-typedef ap_uint<10> em2calo_dr_t;
-typedef ap_uint<12> tk2calo_dq_t;
-
 int dr2_int(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2) {
     etaphi_t deta = (eta1-eta2);
     etaphi_t dphi = (phi1-phi2);
