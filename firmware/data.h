@@ -1,7 +1,7 @@
-#ifndef SIMPLE_PFLOW_DATA_H
-#define SIMPLE_PFLOW_DATA_H
+#ifndef FIRMWARE_DATA_H
+#define FIRMWARE_DATA_H
 
-#include "ap_int.h"
+#include <ap_int.h>
 
 typedef ap_int<16> pt_t;
 typedef ap_int<10>  etaphi_t;
@@ -16,46 +16,73 @@ typedef ap_uint<12> tk2calo_dq_t;
 
 enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=4 };
 
-// VERTEXING
-#define NVTXBINS 15
-#define NPOW 6
-#define NALLTRACK 1 << NPOW
-#define NSECTOR 1
-#define VTXPTMAX  200
-
-// PF
-#ifdef TESTMP7  // reduced input size to fit in a board
-   #define NTRACK 22
-   #define NCALO 15
-   #define NEMCALO 13
-   #define NMU 2
-   #define NPHOTON NEMCALO
-   #define NSELCALO 10
-#elif TESTCTP7  // reduced input size to fit in a board
-   #define NTRACK 7
-   #define NCALO 5
-   #define NMU 2
-   #define NEMCALO 5
-   #define NPHOTON NEMCALO
-   #define NSELCALO 4
-#else
-   // #define NTRACK 15
-   // #define NCALO 15
-   // #define NMU 4
-   // #define NEMCALO 15
-   // #define NPHOTON NEMCALO
-   // #define NSELCALO 10
-   #define NTRACK 7
-   #define NCALO 5
-   #define NMU 2
-   #define NEMCALO 5
-   #define NPHOTON NEMCALO
-   #define NSELCALO 4
+// DEFINE MULTIPLICITIES
+#if defined(REG_HGCAL)
+    #define NTRACK 25
+    #define NCALO 20
+    #define NMU 4
+    #define NSELCALO 15
+    // dummy
+    #define NEMCALO 1
+    #define NPHOTON NEMCALO
+//--------------------------------
+#elif defined(REG_HGCALNOTK)
+    #ifndef NCALO
+        #define NCALO 12
+    #endif
+    #define NNEUTRALS 8
+    // dummy
+    #define NMU 1
+    #define NTRACK 1
+    #define NEMCALO 1
+    #define NPHOTON NEMCALO
+    #define NSELCALO 1
+//--------------------------------
+#elif defined(REG_HF)
+    #define NCALO 12
+    #define NNEUTRALS 8
+    // dummy
+    #define NMU 1
+    #define NTRACK 1
+    #define NEMCALO 1
+    #define NPHOTON NEMCALO
+    #define NSELCALO 1
+//--------------------------------
+#else // BARREL
+   #ifndef REG_BARREL
+      #warning "No region defined, assuming it's barrel (#define REG_BARREL to suppress this)"
+   #endif
+   #if defined(TESTMP7)
+       #define NTRACK 5
+       #define NCALO 5
+       #define NMU 2
+       #define NEMCALO 4
+       #define NPHOTON NEMCALO
+       #define NSELCALO 4
+   #elif defined(TESTCTP7)
+       #define NTRACK 7
+       #define NCALO 5
+       #define NMU 2
+       #define NEMCALO 5
+       #define NPHOTON NEMCALO
+       #define NSELCALO 4
+   #elif defined(VCU118)
+       #define NTRACK 15
+       #define NCALO 15
+       #define NEMCALO 15
+       #define NMU 4
+       #define NPHOTON NEMCALO
+       #define NSELCALO 10
+   #else
+       #define NTRACK 22
+       #define NCALO 15
+       #define NEMCALO 13
+       #define NMU 2
+       #define NPHOTON NEMCALO
+       #define NSELCALO 10
+   #endif
 #endif
 
-// PUPPI & CHS
-#define NPVTRACK 15
-#define NNEUTRALS NPHOTON+NSELCALO
 
 struct CaloObj {
 	pt_t hwPt;
@@ -102,18 +129,19 @@ struct PFChargedObj {
 	particleid_t hwId;
 	z0_t hwZ0;
 };
+inline void clear(PFChargedObj & c) {
+    c.hwPt = 0; c.hwEta = 0; c.hwPhi = 0; c.hwId = 0; c.hwZ0 = 0;
+}
+
 struct PFNeutralObj {
 	pt_t hwPt;
 	etaphi_t hwEta, hwPhi; // relative to the region center, at calo
 	particleid_t hwId;
-  pt_t hwPtPuppi;
+	pt_t hwPtPuppi;
 };
-struct VtxObj {
-	pt_t  hwSumPt;
-	z0_t  hwZ0;
-	vtx_t mult;
-	particleid_t hwId;
-};
+inline void clear(PFNeutralObj & c) {
+    c.hwPt = 0; c.hwEta = 0; c.hwPhi = 0; c.hwId = 0; c.hwPtPuppi = 0;
+}
 
 //TMUX
 #define NETA_TMUX 2
@@ -129,9 +157,8 @@ struct VtxObj {
 
 
 
-#define MP7_NCHANN 144
+typedef ap_uint<32> MP7DataWord;
+#define MP7_NCHANN 72
 #define CTP7_NCHANN_IN 67
 #define CTP7_NCHANN_OUT 48
-typedef ap_uint<32> MP7DataWord;
-
 #endif
