@@ -81,6 +81,8 @@ enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=
        #define NPHOTON NEMCALO
        #define NSELCALO 10
    #endif
+   // not used but must be there because used in header files
+   #define NNEUTRALS 1
 #endif
 
 

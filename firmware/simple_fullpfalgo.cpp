@@ -5,11 +5,15 @@
 #include <cassert>
 #ifndef __SYNTHESIS__
 #include <cstdio>
+int gdebug_;
+void pfalgo3_full_set_debug(bool debug) { gdebug_ = debug; }
+#else
+void pfalgo3_full_set_debug(bool debug) { }
 #endif
 
 int dr2_int(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2) {
-    etaphi_t deta = (eta1-eta2);
-    etaphi_t dphi = (phi1-phi2);
+    ap_int<etaphi_t::width+1> deta = (eta1-eta2);
+    ap_int<etaphi_t::width+1> dphi = (phi1-phi2);
     return deta*deta + dphi*dphi;
 }
 
@@ -124,7 +128,7 @@ void tk2em_drvals(EmCaloObj calo[NEMCALO], TkObj track[NTRACK], tk2em_dr_t calo_
     const tk2em_dr_t eDR2MAX = DR2MAX;
     for (int it = 0; it < NTRACK; ++it) {
         for (int icalo = 0; icalo < NEMCALO; ++icalo) {
-            if (isMu[it]){calo_track_drval[it][icalo] = eDR2MAX; } // set to DR max if the track is a muon
+            if (isMu[it] || track[it].hwPt == 0) {calo_track_drval[it][icalo] = eDR2MAX; } // set to DR max if the track is a muon or null
             else { calo_track_drval[it][icalo] = dr2_int_cap(track[it].hwEta, track[it].hwPhi, calo[icalo].hwEta, calo[icalo].hwPhi, eDR2MAX); } 
         }
     }
@@ -261,7 +265,7 @@ void pick_closest(DR_T calo_track_drval[NTK][NCA], ap_uint<NCA> calo_track_link_
         DR_T mydr = calo_track_drval[it][0];
         int index = 0;
         for (int icalo = 1; icalo < NCA; ++icalo) {
-            if (mydr >= calo_track_drval[it][icalo]) {
+            if (mydr > calo_track_drval[it][icalo]) {
                 mydr = calo_track_drval[it][icalo];
                 index = icalo;
             }
@@ -434,6 +438,9 @@ void tk2em_elealgo(ap_uint<NEMCALO> em_track_link_bit[NTRACK], bool isEM[NEMCALO
             if (isEM[icalo] && em_track_link_bit[it][icalo]) ele = true;
         }
         isEle[it] = ele;
+        #ifndef __SYNTHESIS__
+        if (gdebug_ && ele) printf("HW track %2d promoted to an electron\n", it);
+        #endif
     }
 }
 void tk2em_photons(EmCaloObj calo[NEMCALO], pt_t photonPt[NEMCALO], PFNeutralObj pfout[NSELCALO]) {
@@ -442,6 +449,9 @@ void tk2em_photons(EmCaloObj calo[NEMCALO], pt_t photonPt[NEMCALO], PFNeutralObj
         pfout[icalo].hwEta = photonPt[icalo] ? calo[icalo].hwEta : etaphi_t(0);
         pfout[icalo].hwPhi = photonPt[icalo] ? calo[icalo].hwPhi : etaphi_t(0);
         pfout[icalo].hwId  = photonPt[icalo] ? PID_Photon : 0;
+        #ifndef __SYNTHESIS__
+        if (gdebug_ && photonPt[icalo]) printf("HW emcalo %2d pt %7d promoted to a photon with pt %7d\n", icalo, int(calo[icalo].hwPt), int(photonPt[icalo]));
+        #endif
     }
 }
 
@@ -451,12 +461,18 @@ void em2calo_sub(HadCaloObj calo[NCALO], pt_t sumem[NCALO], bool keepcalo[NCALO]
         pt_t emsub = calo[icalo].hwEmPt - sumem[icalo];
         if ((ptsub <= (calo[icalo].hwPt >> 4)) || 
                 (calo[icalo].hwIsEM && (emsub <= (calo[icalo].hwEmPt>>3)) && !keepcalo[icalo])) {
+#ifndef __SYNTHESIS__
+            if (gdebug_ && calo[icalo].hwPt) printf("HW hadcalo %2d pt %7d empt %7d sumem %7d keepcalo %1d  --> discarded\n", icalo, int(calo[icalo].hwPt), int(calo[icalo].hwEmPt), int(sumem[icalo]), int(keepcalo[icalo]));
+#endif
             calo_out[icalo].hwPt   = 0;
             calo_out[icalo].hwEmPt = 0;
             calo_out[icalo].hwEta  = 0;
             calo_out[icalo].hwPhi  = 0;
             calo_out[icalo].hwIsEM = 0;
         } else {
+#ifndef __SYNTHESIS__
+            if (gdebug_ && calo[icalo].hwPt) printf("HW hadcalo %2d pt %7d empt %7d sumem %7d keepcalo %1d  --> kept with pt %7d empt %7d\n", icalo, int(calo[icalo].hwPt), int(calo[icalo].hwEmPt), int(sumem[icalo]), int(keepcalo[icalo]), int(ptsub), int((emsub > 0 ? emsub : pt_t(0))));
+#endif
             calo_out[icalo].hwPt   = ptsub;
             calo_out[icalo].hwEmPt = (emsub > 0 ? emsub : pt_t(0));
             calo_out[icalo].hwEta  = calo[icalo].hwEta;
