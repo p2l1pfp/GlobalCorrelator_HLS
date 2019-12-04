@@ -87,8 +87,8 @@ void MP7PatternSerializer::zero() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-HumanReadablePatternSerializer::HumanReadablePatternSerializer(const std::string &fname) :
-    fname_(fname), file_(nullptr), ipattern_(0) 
+HumanReadablePatternSerializer::HumanReadablePatternSerializer(const std::string &fname, bool zerosuppress) :
+    fname_(fname), zerosuppress_(zerosuppress), file_(nullptr), ipattern_(0) 
 {
     if (!fname.empty()) {
         if (fname == "-") {
@@ -144,24 +144,28 @@ void HumanReadablePatternSerializer::dump_inputs(const HadCaloObj calo[NCALO], c
 
 void HumanReadablePatternSerializer::dump_hadcalo(const HadCaloObj hadcalo[NCALO], unsigned int N) {
     for (int i = 0; i < N; ++i) {
+        if (zerosuppress_ && !hadcalo[i].hwPt) continue;
         fprintf(file_, "   calo  %3d, hwPt % 7d   hwEmPt  % 7d    hwEta %+7d   hwPhi %+7d   hwIsEM %1d\n", i, int(hadcalo[i].hwPt), int(hadcalo[i].hwEmPt), int(hadcalo[i].hwEta), int(hadcalo[i].hwPhi), int(hadcalo[i].hwIsEM));
     }
     if (file_ == stdout) fflush(file_);
 }
 void HumanReadablePatternSerializer::dump_emcalo(const EmCaloObj emcalo[NEMCALO], unsigned int N) {
     for (int i = 0; i < N; ++i) {
+        if (zerosuppress_ && !emcalo[i].hwPt) continue;
         fprintf(file_, "   em    %3d, hwPt % 7d   hwPtErr % 7d    hwEta %+7d   hwPhi %+7d\n", i, int(emcalo[i].hwPt), int(emcalo[i].hwPtErr), int(emcalo[i].hwEta), int(emcalo[i].hwPhi));
     }
     if (file_ == stdout) fflush(file_);
 }
 void HumanReadablePatternSerializer::dump_track(const TkObj track[NTRACK], unsigned int N) {
     for (int i = 0; i < N; ++i) {
+        if (zerosuppress_ && !track[i].hwPt) continue;
         fprintf(file_, "   track %3d, hwPt % 7d   hwPtErr % 7d    hwEta %+7d   hwPhi %+7d     hwZ0 %+7d\n", i, int(track[i].hwPt), int(track[i].hwPtErr), int(track[i].hwEta), int(track[i].hwPhi), int(track[i].hwZ0));
     }
     if (file_ == stdout) fflush(file_);
 }
 void HumanReadablePatternSerializer::dump_mu(const MuObj mu[NMU], unsigned int N) {
     for (int i = 0; i < N; ++i) {
+        if (zerosuppress_ && !mu[i].hwPt) continue;
         fprintf(file_, "   muon  %3d, hwPt % 7d   hwPtErr % 7d    hwEta %+7d   hwPhi %+7d\n", i, int(mu[i].hwPt), int(mu[i].hwPtErr), int(mu[i].hwEta), int(mu[i].hwPhi));
     }
     if (file_ == stdout) fflush(file_);
@@ -170,18 +174,22 @@ void HumanReadablePatternSerializer::dump_mu(const MuObj mu[NMU], unsigned int N
 void HumanReadablePatternSerializer::dump_outputs(const PFChargedObj outch[NTRACK], const PFNeutralObj outpho[NPHOTON], const PFNeutralObj outne[NSELCALO], const PFChargedObj outmu[NMU]) 
 {
     for (int i = 0; i < NTRACK; ++i) {
+        if (zerosuppress_ && !outch[i].hwPt) continue;
         fprintf(file_, "   charged pf %3d, hwPt % 7d   hwEta %+7d   hwPhi %+7d   hwId %1d      hwZ0 %+7d\n", i,
                 int(outch[i].hwPt), int(outch[i].hwEta), int(outch[i].hwPhi), int(outch[i].hwId), int(outch[i].hwZ0));
     }
     for (int i = 0; i < NPHOTON; ++i) {
+        if (zerosuppress_ && !outpho[i].hwPt) continue;
         fprintf(file_, "   photon  pf %3d, hwPt % 7d   hwEta %+7d   hwPhi %+7d   hwId %1d\n", i,
                 int(outpho[i].hwPt), int(outpho[i].hwEta), int(outpho[i].hwPhi), int(outpho[i].hwId));
     }
     for (int i = 0; i < NSELCALO; ++i) {
+        if (zerosuppress_ && !outne[i].hwPt) continue;
         fprintf(file_, "   neutral pf %3d, hwPt % 7d   hwEta %+7d   hwPhi %+7d   hwId %1d\n", i,
                 int(outne[i].hwPt), int(outne[i].hwEta), int(outne[i].hwPhi), int(outne[i].hwId));
     }
     for (int i = 0; i < NMU; ++i) {
+        if (zerosuppress_ && !outmu[i].hwPt) continue;
         fprintf(file_, "   muon    pf %3d, hwPt % 7d   hwEta %+7d   hwPhi %+7d   hwId %1d\n", i,
                 int(outmu[i].hwPt), int(outmu[i].hwEta), int(outmu[i].hwPhi), int(outmu[i].hwId));
     }

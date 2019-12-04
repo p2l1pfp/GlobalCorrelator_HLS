@@ -647,7 +647,7 @@ void buffer_ff_2d(OBJ_T calo[NOBJ1][NOBJ2], OBJ_T calo_out[NOBJ1][NOBJ2]) {
 // PF Algos
 //-------------------------------------------------------
 
-void pfalgo3_full(EmCaloObj calo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj track[NTRACK], MuObj mu[NMU], PFChargedObj outch[NTRACK], PFNeutralObj outpho[NPHOTON], PFNeutralObj outne[NSELCALO], PFChargedObj outmu[NMU], tk2em_dr_t drvals_tk2em[NTRACK][NPHOTON], tk2calo_dr_t drvals_tk2calo[NTRACK][NSELCALO]) {
+void pfalgo3_full_savedr(EmCaloObj calo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj track[NTRACK], MuObj mu[NMU], PFChargedObj outch[NTRACK], PFNeutralObj outpho[NPHOTON], PFNeutralObj outne[NSELCALO], PFChargedObj outmu[NMU], tk2em_dr_t drvals_tk2em[NTRACK][NPHOTON], tk2calo_dr_t drvals_tk2calo[NTRACK][NSELCALO]) {
     
     #pragma HLS ARRAY_PARTITION variable=calo complete
     #pragma HLS ARRAY_PARTITION variable=hadcalo complete
@@ -661,7 +661,7 @@ void pfalgo3_full(EmCaloObj calo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj trac
     #pragma HLS ARRAY_PARTITION variable=drvals_tk2em complete dim=0
     #pragma HLS ARRAY_PARTITION variable=drvals_tk2calo complete dim=0
 
-    #pragma HLS pipeline II=HLS_pipeline_II
+    #pragma HLS pipeline II=2
 
     // ---------------------------------------------------------------
     // TK-MU Linking
@@ -772,6 +772,128 @@ void pfalgo3_full(EmCaloObj calo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj trac
     //could remove for now, but it doesnt impact synthesis so I leave it
 
 }
+
+void pfalgo3_full(EmCaloObj calo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj track[NTRACK], MuObj mu[NMU], PFChargedObj outch[NTRACK], PFNeutralObj outpho[NPHOTON], PFNeutralObj outne[NSELCALO], PFChargedObj outmu[NMU]) {
+    
+    #pragma HLS ARRAY_PARTITION variable=calo complete
+    #pragma HLS ARRAY_PARTITION variable=hadcalo complete
+    #pragma HLS ARRAY_PARTITION variable=track complete
+    #pragma HLS ARRAY_PARTITION variable=mu complete    
+    #pragma HLS ARRAY_PARTITION variable=outch complete
+    #pragma HLS ARRAY_PARTITION variable=outpho complete
+    #pragma HLS ARRAY_PARTITION variable=outne complete
+    #pragma HLS ARRAY_PARTITION variable=outmu complete
+
+    #pragma HLS pipeline II=2
+
+    tk2em_dr_t drvals_tk2em[NTRACK][NPHOTON];
+    tk2calo_dr_t drvals_tk2calo[NTRACK][NSELCALO];
+    #pragma HLS ARRAY_PARTITION variable=drvals_tk2em complete dim=0
+    #pragma HLS ARRAY_PARTITION variable=drvals_tk2calo complete dim=0
+
+    // ---------------------------------------------------------------
+    // TK-MU Linking
+    ap_uint<NMU> mu_track_link_bit[NTRACK];
+    #pragma HLS ARRAY_PARTITION variable=mu_track_link_bit complete
+    bool isMu[NTRACK];
+    for (int it = 0; it < NTRACK; ++it) { isMu[it] = 0; }
+
+    spfph_mutrk_link(mu, track, mu_track_link_bit);
+    spfph_mualgo(mu, track, mu_track_link_bit, outmu, isMu);
+    #ifndef __SYNTHESIS__
+    for (int it = 0; it < NTRACK; ++it) { for (int imu = 0; imu < NMU; ++imu) {
+        if (gdebug_ && isMu[it] && mu_track_link_bit[it][imu]) printf("HW track %2d is linked to muon %d\n", it, imu);
+    } }
+    #endif
+
+    // ---------------------------------------------------------------
+    // TK-EM Linking
+    ap_uint<NEMCALO> em_track_link_bit[NTRACK];
+    #pragma HLS ARRAY_PARTITION variable=em_track_link_bit complete
+    tk2em_dr_t drvals_tk2em_unsort[NTRACK][NPHOTON];
+    #pragma HLS ARRAY_PARTITION variable=drvals_tk2em_unsort complete dim=0
+    //#pragma HLS RESOURCE variable=drvals_tk2em_unsort type=RAM_2P
+    tk2em_link(calo, track, em_track_link_bit, isMu, drvals_tk2em_unsort);
+    #ifndef __SYNTHESIS__
+    for (int it = 0; it < NTRACK; ++it) { for (int ic = 0; ic < NEMCALO; ++ic) {
+        if (gdebug_ && track[it].hwPt && em_track_link_bit[it][ic]) printf("HW track %2d pt %7d is linked to em calo %2d pt %7d\n", it, int(track[it].hwPt), ic, int(calo[ic].hwPt));
+    } }
+    #endif
+
+    pt_t sumtk2em[NEMCALO]; 
+    #pragma HLS ARRAY_PARTITION variable=sumtk2em complete
+
+    pt_t photonPt[NEMCALO];
+    #pragma HLS ARRAY_PARTITION variable=photonPt complete
+
+    bool isEM[NEMCALO];
+    #pragma HLS ARRAY_PARTITION variable=isEM complete
+
+    tk2em_sumtk(track, em_track_link_bit, sumtk2em);
+    tk2em_emalgo(calo, sumtk2em, isEM, photonPt);
+    tk2em_photons(calo, photonPt, outpho);
+
+    bool isEle[NTRACK];
+    #pragma HLS ARRAY_PARTITION variable=isEle complete
+    tk2em_elealgo(em_track_link_bit, isEM, isEle);
+
+    ap_uint<NCALO> em_calo_link_bit[NEMCALO];
+    #pragma HLS ARRAY_PARTITION variable=em_calo_link_bit complete
+    em2calo_link(calo, hadcalo, em_calo_link_bit);
+    #ifndef __SYNTHESIS__
+    for (int ie = 0; ie < NEMCALO; ++ie) { for (int ic = 0; ic < NCALO; ++ic) {
+        if (gdebug_ && calo[ie].hwPt && em_calo_link_bit[ie][ic]) printf("HW em calo %2d pt %7d is linked to had calo %2d pt %7d empt %7d\n", ie, int(calo[ie].hwPt), ic, int(hadcalo[ic].hwPt), int(hadcalo[ic].hwEmPt));
+    } }
+    #endif
+
+    bool keepcalo[NCALO];
+    pt_t sumem[NCALO]; 
+    #pragma HLS ARRAY_PARTITION variable=sumem complete
+    em2calo_sumem(calo, isEM, em_calo_link_bit, sumem, keepcalo);
+
+    HadCaloObj hadcalo_sub[NCALO];
+    #pragma HLS ARRAY_PARTITION variable=hadcalo_sub complete
+    em2calo_sub(hadcalo, sumem, keepcalo, hadcalo_sub);
+
+    HadCaloObj hadcalo_sub_out[NCALO];
+    #pragma HLS ARRAY_PARTITION variable=hadcalo_sub_out complete
+
+    buffer_ff<HadCaloObj,NCALO>(hadcalo_sub,hadcalo_sub_out);
+
+    // ---------------------------------------------------------------
+    // TK-HAD Linking
+    ap_uint<NCALO> calo_track_link_bit[NTRACK];
+    #pragma HLS ARRAY_PARTITION variable=calo_track_link_bit complete
+    tk2calo_dr_t drvals_tk2calo_unsort[NTRACK][NCALO];
+    #pragma HLS ARRAY_PARTITION variable=drvals_tk2calo_unsort complete dim=0
+
+    tk2calo_link_drdpt(hadcalo_sub_out, track, calo_track_link_bit, drvals_tk2calo_unsort);
+    //tk2calo_link_dronly(hadcalo_sub, track, calo_track_link_bit, drvals_tk2calo_unsort);
+    #ifndef __SYNTHESIS__
+    for (int it = 0; it < NTRACK; ++it) { for (int ic = 0; ic < NCALO; ++ic) {
+        if (gdebug_ && track[it].hwPt && calo_track_link_bit[it][ic]) printf("HW track %2d pt %7d is linked to had calo %2d pt %7d\n", it, int(track[it].hwPt), ic, int(hadcalo_sub_out[ic].hwPt));
+    } }
+    #endif
+
+    int tkerr2[NTRACK];
+    #pragma HLS ARRAY_PARTITION variable=tkerr2 complete
+    tk2calo_tkerr2(track, tkerr2);
+
+    pt_t sumtk[NCALO]; int sumtkerr2[NCALO];
+    #pragma HLS ARRAY_PARTITION variable=sumtk complete
+    #pragma HLS ARRAY_PARTITION variable=sumtkerr2 complete
+
+    tk2calo_tkalgo(track, isEle, isMu, calo_track_link_bit, outch);
+    tk2calo_sumtk(track, isEle, isMu, tkerr2, calo_track_link_bit, sumtk, sumtkerr2);
+
+    PFNeutralObj outne_all[NCALO];
+    #pragma HLS ARRAY_PARTITION variable=outne_all complete
+    tk2calo_caloalgo(hadcalo_sub, sumtk, sumtkerr2, outne_all);
+
+    ptsort_hwopt<PFNeutralObj,NCALO,NSELCALO>(outne_all, outne);
+}
+
+
 
 
 void mp7wrapped_pack_in(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj track[NTRACK], MuObj mu[NMU], MP7DataWord data[MP7_NCHANN]) {
@@ -971,7 +1093,7 @@ void mp7wrapped_pfalgo3_full(MP7DataWord input[MP7_NCHANN], MP7DataWord output[M
     tk2calo_dr_t drvals_tk2calo[NTRACK][NSELCALO];
     #pragma HLS ARRAY_PARTITION variable=drvals_tk2em complete dim=0
     #pragma HLS ARRAY_PARTITION variable=drvals_tk2calo complete dim=0
-    pfalgo3_full(emcalo, hadcalo, track, mu, pfch, pfpho, pfne, pfmu, drvals_tk2em, drvals_tk2calo);
+    pfalgo3_full_savedr(emcalo, hadcalo, track, mu, pfch, pfpho, pfne, pfmu, drvals_tk2em, drvals_tk2calo);
     //concat drvals, ne
     tk2calo_dr_t drvals[NTRACK][NNEUTRALS];
     #pragma HLS ARRAY_PARTITION variable=drvals complete dim=0
@@ -1005,7 +1127,7 @@ void mp7wrapped_pfalgo3_full(MP7DataWord input[MP7_NCHANN], MP7DataWord output[M
     #pragma HLS ARRAY_PARTITION variable=drvals_out complete dim=0
     buffer_ff_2d<tk2calo_dr_t,NTRACK,NNEUTRALS>(drvals, drvals_out);
 
-    simple_puppi_hw(pfch_out, pfne_all_out, drvals_out, Z0);
+    //simple_puppi_hw(pfch_out, pfne_all_out, drvals_out, Z0);
 
     mp7wrapped_pack_out_necomb(pfch_out, pfne_all_out, pfmu_out, output);
 

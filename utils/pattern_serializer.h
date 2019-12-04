@@ -68,7 +68,7 @@ class MP7PatternSerializer {
 
 class HumanReadablePatternSerializer {
     public:
-        HumanReadablePatternSerializer(const std::string &fname) ;
+        HumanReadablePatternSerializer(const std::string &fname, bool zerosuppress=false) ;
         ~HumanReadablePatternSerializer() ;
         
         void operator()(const EmCaloObj emcalo[NEMCALO], const HadCaloObj hadcalo[NCALO], const TkObj track[NTRACK], const MuObj mu[NMU], const PFChargedObj outch[NTRACK], const PFNeutralObj outpho[NPHOTON], const PFNeutralObj outne[NSELCALO], const PFChargedObj outmu[NMU]) ;
@@ -83,7 +83,8 @@ class HumanReadablePatternSerializer {
         void dump_outputs(const PFChargedObj outch[NTRACK], const PFNeutralObj outne[NSELCALO], const PFChargedObj outmu[NMU]) ;
 
     protected:
-        const std::string fname_; 
+        const std::string fname_;
+        bool zerosuppress_;
         FILE *file_; // may be stdout
         unsigned int ipattern_;
     
