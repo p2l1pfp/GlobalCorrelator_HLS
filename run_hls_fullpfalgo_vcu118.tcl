@@ -10,7 +10,7 @@ add_files -tb simple_fullpfalgo_ref.cpp -cflags "-DTESTMP7 -DVCU118"
 add_files -tb utils/pattern_serializer.cpp -cflags "-DTESTMP7 -DVCU118"
 add_files -tb utils/test_utils.cpp -cflags "-DTESTMP7 -DVCU118"
 add_files -tb DiscretePFInputs.h    -cflags "-DTESTMP7 -DVCU118 -std=c++0x"
-add_files -tb utils/DiscretePFInputs_IO.h -cflags "-DTESTMP7 -DVCU118 -std=c++0x"
+add_files -tb utils/DiscretePFInputsReader.h -cflags "-DTESTMP7 -DVCU118 -std=c++0x"
 add_files -tb data/regions_TTbar_PU140.dump
 
 # reset the solution

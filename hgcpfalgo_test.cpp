@@ -4,7 +4,7 @@
 #include "vertexing/firmware/simple_vtx.h"
 #include "puppi/firmware/simple_puppi.h"
 #include "utils/random_inputs.h"
-#include "utils/DiscretePFInputs_IO.h"
+#include "utils/DiscretePFInputsReader.h"
 #include "utils/pattern_serializer.h"
 #include "utils/test_utils.h"
 

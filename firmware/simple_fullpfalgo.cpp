@@ -26,6 +26,7 @@ ap_uint<NB> dr2_int_cap(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t ph
 }*/ //old version
 template<int NB>
 ap_uint<NB> dr2_int_cap(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2, ap_uint<NB> max) {
+#if 0
     //hardcode for etaphi size
     int tmpe = eta1-eta2;
     ap_uint<NB> deta = (tmpe > 0 ? tmpe : -tmpe);
@@ -38,6 +39,12 @@ ap_uint<NB> dr2_int_cap(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t ph
         dr2 = deta2 + dphi2;
     }
     return (dr2 < int(max) ? ap_uint<NB>(dr2) : max);
+#else
+    ap_int<etaphi_t::width+1> deta = (eta1-eta2);
+    ap_int<etaphi_t::width+1> dphi = (phi1-phi2);
+    int dr2 = deta*deta + dphi*dphi;
+    return (dr2 < int(max) ? ap_uint<NB>(dr2) : max);
+#endif
 }
 
 template<int NB, typename PTS_t>
@@ -597,6 +604,7 @@ void buffer_ff(OBJ_T obj[NOBJ], OBJ_T obj_out[NOBJ]) {
     }
 }
 
+#if 0
 template<typename OBJ_T, int NOBJ>
 void buffer_bram(OBJ_T calo[NOBJ], OBJ_T calo_out[NOBJ]) {
 #pragma HLS dataflow
@@ -617,6 +625,7 @@ void buffer_bram(OBJ_T calo[NOBJ], OBJ_T calo_out[NOBJ]) {
         calo_out[icalo] = hadcalo_sub_tmp[icalo].read();
     }
 }
+#endif
 
 template<typename OBJ_T, int NOBJ1, int NOBJ2>
 void buffer_ff_2d(OBJ_T calo[NOBJ1][NOBJ2], OBJ_T calo_out[NOBJ1][NOBJ2]) {
@@ -784,7 +793,20 @@ void pfalgo3_full(EmCaloObj calo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj trac
     #pragma HLS ARRAY_PARTITION variable=outne complete
     #pragma HLS ARRAY_PARTITION variable=outmu complete
 
+#ifdef HLS_pipeline_II
+ #if HLS_pipeline_II == 1
+    #pragma HLS pipeline II=1
+ #elif HLS_pipeline_II == 2
     #pragma HLS pipeline II=2
+ #elif HLS_pipeline_II == 3
+    #pragma HLS pipeline II=3
+ #elif HLS_pipeline_II == 4
+    #pragma HLS pipeline II=4
+ #elif HLS_pipeline_II == 6
+    #pragma HLS pipeline II=6
+ #endif
+#endif
+ 
 
     tk2em_dr_t drvals_tk2em[NTRACK][NPHOTON];
     tk2calo_dr_t drvals_tk2calo[NTRACK][NSELCALO];
@@ -1074,7 +1096,7 @@ void mp7wrapped_pfalgo3_full(MP7DataWord input[MP7_NCHANN], MP7DataWord output[M
     #pragma HLS ARRAY_PARTITION variable=output complete
     #pragma HLS INTERFACE ap_none port=output
 
-    #pragma HLS pipeline II=HLS_pipeline_II
+    #pragma HLS pipeline II=2
 
     EmCaloObj emcalo[NEMCALO]; HadCaloObj hadcalo[NCALO]; TkObj track[NTRACK]; MuObj mu[NMU];
     #pragma HLS ARRAY_PARTITION variable=emcalo complete
