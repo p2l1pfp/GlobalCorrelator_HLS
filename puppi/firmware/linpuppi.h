@@ -15,4 +15,27 @@ void fwdlinpuppi_flt(const HadCaloObj caloin[NCALO], PFNeutralObj pfallne[NCALO]
 
 void fwdlinpuppi_set_debug(bool debug);
 
+#define LINPUPPI_ptLSB 0.25
+#define LINPUPPI_DR2LSB 1.9e-5
+#define LINPUPPI_pt2LSB LINPUPPI_ptLSB*LINPUPPI_ptLSB
+#define LINPUPPI_pt2DR2_scale LINPUPPI_ptLSB*LINPUPPI_ptLSB/LINPUPPI_DR2LSB
+
+#if defined(REG_HGCALNOTK)
+
+#define LINPUPPI_ptSlopeNe  0.3
+#define LINPUPPI_ptSlopeNe  0.3
+
+#define LINPUPPI_ptSlopeNe  0.3
+#define LINPUPPI_ptSlopePh  0.4
+#define LINPUPPI_ptZeroNe   9.0
+#define LINPUPPI_ptZeroPh   5.0
+#define LINPUPPI_alphaSlope 2.2
+#define LINPUPPI_alphaZero  9.0
+#define LINPUPPI_alphaCrop  4.0
+#define LINPUPPI_priorNe    7.0
+#define LINPUPPI_priorPh    5.0
+#define LINPUPPI_ptCut      4.0
+
+#endif
+
 #endif

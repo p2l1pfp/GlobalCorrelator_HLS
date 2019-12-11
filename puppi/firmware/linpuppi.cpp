@@ -40,10 +40,10 @@ void fwdlinpuppi_init_x2a_short(ap_int<14> table[1024]) {
         const int sum_bitShift = 15;
         const int alpha_bits = 4; // decimal bits of the alpha values
         const int alphaSlope_bits = 4; // decimal bits of the alphaSlope values
-        const int alphaSlope = 2.2 * std::log(2) * (1 << alphaSlope_bits); // we put a log(2) here since we compute alpha as log2(sum) instead of ln(sum)
-        const int alphaZero = 9.0 / std::log(2) * (1 << alpha_bits);
+        const int alphaSlope = LINPUPPI_alphaSlope * std::log(2) * (1 << alphaSlope_bits); // we put a log(2) here since we compute alpha as log2(sum) instead of ln(sum)
+        const int alphaZero = LINPUPPI_alphaZero / std::log(2) * (1 << alpha_bits);
         const int C0 = - alphaSlope * alphaZero;
-        const int C1 =   alphaSlope * int((std::log(0.25*0.25 / 1.9e-5)/std::log(2.) - sum_bitShift)*(1 << alpha_bits) + 0.5); 
+        const int C1 =   alphaSlope * int((std::log(LINPUPPI_pt2DR2_scale)/std::log(2.) - sum_bitShift)*(1 << alpha_bits) + 0.5); 
                                     // note: ^^^^^^^^^^^^^^^^^^^^^^^^^^  HLS does not know std::log2(x)
         table[i] = C0 + (i >  0 ? alphaSlope * int(std::log(float(i))/std::log(2.)*(1 << alpha_bits)) + C1 : 0);
                                // note: ^^^^^^^^^^^^^^^^^^^^^^^^^^  HLS does not know std::log2(x) --> std::log/std::log(2) 
@@ -63,8 +63,8 @@ int fwdlinpuppi_calc_x2a(ap_uint<32> sum) {
     const int x2_bits = 6;    // decimal bits the discriminator values
     const int alpha_bits = 4; // decimal bits of the alpha values
     const int alphaSlope_bits = 4; // decimal bits of the alphaSlope values
-    const int alphaSlope = 2.2 * std::log(2) * (1 << alphaSlope_bits); // we put a log(2) here since we compute alpha as log2(sum) instead of ln(sum)
-    const int alphaCrop = 4.0 * (1 << x2_bits);
+    const int alphaSlope = LINPUPPI_alphaSlope * std::log(2) * (1 << alphaSlope_bits); // we put a log(2) here since we compute alpha as log2(sum) instead of ln(sum)
+    const int alphaCrop = LINPUPPI_alphaCrop * (1 << x2_bits);
 
     assert(sum >= 0);    
     int sumterm = 0, logarg = sum;
@@ -177,13 +177,13 @@ void fwdlinpuppiSum2Pt(const HadCaloObj caloin[NCALO], const ap_uint<32> sums[NC
     const int ptSlope_bits = 6;    // decimal bits of the ptSlope values 
     const int weight_bits = 8;
 
-    const int ptSlopeNe = 0.3 * (1 << ptSlope_bits);
-    const int ptSlopePh = 0.4 * (1 << ptSlope_bits);
-    const int ptZeroNe = 9.0 * 4; // in pt scale
-    const int ptZeroPh = 5.0 * 4; // in pt scale
-    const int priorNe = 7.0 * (1 << x2_bits);
-    const int priorPh = 5.0 * (1 << x2_bits);
-    const int ptCut = 4.0 * 4; // 4 GeV
+    const int ptSlopeNe = LINPUPPI_ptSlopeNe * (1 << ptSlope_bits);
+    const int ptSlopePh = LINPUPPI_ptSlopePh * (1 << ptSlope_bits);
+    const int ptZeroNe = LINPUPPI_ptZeroNe / LINPUPPI_ptLSB; // in pt scale
+    const int ptZeroPh = LINPUPPI_ptZeroPh / LINPUPPI_ptLSB; // in pt scale
+    const int priorNe = LINPUPPI_priorNe * (1 << x2_bits);
+    const int priorPh = LINPUPPI_priorPh * (1 << x2_bits);
+    const int ptCut = LINPUPPI_ptCut / LINPUPPI_ptLSB; 
 
     ap_int<12>  x2a[NCALO], x2ptp[NCALO];
     #pragma HLS ARRAY_PARTITION variable=x2a complete    
@@ -209,13 +209,13 @@ void fwdlinpuppiSum2Pt(const HadCaloObj caloin[NCALO], const ap_uint<32> sums[NC
 #ifndef __SYNTHESIS__
         if (caloin[in].hwPt == 0) continue;
         if (gdebug_) printf("hw  candidate %02d pt %7.2f  em %1d: alpha %+7.2f   x2a %+5d = %+7.3f  x2pt %+5d = %+7.3f   x2 %+5d = %+7.3f  -->                       puppi pt %7.2f\n",
-                   in, caloin[in].hwPt* 0.25, int(caloin[in].hwIsEM), 
-                   sums[in] > 0 ? std::log2(float(sums[in]) * 0.25*0.25 / 1.9e-5 / (1<<15))*std::log(2.) : 0., 
+                   in, caloin[in].hwPt*LINPUPPI_ptLSB, int(caloin[in].hwIsEM), 
+                   sums[in] > 0 ? std::log2(float(sums[in]) * LINPUPPI_pt2DR2_scale / (1<<15))*std::log(2.) : 0., 
                    int(x2a[in]), x2a[in]/float(1<<x2_bits), 
                    (int(x2ptp[in]) + (caloin[in].hwIsEM ? priorPh : priorNe) ), 
                    (int(x2ptp[in]) + (caloin[in].hwIsEM ? priorPh : priorNe) )/float(1<<x2_bits), 
                    x2, x2/float(1<<x2_bits), 
-                   puppiPts[in]*0.25);
+                   puppiPts[in]*LINPUPPI_ptLSB);
 #endif
     }
 }
