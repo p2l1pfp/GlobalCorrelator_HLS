@@ -4,7 +4,7 @@
 #include "../utils/pattern_serializer.h"
 #include "../utils/test_utils.h"
 
-#define NTEST 2
+#define NTEST 100
 
 
 int main() {
@@ -19,17 +19,12 @@ int main() {
     EmCaloObj emcalo[NEMCALO]; TkObj track[NTRACK]; MuObj mu[NMU]; z0_t hwZPV;
 
     // input/output PFPUPPI objects
+    PFNeutralObj outselne[NNEUTRALS];
     PFNeutralObj outselne_ref[NNEUTRALS];
     PFNeutralObj outselne_flt[NNEUTRALS];
+    PFNeutralObj outallne[NCALO];
     PFNeutralObj outallne_ref[NCALO];
     PFNeutralObj outallne_flt[NCALO];
-#ifdef TEST_PUPPI_PT
-    pt_t         outPuppiPt_hw[NCALO];
-#elif defined(TEST_PUPPI_NOCROP)
-    PFNeutralObj outallne[NCALO];
-#else
-    PFNeutralObj outselne[NNEUTRALS];
-#endif
 
 
     int flt_nok = 0, flt_1bit = 0, flt_almostok = 0, flt_nz = 0, flt_nmiss = 0;
@@ -46,16 +41,18 @@ int main() {
             --test; continue; 
         }
 #endif
- 
-#ifdef TEST_PUPPI_PT
-        fwdlinpuppiPt_hw(calo, outPuppiPt_hw);
-#elif defined(TEST_PUPPI_NOCROP)
-        fwdlinpuppiNoCrop_hw(calo, outallne);
+
+        bool verbose = false;
+        if (verbose) printf("test case %d\n", test);
+        fwdlinpuppi_set_debug(verbose);
+
+#if defined(TEST_PUPPI_NOCROP)
+        fwdlinpuppiNoCrop(calo, outallne);
 #else
-        fwdlinpuppi_hw(calo, outselne);
+        fwdlinpuppi(calo, outselne);
 #endif
-        fwdlinpuppi_ref(calo, outallne_ref, outselne_ref);
-        fwdlinpuppi_flt(calo, outallne_flt, outselne_flt);
+        fwdlinpuppi_ref(calo, outallne_ref, outselne_ref, verbose);
+        fwdlinpuppi_flt(calo, outallne_flt, outselne_flt, verbose);
 
         for (int i = 0; i < NCALO; ++i){
             if (calo[i].hwPt > 0) {
@@ -75,34 +72,29 @@ int main() {
                 float ptDiff = (outallne_flt[i].hwPtPuppi - outallne_ref[i].hwPtPuppi) * 0.25;
                 flt_sumDiff += ptDiff;
                 flt_sumAbsDiff += std::abs(ptDiff);
-                printf("particle %02d pT %7.2f  em %1d :  puppiPt_ref %7.2f   puppiPt_flt %7.2f    diff %+7.2f\n",
-                    i, calo[i].hwPt * 0.25, int(calo[i].hwIsEM), outallne_ref[i].hwPtPuppi * 0.25, outallne_flt[i].hwPtPuppi * 0.25, ptDiff);
+                if (verbose)  printf("particle %02d pT %7.2f  em %1d :  puppiPt_ref %7.2f   puppiPt_flt %7.2f    diff %+7.2f\n",
+                                        i, calo[i].hwPt * 0.25, int(calo[i].hwIsEM), 
+                                        outallne_ref[i].hwPtPuppi * 0.25, outallne_flt[i].hwPtPuppi * 0.25, ptDiff);
             }
-#ifdef TEST_PUPPI_PT
-            if (outPuppiPt_hw[i] != outallne_ref[i].hwPtPuppi) {
-                printf("MISMATCH!\n");
-                printf("particle %02d pT %7.2f  em %1d :  puppiPt_hw %7.2f    puppiPt_ref %7.2f   puppiPt_flt %7.2f\n",
-                    i, calo[i].hwPt * 0.25, int(calo[i].hwIsEM), outPuppiPt_hw[i] * 0.25, outallne_ref[i].hwPtPuppi * 0.25, outallne_flt[i].hwPtPuppi * 0.25);
-                return 1;
-            }
-#elif defined(TEST_PUPPI_NOCROP)
+#if defined(TEST_PUPPI_NOCROP)
             // apply pT cut to the reference
             if (outallne_ref[i].hwPtPuppi < 4*4) clear(outallne_ref[i]);
             if (!puppi_equals(outallne_ref[i], outallne[i], "Puppi", i)) {
-                printf("particle %02d pT %7.2f  em %1d :  puppiPt_hw %7.2f    puppiPt_ref %7.2f   puppiPt_flt %7.2f\n",
+                printf("Mismatch in test %d: particle %02d pT %7.2f  em %1d :  puppiPt_hw %7.2f    puppiPt_ref %7.2f   puppiPt_flt %7.2f\n", test,
                     i, calo[i].hwPt * 0.25, int(calo[i].hwIsEM), outallne[i].hwPtPuppi * 0.25, outallne_ref[i].hwPtPuppi * 0.25, outallne_flt[i].hwPtPuppi * 0.25);
                 return 1;
             }
 #else
             if (i <= NSELCALO && !puppi_equals(outselne_ref[i], outselne[i], "Puppi", i)) {
-                printf("particle %02d pT %7.2f  em %1d :  puppiPt_hw %7.2f    puppiPt_ref %7.2f   puppiPt_flt %7.2f\n",
+                printf("Mismatch in test %d: particle %02d pT %7.2f  em %1d :  puppiPt_hw %7.2f    puppiPt_ref %7.2f   puppiPt_flt %7.2f\n", test,
                     i, calo[i].hwPt * 0.25, int(calo[i].hwIsEM), outselne[i].hwPtPuppi * 0.25, outselne_ref[i].hwPtPuppi * 0.25, outselne_flt[i].hwPtPuppi * 0.25);
                 return 1;
             }
 #endif
         }
 
-        printf("\n");
+        if (verbose) printf("\n");
+        else         printf("passed test %d\n", test);
 
     }
 

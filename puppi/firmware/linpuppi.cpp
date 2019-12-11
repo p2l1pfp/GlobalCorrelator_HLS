@@ -1,12 +1,22 @@
 #include "linpuppi.h"
 #include <cassert>
+
 #ifndef __SYNTHESIS__
 #include <cstdio>
+int gdebug_;
+void fwdlinpuppi_set_debug(bool debug) { gdebug_ = debug; }
+#else
+void fwdlinpuppi_set_debug(bool debug) {}
 #endif
 
+void fwdlinpuppiSum(const HadCaloObj caloin[NCALO], ap_uint<32> sums[NCALO]);
+void fwdlinpuppiSum2Pt(const HadCaloObj caloin[NCALO], const ap_uint<32> sums[NCALO], pt_t puppiPts[NCALO]);
+void fwdlinpuppiPt(const HadCaloObj caloin[NCALO], pt_t puppiPts[NCALO]);
+
+
 int dr2_int(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2) {
-    etaphi_t deta = (eta1-eta2);
-    etaphi_t dphi = (phi1-phi2);
+    ap_int<etaphi_t::width+1> deta = (eta1-eta2);
+    ap_int<etaphi_t::width+1> dphi = (phi1-phi2);
     return deta*deta + dphi*dphi;
 }
 
@@ -19,7 +29,7 @@ void _lut_shift15_invert_init(ap_uint<16> _table[512]) { // returns 2^15 / x
 }
 int _lut_shift15_divide(ap_uint<17> num, ap_uint<9> den) { // returns (num * 2^15) / den
     assert(int(den) >= 0 && int(den) <= 511);
-    ap_uint<16> _table[512];
+    static ap_uint<16> _table[512];
     _lut_shift15_invert_init(_table);
     return (num * _table[den]);
 }
@@ -42,7 +52,12 @@ void fwdlinpuppi_init_x2a_short(ap_int<14> table[1024]) {
 
 int fwdlinpuppi_calc_x2a(ap_uint<32> sum) {
     static ap_int<14> table[1024];
+#ifdef __SYNTHESIS__
     fwdlinpuppi_init_x2a_short(table);
+#else // initialize the table only once, otherwise this is really slow
+    static bool is_init = false;
+    if (!is_init) { fwdlinpuppi_init_x2a_short(table); is_init = true; }
+#endif
 
     const int log2lut_bits = 10;
     const int x2_bits = 6;    // decimal bits the discriminator values
@@ -85,7 +100,12 @@ void fwdlinpuppi_init_w(ap_uint<8> table[1024]) {
 
 pt_t fwdlinpuppi_calc_wpt(pt_t pt, int x2) {
     static ap_uint<8> table[1024];
+#ifdef __SYNTHESIS__
     fwdlinpuppi_init_w(table);
+#else // initialize the table only once, otherwise this is really slow
+    static bool is_init = false;
+    if (!is_init) { fwdlinpuppi_init_w(table); is_init = true; }
+#endif
 
     const int xavg = 512;
     const int x2_max = 400;  
@@ -100,7 +120,7 @@ pt_t fwdlinpuppi_calc_wpt(pt_t pt, int x2) {
     }
 }
 
-void fwdlinpuppiSum_hw(const HadCaloObj caloin[NCALO], ap_uint<32> sums[NCALO]) {
+void fwdlinpuppiSum(const HadCaloObj caloin[NCALO], ap_uint<32> sums[NCALO]) {
     #pragma HLS ARRAY_PARTITION variable=caloin complete
     #pragma HLS ARRAY_PARTITION variable=sums complete
     #pragma HLS inline
@@ -135,19 +155,19 @@ void fwdlinpuppiSum_hw(const HadCaloObj caloin[NCALO], ap_uint<32> sums[NCALO]) 
     }
 }
 
-void fwdlinpuppiPt_hw(const HadCaloObj caloin[NCALO], pt_t puppiPts[NCALO]) {
+void fwdlinpuppiPt(const HadCaloObj caloin[NCALO], pt_t puppiPts[NCALO]) {
     #pragma HLS ARRAY_PARTITION variable=caloin complete
     #pragma HLS ARRAY_PARTITION variable=puppiPts complete
     #pragma HLS pipeline II=2
 
     ap_uint<32> sums[NCALO];
     #pragma HLS ARRAY_PARTITION variable=sums complete
-    fwdlinpuppiSum_hw(caloin, sums);
+    fwdlinpuppiSum(caloin, sums);
 
-    fwdlinpuppiSum2Pt_hw(caloin, sums, puppiPts);
+    fwdlinpuppiSum2Pt(caloin, sums, puppiPts);
 }
 
-void fwdlinpuppiSum2Pt_hw(const HadCaloObj caloin[NCALO], const ap_uint<32> sums[NCALO], pt_t puppiPts[NCALO]) {
+void fwdlinpuppiSum2Pt(const HadCaloObj caloin[NCALO], const ap_uint<32> sums[NCALO], pt_t puppiPts[NCALO]) {
     #pragma HLS ARRAY_PARTITION variable=caloin complete
     #pragma HLS ARRAY_PARTITION variable=sums complete
     #pragma HLS ARRAY_PARTITION variable=puppiPts complete
@@ -188,7 +208,7 @@ void fwdlinpuppiSum2Pt_hw(const HadCaloObj caloin[NCALO], const ap_uint<32> sums
         puppiPts[in] = fwdlinpuppi_calc_wpt(caloin[in].hwPt, x2);
 #ifndef __SYNTHESIS__
         if (caloin[in].hwPt == 0) continue;
-        printf("hw  candidate %02d pt %7.2f  em %1d: alpha %+7.2f   x2a %+5d = %+7.3f  x2pt %+5d = %+7.3f   x2 %+5d = %+7.3f  -->                       puppi pt %7.2f\n",
+        if (gdebug_) printf("hw  candidate %02d pt %7.2f  em %1d: alpha %+7.2f   x2a %+5d = %+7.3f  x2pt %+5d = %+7.3f   x2 %+5d = %+7.3f  -->                       puppi pt %7.2f\n",
                    in, caloin[in].hwPt* 0.25, int(caloin[in].hwIsEM), 
                    sums[in] > 0 ? std::log2(float(sums[in]) * 0.25*0.25 / 1.9e-5 / (1<<15))*std::log(2.) : 0., 
                    int(x2a[in]), x2a[in]/float(1<<x2_bits), 
@@ -200,7 +220,7 @@ void fwdlinpuppiSum2Pt_hw(const HadCaloObj caloin[NCALO], const ap_uint<32> sums
     }
 }
 
-void fwdlinpuppiNoCrop_hw(const HadCaloObj caloin[NCALO], PFNeutralObj pfallne[NCALO]) {
+void fwdlinpuppiNoCrop(const HadCaloObj caloin[NCALO], PFNeutralObj pfallne[NCALO]) {
     #pragma HLS ARRAY_PARTITION variable=caloin complete
     #pragma HLS ARRAY_PARTITION variable=pfselne complete
     #pragma HLS pipeline II=2
@@ -208,7 +228,7 @@ void fwdlinpuppiNoCrop_hw(const HadCaloObj caloin[NCALO], PFNeutralObj pfallne[N
     pt_t puppiPts[NCALO];
     #pragma HLS ARRAY_PARTITION variable=puppiPts complete    
 
-    fwdlinpuppiPt_hw(caloin, puppiPts);
+    fwdlinpuppiPt(caloin, puppiPts);
 
     const int ptCut = 4.0 * 4; // 4 GeV
     for (int in = 0; in < NCALO; ++in) {
@@ -228,7 +248,7 @@ void fwdlinpuppiNoCrop_hw(const HadCaloObj caloin[NCALO], PFNeutralObj pfallne[N
     }
 }
 
-void fwdlinpuppi_hw(const HadCaloObj caloin[NCALO], PFNeutralObj pfselne[NNEUTRALS]) {
+void fwdlinpuppi(const HadCaloObj caloin[NCALO], PFNeutralObj pfselne[NNEUTRALS]) {
     #pragma HLS ARRAY_PARTITION variable=caloin complete
     #pragma HLS ARRAY_PARTITION variable=pfselne complete
     #pragma HLS pipeline II=2
@@ -236,7 +256,7 @@ void fwdlinpuppi_hw(const HadCaloObj caloin[NCALO], PFNeutralObj pfselne[NNEUTRA
     pt_t puppiPts[NCALO];
     #pragma HLS ARRAY_PARTITION variable=puppiPts complete    
 
-    fwdlinpuppiPt_hw(caloin, puppiPts);
+    fwdlinpuppiPt(caloin, puppiPts);
 
     PFNeutralObj work[NNEUTRALS];
     #pragma HLS ARRAY_PARTITION variable=work complete    

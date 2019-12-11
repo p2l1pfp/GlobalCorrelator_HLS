@@ -4,7 +4,7 @@
 
 
 template<typename T, int NIn, int NOut>
-void puppisort_and_crop(const T in[NIn], int minHwPtPuppi, T out[NOut]) {
+void puppisort_and_crop_ref(const T in[NIn], int minHwPtPuppi, T out[NOut]) {
     T tmp[NOut];
 
     for (int iout = 0; iout < NOut; ++iout) {
@@ -30,7 +30,7 @@ void puppisort_and_crop(const T in[NIn], int minHwPtPuppi, T out[NOut]) {
 
 }
 
-void fwdlinpuppi_ref(const HadCaloObj caloin[NCALO], PFNeutralObj pfallne[NCALO], PFNeutralObj pfselne[NNEUTRALS]) {
+void fwdlinpuppi_ref(const HadCaloObj caloin[NCALO], PFNeutralObj pfallne[NCALO], PFNeutralObj pfselne[NNEUTRALS], bool debug) {
     const int DR2MAX = 4727; // 0.3 cone
     const int DR2MIN =   84; // 0.04 cone
     const int PTMAX2  = (50*4)*(50*4);
@@ -145,7 +145,7 @@ void fwdlinpuppi_ref(const HadCaloObj caloin[NCALO], PFNeutralObj pfallne[NCALO]
 
         pfallne[in].hwPtPuppi = ( caloin[in].hwPt * weight ) >> weight_bits;
 
-        printf("ref candidate %02d pt %7.2f  em %1d: alpha %+7.2f   x2a %+5d = %+7.3f  x2pt %+5d = %+7.3f   x2 %+5d = %+7.3f  --> weight %4d = %.4f  puppi pt %7.2f\n",
+        if (debug) printf("ref candidate %02d pt %7.2f  em %1d: alpha %+7.2f   x2a %+5d = %+7.3f  x2pt %+5d = %+7.3f   x2 %+5d = %+7.3f  --> weight %4d = %.4f  puppi pt %7.2f\n",
                    in, caloin[in].hwPt* 0.25, int(caloin[in].hwIsEM), 
                    std::max<float>(alpha/float(1<<alpha_bits)*std::log(2.),-99.99f), 
                    x2a, x2a/float(1<<x2_bits), x2pt, x2pt/float(1<<x2_bits), x2, x2/float(1<<x2_bits), 
@@ -154,11 +154,11 @@ void fwdlinpuppi_ref(const HadCaloObj caloin[NCALO], PFNeutralObj pfallne[NCALO]
 
     }
 
-    puppisort_and_crop<PFNeutralObj,NCALO,NNEUTRALS>(pfallne, ptCut, pfselne);
+    puppisort_and_crop_ref<PFNeutralObj,NCALO,NNEUTRALS>(pfallne, ptCut, pfselne);
 
 }
 
-void fwdlinpuppi_flt(const HadCaloObj caloin[NCALO], PFNeutralObj pfallne[NCALO], PFNeutralObj pfselne[NNEUTRALS]) {
+void fwdlinpuppi_flt(const HadCaloObj caloin[NCALO], PFNeutralObj pfallne[NCALO], PFNeutralObj pfselne[NNEUTRALS], bool debug) {
     const int DR2MAX = 4727; // 0.3 cone
     const int DR2MIN =   84; // 0.04 cone
     const float f_ptMax = 50.0;
@@ -210,9 +210,9 @@ void fwdlinpuppi_flt(const HadCaloObj caloin[NCALO], PFNeutralObj pfallne[NCALO]
 
         pfallne[in].hwPtPuppi = int( caloin[in].hwPt * weight );
 
-        printf("flt candidate %02d pt %7.2f  em %1d: alpha %+7.2f   x2a         %+7.3f  x2pt         %+7.3f   x2         %+7.3f  --> weight        %.4f  puppi pt %7.2f\n",
+        if (debug) printf("flt candidate %02d pt %7.2f  em %1d: alpha %+7.2f   x2a         %+7.3f  x2pt         %+7.3f   x2         %+7.3f  --> weight        %.4f  puppi pt %7.2f\n",
                    in, caloin[in].hwPt* 0.25, int(caloin[in].hwIsEM), std::max(alpha,-99.99f), x2a, x2pt, x2, weight, pfallne[in].hwPtPuppi*0.25);
     }
 
-    puppisort_and_crop<PFNeutralObj,NCALO,NNEUTRALS>(pfallne, int(f_ptCut/0.25), pfselne);
+    puppisort_and_crop_ref<PFNeutralObj,NCALO,NNEUTRALS>(pfallne, int(f_ptCut/0.25), pfselne);
 }
