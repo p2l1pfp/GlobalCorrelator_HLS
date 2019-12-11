@@ -31,9 +31,10 @@ void puppisort_and_crop_ref(const T in[NIn], int minHwPtPuppi, T out[NOut]) {
 }
 
 void fwdlinpuppi_ref(const HadCaloObj caloin[NCALO], PFNeutralObj pfallne[NCALO], PFNeutralObj pfselne[NNEUTRALS], bool debug) {
-    const int DR2MAX = 4727; // 0.3 cone
-    const int DR2MIN =   84; // 0.04 cone
-    const int PTMAX2  = (50*4)*(50*4);
+    const int DR2MAX = LINPUPPI_DR2MAX; 
+    const int DR2MIN = LINPUPPI_DR2MIN; 
+    const int PTMAX2 = (LINPUPPI_ptMax*LINPUPPI_ptMax/LINPUPPI_ptLSB/LINPUPPI_ptLSB);
+
     for (int i = 0; i < NCALO; ++i) {
         pfallne[i].hwPt      = caloin[i].hwPt;
         pfallne[i].hwEta     = caloin[i].hwEta;
@@ -159,9 +160,9 @@ void fwdlinpuppi_ref(const HadCaloObj caloin[NCALO], PFNeutralObj pfallne[NCALO]
 }
 
 void fwdlinpuppi_flt(const HadCaloObj caloin[NCALO], PFNeutralObj pfallne[NCALO], PFNeutralObj pfselne[NNEUTRALS], bool debug) {
-    const int DR2MAX = 4727; // 0.3 cone
-    const int DR2MIN =   84; // 0.04 cone
-    const float f_ptMax = 50.0;
+    const int DR2MAX = LINPUPPI_DR2MAX; 
+    const int DR2MIN = LINPUPPI_DR2MIN; 
+    const float f_ptMax = LINPUPPI_ptMax;
     const float f_ptCut = LINPUPPI_ptCut;
     const float f_ptSlopeNe = LINPUPPI_ptSlopeNe;
     const float f_ptSlopePh = LINPUPPI_ptSlopePh;

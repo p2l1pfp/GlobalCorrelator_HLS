@@ -22,9 +22,9 @@ void fwdlinpuppi_set_debug(bool debug);
 
 #if defined(REG_HGCALNOTK)
 
-#define LINPUPPI_ptSlopeNe  0.3
-#define LINPUPPI_ptSlopeNe  0.3
-
+#define LINPUPPI_DR2MAX  4727 // 0.3 cone
+#define LINPUPPI_DR2MIN    84 // 0.04 cone
+#define LINPUPPI_ptMax    50.0 // 
 #define LINPUPPI_ptSlopeNe  0.3
 #define LINPUPPI_ptSlopePh  0.4
 #define LINPUPPI_ptZeroNe   9.0

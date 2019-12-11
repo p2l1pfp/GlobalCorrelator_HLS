@@ -124,10 +124,10 @@ void fwdlinpuppiSum(const HadCaloObj caloin[NCALO], ap_uint<32> sums[NCALO]) {
     #pragma HLS ARRAY_PARTITION variable=sums complete
     #pragma HLS inline
 
-    const int DR2MAX = 4727; // 0.3 cone
-    const int DR2MIN =  84; // 0.04 cone
-    const int DR2MIN_SHIFT =  DR2MIN >> 5; // 0.04 cone
-    const int PTMAX = (50*4);
+    const int DR2MAX = LINPUPPI_DR2MAX; 
+    const int DR2MIN = LINPUPPI_DR2MIN; 
+    const int DR2MIN_SHIFT =  DR2MIN >> 5; 
+    const int PTMAX = (LINPUPPI_ptMax/LINPUPPI_ptLSB);
     const int PTMAX2_SHIFT = (PTMAX)*(PTMAX) >> 5;
 
     ap_uint<17> pt2_shift[NCALO];
@@ -229,7 +229,7 @@ void fwdlinpuppiNoCrop(const HadCaloObj caloin[NCALO], PFNeutralObj pfallne[NCAL
 
     fwdlinpuppiPt(caloin, puppiPts);
 
-    const int ptCut = 4.0 * 4; // 4 GeV
+    const int ptCut = LINPUPPI_ptCut / LINPUPPI_ptLSB;
     for (int in = 0; in < NCALO; ++in) {
         if (puppiPts[in] >= ptCut) {
             pfallne[in].hwPt      = caloin[in].hwPt;
@@ -268,7 +268,7 @@ void fwdlinpuppi(const HadCaloObj caloin[NCALO], PFNeutralObj pfselne[NNEUTRALS]
         work[out].hwPtPuppi = 0;
     }
 
-    const int ptCut = 4.0 * 4; // 4 GeV
+    const int ptCut = LINPUPPI_ptCut / LINPUPPI_ptLSB;
     for (int in = 0; in < NCALO; ++in) {
         if (puppiPts[in] < ptCut) continue;
         for (int iout = NNEUTRALS-1; iout >= 0; --iout) {
