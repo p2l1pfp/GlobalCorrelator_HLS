@@ -1,4 +1,5 @@
 #include "linpuppi.h"
+#include <algorithm>
 #include <cassert>
 
 #ifndef __SYNTHESIS__
@@ -43,10 +44,8 @@ void fwdlinpuppi_init_x2a_short(ap_int<14> table[1024]) {
         const int alphaSlope = LINPUPPI_alphaSlope * std::log(2) * (1 << alphaSlope_bits); // we put a log(2) here since we compute alpha as log2(sum) instead of ln(sum)
         const int alphaZero = LINPUPPI_alphaZero / std::log(2) * (1 << alpha_bits);
         const int C0 = - alphaSlope * alphaZero;
-        const int C1 =   alphaSlope * int((std::log(LINPUPPI_pt2DR2_scale)/std::log(2.) - sum_bitShift)*(1 << alpha_bits) + 0.5); 
-                                    // note: ^^^^^^^^^^^^^^^^^^^^^^^^^^  HLS does not know std::log2(x)
-        table[i] = C0 + (i >  0 ? alphaSlope * int(std::log(float(i))/std::log(2.)*(1 << alpha_bits)) + C1 : 0);
-                               // note: ^^^^^^^^^^^^^^^^^^^^^^^^^^  HLS does not know std::log2(x) --> std::log/std::log(2) 
+        const int C1 =   alphaSlope * int((std::log2(LINPUPPI_pt2DR2_scale) - sum_bitShift)*(1 << alpha_bits) + 0.5); 
+        table[i] = C0 + (i >  0 ? alphaSlope * int(std::log2(float(i))*(1 << alpha_bits)) + C1 : 0);
     }
 }
 
@@ -94,7 +93,7 @@ void fwdlinpuppi_init_w(ap_uint<8> table[1024]) {
     for (int i = 0; i <= 1023; ++i) {
         int x2 = i - xavg;
         int val = 1.0/(1.0 + std::exp(- float(x2)/(1<<6))) * ( 1 << 8 ) + 0.5;
-        table[i] = val <= 255 ? val : 255; // HLS doesn't know std::min<int>(a,b)  :-(
+        table[i] = std::min<int>(val, 255);
     }
 }
 
