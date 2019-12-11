@@ -23,7 +23,7 @@ void mp7wrapped_pfalgo2_hgc(MP7DataWord input[MP7_NCHANN], MP7DataWord output[MP
 
 #ifndef DRVALSET_HGC
 #define DRVALSET_HGC
-#define PFALGO2_HGC_DR2MAX_TK_CALO 756
+#define PFALGO2_HGC_DR2MAX_TK_CALO 525
 #define PFALGO2_HGC_DR2MAX_EM_CALO 525
 #define PFALGO2_HGC_DR2MAX_TK_MU   2101
 #define PFALGO2_HGC_DR2MAX_TK_EM   756

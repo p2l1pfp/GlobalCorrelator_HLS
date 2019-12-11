@@ -6,9 +6,9 @@
 #ifndef __SYNTHESIS__
 #include <cstdio>
 int gdebug_;
-void pfalgo3_full_set_debug(bool debug) { gdebug_ = debug; }
+void pfalgo3_set_debug(bool debug) { gdebug_ = debug; }
 #else
-void pfalgo3_full_set_debug(bool debug) { }
+void pfalgo3_set_debug(bool debug) { }
 #endif
 
 int dr2_int(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2) {

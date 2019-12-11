@@ -26,14 +26,15 @@ void mp7wrapped_pfalgo3_full(MP7DataWord input[MP7_NCHANN], MP7DataWord output[M
 
 #ifndef DRVALSET
 #define DRVALSET
+#define PFALGO3_DR2MAX_TK_CALO 1182
 //#define PFALGO3_DR2MAX_TK_CALO 756
-#define PFALGO3_DR2MAX_TK_CALO 377
-//#define PFALGO3_DR2MAX_EM_CALO 525
-#define PFALGO3_DR2MAX_EM_CALO 262
-//#define PFALGO3_DR2MAX_TK_MU   2101
-#define PFALGO3_DR2MAX_TK_MU   1049
-//#define PFALGO3_DR2MAX_TK_EM   84
-#define PFALGO3_DR2MAX_TK_EM   42
+//#define PFALGO3_DR2MAX_TK_CALO 377
+#define PFALGO3_DR2MAX_EM_CALO 525
+//#define PFALGO3_DR2MAX_EM_CALO 262
+#define PFALGO3_DR2MAX_TK_MU   2101 // FIXME use below
+//#define PFALGO3_DR2MAX_TK_MU   1049
+#define PFALGO3_DR2MAX_TK_EM   84
+//#define PFALGO3_DR2MAX_TK_EM   42
 //for demonstrator, altered encoding to handle large region. will need to modify in any case to handle actual inputs
 #define PFALGO3_TK_MAXINVPT_LOOSE    40
 #define PFALGO3_TK_MAXINVPT_TIGHT    80

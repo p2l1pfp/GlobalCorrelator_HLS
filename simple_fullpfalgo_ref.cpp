@@ -5,6 +5,14 @@
 #include <cmath>
 #include <algorithm>
 
+int dr2_int(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2) {
+    ap_int<etaphi_t::width+1> deta = (eta1-eta2);
+    ap_int<etaphi_t::width+1> dphi = (phi1-phi2);
+    return deta*deta + dphi*dphi;
+}
+
+
+
 bool g_debug_ = 0;
 
 void pfalgo3_full_ref_set_debug(bool debug) { g_debug_ = debug; }
@@ -242,7 +250,7 @@ void pfalgo3_full_ref(const EmCaloObj emcalo[NEMCALO], const HadCaloObj hadcalo[
             int dptmin = mu[im].hwPt >> 1;
             for (int it = 0; it < NTRACK; ++it) {
                 int dr = dr2_int(mu[im].hwEta, mu[im].hwPhi, track[it].hwEta, track[it].hwPhi);
-                //printf("deltaR2(mu %d float pt %5.1f, tk %2d float pt %5.1f) = int %d  (float deltaR = %.3f); int cut at %d\n", im, 0.25*int(mu[im].hwPt), it, 0.25*int(track[it].hwPt), dr, std::sqrt(float(dr))/229.2, PFALGO3_DR2MAX_TK_MU);
+                //if (g_debug_) printf("deltaR2(mu %d float pt %5.1f, tk %2d float pt %5.1f) = int %d  (float deltaR = %.3f); int cut at %d\n", im, 0.25*int(mu[im].hwPt), it, 0.25*int(track[it].hwPt), dr, std::sqrt(float(dr))/229.2, DR2MAX_TM);
                 if (dr < DR2MAX_TM) { 
                     int dpt = std::abs(int(track[it].hwPt - mu[im].hwPt));
                     if (dpt < dptmin) {
@@ -294,7 +302,7 @@ void pfalgo3_full_ref(const EmCaloObj emcalo[NEMCALO], const HadCaloObj hadcalo[
             int  ibest = best_match_with_pt_ref<NCALO,DR2MAX,HadCaloObj>(hadcalo_subem, track[it]);
             //int  ibest = best_match_ref<NCALO,DR2MAX,true,HadCaloObj>(hadcalo_subem, track[it]);
             if (ibest != -1) {
-                if (g_debug_) printf("FW  \t track  %3d pt %7d matched to calo' %3d pt %7d\n", it, int(track[it].hwPt), ibest, int(hadcalo_subem[ibest].hwPt));
+                if (g_debug_) printf("FW  \t track  %3d pt %7d matched to calo %3d pt %7d\n", it, int(track[it].hwPt), ibest, int(hadcalo_subem[ibest].hwPt));
                 track_good[it] = 1;
                 calo_sumtk[ibest]    += track[it].hwPt;
                 calo_sumtkErr2[ibest] += sqr(track[it].hwPtErr);
@@ -307,9 +315,9 @@ void pfalgo3_full_ref(const EmCaloObj emcalo[NEMCALO], const HadCaloObj hadcalo[
             pt_t ptdiff = hadcalo_subem[ic].hwPt - calo_sumtk[ic];
             int sigmamult = (calo_sumtkErr2[ic] + (calo_sumtkErr2[ic] >> 1)); // this multiplies by 1.5 = sqrt(1.5)^2 ~ (1.2)^2
             if (g_debug_ && (hadcalo_subem[ic].hwPt > 0)) {
-#ifdef FASTPUPPI_NTUPLERPRODUCER_DISCRETEPFINPUTS_MORE
-                l1tpf_int::CaloCluster floatcalo; fw2dpf::convert(hadcalo_subem[ic], floatcalo); 
-                printf("FW  \t calo'  %3d pt %7d [ %7.2f ] eta %+7d [ %+5.2f ] has a sum track pt %7d, difference %7d +- %.2f \n",
+#ifdef L1Trigger_Phase2L1ParticleFlow_DiscretePFInputs_MORE
+                l1tpf_impl::CaloCluster floatcalo; fw2dpf::convert(hadcalo_subem[ic], floatcalo); 
+                printf("FW  \t calo  %3d pt %7d [ %7.2f ] eta %+7d [ %+5.2f ] has a sum track pt %7d, difference %7d +- %.2f \n",
                             ic, int(hadcalo_subem[ic].hwPt), floatcalo.floatPt(), int(hadcalo_subem[ic].hwEta), floatcalo.floatEta(), 
                                 int(calo_sumtk[ic]), int(ptdiff), std::sqrt(float(int(calo_sumtkErr2[ic]))));
 #endif
@@ -323,7 +331,7 @@ void pfalgo3_full_ref(const EmCaloObj emcalo[NEMCALO], const HadCaloObj hadcalo[
         } else {
             calo_subpt[ic] = hadcalo_subem[ic].hwPt;
         }
-        if (g_debug_ && (hadcalo_subem[ic].hwPt > 0)) printf("FW  \t calo'  %3d pt %7d ---> %7d \n", ic, int(hadcalo_subem[ic].hwPt), int(calo_subpt[ic]));
+        if (g_debug_ && (hadcalo_subem[ic].hwPt > 0)) printf("FW  \t calo  %3d pt %7d ---> %7d \n", ic, int(hadcalo_subem[ic].hwPt), int(calo_subpt[ic]));
     }
 
     // copy out charged hadrons
@@ -339,7 +347,7 @@ void pfalgo3_full_ref(const EmCaloObj emcalo[NEMCALO], const HadCaloObj hadcalo[
 
     // copy out neutral hadrons
     PFNeutralObj outne_all[NCALO];
-    for (int ipf = 0; ipf < NCALO; ++ipf) { outne_all[ipf].hwPt = 0; outne_all[ipf].hwEta = 0; outne_all[ipf].hwPhi = 0; outne_all[ipf].hwId = 0; }
+    for (int ipf = 0; ipf < NCALO; ++ipf) { clear(outne_all[ipf]); }
     for (int ic = 0; ic < NCALO; ++ic) {
         if (calo_subpt[ic] > 0) {
             outne_all[ic].hwPt  = calo_subpt[ic];
@@ -350,29 +358,5 @@ void pfalgo3_full_ref(const EmCaloObj emcalo[NEMCALO], const HadCaloObj hadcalo[
     }
 
     ptsort_ref<PFNeutralObj,NCALO,NSELCALO>(outne_all, outne);
-    /*PFNeutralObj outpho_tmp[NPHOTON];
-    ptsort_ref<PFNeutralObj,NPHOTON,NPHOTON>(outpho, outpho_tmp);
-    for (unsigned int it = 0; it < NPHOTON; it++) {outpho[it] = outpho_tmp[it];}
-    PFChargedObj outch_tmp[NTRACK];
-    ptsort_ref<PFChargedObj,NTRACK,NTRACK>(outch, outch_tmp);
-    for (unsigned int it = 0; it < NTRACK; it++) {outch[it] = outch_tmp[it];}*/
-    /*std::cout<<" -- SW --"<<std::endl;
-    std::cout<<"\t ** NE **"<<std::endl;
-    for (int ic=0; ic<NSELCALO; ic++) {
-        std::cout<<"\t"<<outne[ic].hwPt<<"\t\t";
-        for (int it=0; it<NTRACK; it++) {
-            if ((int)(dr2_int(outch[it].hwEta, outch[it].hwPhi, outne[ic].hwEta, outne[ic].hwPhi))<4195) std::cout<<(int)(dr2_int(outch[it].hwEta, outch[it].hwPhi, outne[ic].hwEta, outne[ic].hwPhi))<<" ";
-        }
-        std::cout<<std::endl;
-    }*/
-    /*
-    std::cout<<"\t ** PHO **"<<std::endl;
-    for (int ic=0; ic<NPHOTON; ic++) {
-        std::cout<<"\t"<<outpho[ic].hwPt<<"\t\t";
-        for (int it=0; it<NTRACK; it++) {
-            if ((int)(dr2_int(outch[it].hwEta, outch[it].hwPhi, outpho[ic].hwEta, outpho[ic].hwPhi))<4195) std::cout<<(int)(dr2_int(outch[it].hwEta, outch[it].hwPhi, outpho[ic].hwEta, outpho[ic].hwPhi))<<" ";
-        }
-        std::cout<<std::endl;
-    }*/
 
 }

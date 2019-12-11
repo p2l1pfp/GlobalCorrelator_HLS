@@ -1,0 +1,71 @@
+template<int NCAL, int DR2MAX, typename CO_t>
+int best_match_with_pt_ref(const CO_t calo[NCAL], const TkObj & track) {
+    pt_t caloPtMin = track.hwPt - 2*(track.hwPtErr);
+    if (caloPtMin < 0) caloPtMin = 0;
+    int dptscale = (DR2MAX<<8)/std::max<int>(1,sqr(track.hwPtErr));
+    int drmin = 0, ibest = -1;
+    for (int ic = 0; ic < NCAL; ++ic) {
+            if (calo[ic].hwPt <= caloPtMin) continue;
+            int dr = dr2_int(track.hwEta, track.hwPhi, calo[ic].hwEta, calo[ic].hwPhi);
+            if (dr >= DR2MAX) continue;
+            dr += (( sqr(std::max<int>(track.hwPt-calo[ic].hwPt,0))*dptscale ) >> 8);
+            if (ibest == -1 || dr < drmin) { drmin = dr; ibest = ic; }
+    }
+    return ibest;
+}
+
+
+template<typename T, int NIn, int NOut>
+void ptsort_ref(const T in[NIn], T out[NOut]) {
+    for (int iout = 0; iout < NOut; ++iout) {
+        out[iout].hwPt = 0;
+    }
+    for (int it = 0; it < NIn; ++it) {
+        for (int iout = 0; iout < NOut; ++iout) {
+            if (in[it].hwPt >= out[iout].hwPt) {
+                for (int i2 = NOut-1; i2 > iout; --i2) {
+                    out[i2] = out[i2-1];
+                }
+                out[iout] = in[it];
+                break;
+            }
+        }
+    }
+}
+
+template<unsigned int NTrack, unsigned int NMu>
+void pfalgo_mu_ref(const TkObj track[NTrack], const MuObj mu[NMu], bool isMu[NTrack], PFChargedObj outmu[NMu], bool debug) {
+
+    // init
+    for (int ipf = 0; ipf < NMu; ++ipf) clear(outmu[ipf]);
+    for (int it = 0; it < NTrack; ++it) isMu[it] = 0;
+
+        // for each muon, find the closest track
+    for (int im = 0; im < NMu; ++im) {
+        if (mu[im].hwPt > 0) {
+            int ibest = -1;
+            int dptmin = mu[im].hwPt >> 1;
+            for (int it = 0; it < NTrack; ++it) {
+                int dr = dr2_int(mu[im].hwEta, mu[im].hwPhi, track[it].hwEta, track[it].hwPhi);
+                //printf("deltaR2(mu %d float pt %5.1f, tk %2d float pt %5.1f) = int %d  (float deltaR = %.3f); int cut at %d\n", im, 0.25*int(mu[im].hwPt), it, 0.25*int(track[it].hwPt), dr, std::sqrt(float(dr))/229.2, PFALGO3_DR2MAX_TK_MU);
+                if (dr < PFALGO_DR2MAX_TK_MU) { 
+                    int dpt = std::abs(int(track[it].hwPt - mu[im].hwPt));
+                    if (dpt < dptmin) {
+                        dptmin = dpt; ibest = it; 
+                    }
+                }
+            }
+            if (ibest != -1) {
+                outmu[im].hwPt = track[ibest].hwPt;
+                outmu[im].hwEta = track[ibest].hwEta;
+                outmu[im].hwPhi = track[ibest].hwPhi;
+                outmu[im].hwId  = PID_Muon;
+                outmu[im].hwZ0 = track[ibest].hwZ0;      
+                isMu[ibest] = 1;
+                if (debug) printf("FW  \t muon %3d linked to track %3d \n", im, ibest);
+            } else {
+                if (debug) printf("FW  \t muon %3d not linked to any track\n", im);
+            }
+        }
+    }
+}
