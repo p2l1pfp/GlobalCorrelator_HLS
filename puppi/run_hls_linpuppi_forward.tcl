@@ -7,8 +7,9 @@ set_top fwdlinpuppiNoCrop
 add_files firmware/linpuppi.cpp  -cflags "-DREG_${puppiReg} -std=c++0x"
 add_files -tb linpuppi_ref.cpp   -cflags "-DREG_${puppiReg} -std=c++0x"
 add_files -tb ../utils/test_utils.cpp  -cflags "-DREG_${puppiReg}"
-#add_files -tb fwlinpuppi_test.cpp   -cflags "-DREG_${puppiReg} -DTEST_PUPPI_NOCROP -DTEST_PT_CUT=120"
-add_files -tb fwlinpuppi_test.cpp   -cflags "-DREG_${puppiReg} -DTEST_PT_CUT=120"
+add_files -tb ../utils/pattern_serializer.cpp -cflags "-std=c++0x -DREG_${puppiReg}"
+add_files -tb fwlinpuppi_test.cpp   -cflags "-DREG_${puppiReg} -DTEST_PUPPI_NOCROP -DTEST_PT_CUT=120"
+#add_files -tb fwlinpuppi_test.cpp   -cflags "-DREG_${puppiReg} -DTEST_PT_CUT=120"
 #add_files -tb ../data/TTbar_PU200_${puppiReg}.dump
 add_files -tb ../data/VBFHToBB_PU200_${puppiReg}.dump
 
