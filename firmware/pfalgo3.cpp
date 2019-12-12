@@ -1,12 +1,9 @@
 #include "pfalgo3.h"
 
-//typedef ap_uint<10> tk2calo_dr_t;
-//typedef ap_uint<12> tk2calo_dq_t;
-
 #include <cassert>
 #ifndef __SYNTHESIS__
 #include <cstdio>
-int gdebug_;
+bool gdebug_;
 void pfalgo3_set_debug(bool debug) { gdebug_ = debug; }
 #else
 void pfalgo3_set_debug(bool debug) { }

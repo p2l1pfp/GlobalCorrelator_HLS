@@ -20,7 +20,7 @@ void fwdlinpuppi_set_debug(bool debug);
 #define LINPUPPI_pt2LSB LINPUPPI_ptLSB*LINPUPPI_ptLSB
 #define LINPUPPI_pt2DR2_scale LINPUPPI_ptLSB*LINPUPPI_ptLSB/LINPUPPI_DR2LSB
 
-#if defined(REG_HGCALNOTK)
+#if defined(REG_HGCalNoTK)
 
 #define LINPUPPI_DR2MAX  4727 // 0.3 cone
 #define LINPUPPI_DR2MIN    84 // 0.04 cone

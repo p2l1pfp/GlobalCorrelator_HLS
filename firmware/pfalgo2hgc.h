@@ -1,9 +1,8 @@
 #ifndef FIRMWARE_PFALGO2HGC_H
 #define FIRMWARE_PFALGO2HGC_H
 
-#ifndef REG_HGCAL
-#error "REG_HGCAL must be #defined"
-//#define REG_HGCAL
+#ifndef REG_HGCal
+#warning "REG_HGCal is not #defined, but this algorithm has only been tested there"
 #endif
 
 #include "pfalgo_common.h"

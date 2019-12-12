@@ -4,11 +4,11 @@
 # open the project, don't forget to reset
 open_project -reset "proj_pfhgc"
 set_top pfalgo2hgc
-add_files firmware/pfalgo2hgc.cpp -cflags "-std=c++0x -DREG_HGCAL"
-add_files -tb pfalgo2hgc_test.cpp  -cflags "-std=c++0x -DREG_HGCAL"
-add_files -tb pfalgo2hgc_ref.cpp  -cflags "-std=c++0x -DREG_HGCAL"
-add_files -tb utils/pattern_serializer.cpp -cflags "-std=c++0x -DREG_HGCAL"
-add_files -tb utils/test_utils.cpp -cflags "-std=c++0x -DREG_HGCAL"
+add_files firmware/pfalgo2hgc.cpp -cflags "-std=c++0x -DREG_HGCal"
+add_files -tb pfalgo2hgc_test.cpp  -cflags "-std=c++0x -DREG_HGCal"
+add_files -tb pfalgo2hgc_ref.cpp  -cflags "-std=c++0x -DREG_HGCal"
+add_files -tb utils/pattern_serializer.cpp -cflags "-std=c++0x -DREG_HGCal"
+add_files -tb utils/test_utils.cpp -cflags "-std=c++0x -DREG_HGCal"
 add_files -tb data/TTbar_PU200_HGCal.dump
 
 # reset the solution

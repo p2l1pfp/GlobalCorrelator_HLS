@@ -1,8 +1,8 @@
 #ifndef FIRMWARE_PFALGO3_H
 #define FIRMWARE_PFALGO3_H
 
-#ifndef REG_BARREL
-#warning "REG_BARREL not defined in PFALGO3: not validated"
+#ifndef REG_Barrel
+#warning "REG_Barrel not defined in PFALGO3: not validated"
 #endif
 
 #include "pfalgo_common.h"

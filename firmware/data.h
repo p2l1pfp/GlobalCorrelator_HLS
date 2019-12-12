@@ -17,7 +17,7 @@ typedef ap_uint<13> tk2calo_dq_t;
 enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=4 };
 
 // DEFINE MULTIPLICITIES
-#if defined(REG_HGCAL)
+#if defined(REG_HGCal)
     #define NTRACK 25
     #define NCALO 20
     #define NMU 4
@@ -28,7 +28,7 @@ enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=
     // not used but must be there because used in header files
     #define NNEUTRALS 1
 //--------------------------------
-#elif defined(REG_HGCALNOTK)
+#elif defined(REG_HGCalNoTK)
     #ifndef NCALO
         #define NCALO 12
     #endif
@@ -51,8 +51,8 @@ enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=
     #define NSELCALO 1
 //--------------------------------
 #else // BARREL
-   #ifndef REG_BARREL
-      #warning "No region defined, assuming it's barrel (#define REG_BARREL to suppress this)"
+   #ifndef REG_Barrel
+      #warning "No region defined, assuming it's barrel (#define REG_Barrel to suppress this)"
    #endif
    #if defined(TESTMP7)
        #define NTRACK 5

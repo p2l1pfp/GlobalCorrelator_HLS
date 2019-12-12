@@ -1,8 +1,5 @@
 #include "pfalgo2hgc.h"
 
-//typedef ap_uint<10> tk2calo_dr_t;
-//typedef ap_uint<12> tk2calo_dq_t;
-
 #include "pfalgo_common.icc"
 
 void tk2calo_sumtk_hgc(const TkObj track[NTRACK], const bool isMu[NTRACK], const int tkerr2[NTRACK], const ap_uint<NCALO> calo_track_link_bit[NTRACK], pt_t sumtk[NCALO], int sumtkerr2[NCALO]) {

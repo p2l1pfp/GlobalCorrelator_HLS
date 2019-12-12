@@ -1,4 +1,3 @@
-#define REG_HGCAL
 #include "pfalgo2hgc_ref.h"
 #include "pfalgo_common_ref.icc"
 
