@@ -8,5 +8,7 @@ void pfalgo3_ref_set_debug(int debug) ;
 
 void pfalgo3_em_ref(const EmCaloObj emcalo[NEMCALO], const HadCaloObj hadcalo[NCALO], const TkObj track[NTRACK], const bool isMu[NTRACK], bool isEle[NTRACK], PFNeutralObj outpho[NPHOTON], HadCaloObj hadcalo_out[NCALO]) ;
 void pfalgo3_ref(const EmCaloObj emcalo[NEMCALO], const HadCaloObj hadcalo[NCALO], const TkObj track[NTRACK], const MuObj mu[NMU], PFChargedObj outch[NTRACK], PFNeutralObj outpho[NPHOTON], PFNeutralObj outne[NSELCALO], PFChargedObj outmu[NMU]) ;
+
+void pfalgo3_merge_neutrals_ref(const PFNeutralObj pho[NPHOTON], const PFNeutralObj ne[NSELCALO], PFNeutralObj allne[NALLNEUTRALS]);
     // constants
 #endif

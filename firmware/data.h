@@ -22,6 +22,7 @@ enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=
     #define NCALO 20
     #define NMU 4
     #define NSELCALO 15
+    #define NALLNEUTRALS NSELCALO
     // dummy
     #define NEMCALO 1
     #define NPHOTON NEMCALO
@@ -29,10 +30,9 @@ enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=
     #define NNEUTRALS 1
 //--------------------------------
 #elif defined(REG_HGCalNoTK)
-    #ifndef NCALO
-        #define NCALO 12
-    #endif
+    #define NCALO 12
     #define NNEUTRALS 8
+    #define NALLNEUTRALS NCALO
     // dummy
     #define NMU 1
     #define NTRACK 1
@@ -43,6 +43,7 @@ enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=
 #elif defined(REG_HF)
     #define NCALO 18
     #define NNEUTRALS 10
+    #define NALLNEUTRALS NCALO
     // dummy
     #define NMU 1
     #define NTRACK 1
@@ -75,6 +76,8 @@ enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=
        #define NMU 4
        #define NPHOTON NEMCALO
        #define NSELCALO 10
+       #define NALLNEUTRALS (NPHOTON+NSELCALO)
+       #define NNEUTRALS 25
    #else
        #define NTRACK 22
        #define NCALO 15
@@ -82,9 +85,9 @@ enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=
        #define NMU 2
        #define NPHOTON NEMCALO
        #define NSELCALO 10
+       #define NALLNEUTRALS (NPHOTON+NSELCALO)
+       #define NNEUTRALS 25
    #endif
-   // not used but must be there because used in header files
-   #define NNEUTRALS 1
 #endif
 
 

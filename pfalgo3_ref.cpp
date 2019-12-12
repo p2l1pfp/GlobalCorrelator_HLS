@@ -269,3 +269,11 @@ void pfalgo3_ref(const EmCaloObj emcalo[NEMCALO], const HadCaloObj hadcalo[NCALO
 
     ptsort_ref<PFNeutralObj,NCALO,NSELCALO>(outne_all, outne);
 }
+
+void pfalgo3_merge_neutrals_ref(const PFNeutralObj pho[NPHOTON], const PFNeutralObj ne[NSELCALO], PFNeutralObj allne[NALLNEUTRALS]) 
+{
+    int j = 0;
+    for (int i = 0; i < NPHOTON;  ++i, ++j) allne[j] = pho[i];
+    for (int i = 0; i < NSELCALO; ++i, ++j) allne[j] = ne[i];
+}
+

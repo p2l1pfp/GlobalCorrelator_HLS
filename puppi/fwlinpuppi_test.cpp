@@ -57,7 +57,10 @@ int main() {
         fwdlinpuppi_ref(calo, outallne_ref, outselne_ref, verbose);
         fwdlinpuppi_flt(calo, outallne_flt, outselne_flt, verbose);
 
+        // validate numerical accuracy 
         checker.checkIntVsFloat<HadCaloObj,NCALO>(calo, outallne_ref, outallne_flt, verbose);
+
+        // check vs reference
 #if defined(TEST_PUPPI_NOCROP)
         // apply pT cut to the reference
         for (int i = 0; i < NCALO; ++i){

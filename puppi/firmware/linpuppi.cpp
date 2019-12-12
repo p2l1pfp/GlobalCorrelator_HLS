@@ -291,3 +291,23 @@ void fwdlinpuppi(const HadCaloObj caloin[NCALO], PFNeutralObj pfselne[NNEUTRALS]
     }
 }
 
+void linpuppi_chs(z0_t pvZ0, const PFChargedObj pfch[NTRACK], PFChargedObj outallch[NTRACK]) 
+{
+    for (unsigned int i = 0; i < NTRACK; ++i) {
+        int z0diff = pfch[i].hwZ0 - pvZ0;
+        if (z0diff < 0) z0diff = -z0diff; 
+        if (z0diff <= LINPUPPI_dzCut || pfch[i].hwId == PID_Muon) {
+            outallch[i] = pfch[i];
+        } else {
+            clear(outallch[i]);
+        }
+    }
+
+}
+
+void linpuppiNoCrop(const TkObj track[NTRACK], z0_t pvZ0, const PFNeutralObj pfallne[NALLNEUTRALS], PFNeutralObj outallne[NALLNEUTRALS]) 
+{
+}
+void linpuppi(const TkObj track[NTRACK], z0_t pvZ0, const PFNeutralObj pfallne[NALLNEUTRALS], PFNeutralObj outselne[NNEUTRALS]) {
+}
+

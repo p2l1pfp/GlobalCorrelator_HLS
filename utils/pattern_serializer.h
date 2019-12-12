@@ -81,6 +81,7 @@ class HumanReadablePatternSerializer {
         void dump_mu(const MuObj mu[NMU], unsigned int N = NMU) ;
         void dump_outputs(const PFChargedObj outch[NTRACK], const PFNeutralObj outpho[NPHOTON], const PFNeutralObj outne[NSELCALO], const PFChargedObj outmu[NMU]) ;
         void dump_outputs(const PFChargedObj outch[NTRACK], const PFNeutralObj outne[NSELCALO], const PFChargedObj outmu[NMU]) ;
+        void dump_puppi(unsigned int N, const char *label, const PFNeutralObj outpuppi[]) ;
 
     protected:
         const std::string fname_;
