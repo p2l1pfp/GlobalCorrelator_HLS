@@ -1,7 +1,7 @@
-# open the project, don't forget to reset
-open_project -reset proj_linpuppi_forward
-
 set puppiReg "HGCalNoTK"
+#set puppiReg "HF"
+
+open_project -reset proj_linpuppi_${puppiReg}
 
 set_top fwdlinpuppiNoCrop
 add_files firmware/linpuppi.cpp  -cflags "-DREG_${puppiReg} -std=c++0x"

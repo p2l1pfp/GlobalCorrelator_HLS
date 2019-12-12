@@ -41,8 +41,8 @@ enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=
     #define NSELCALO 1
 //--------------------------------
 #elif defined(REG_HF)
-    #define NCALO 12
-    #define NNEUTRALS 8
+    #define NCALO 18
+    #define NNEUTRALS 10
     // dummy
     #define NMU 1
     #define NTRACK 1

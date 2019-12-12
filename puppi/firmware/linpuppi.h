@@ -36,6 +36,22 @@ void fwdlinpuppi_set_debug(bool debug);
 #define LINPUPPI_priorPh    5.0
 #define LINPUPPI_ptCut      4.0
 
+#elif defined(REG_HF)
+#define LINPUPPI_DR2MAX  4727 // 0.3 cone
+#define LINPUPPI_DR2MIN   525 // 0.1 cone
+#define LINPUPPI_ptMax    100.0 
+#define LINPUPPI_ptSlopeNe  0.25
+#define LINPUPPI_ptSlopePh  0.25
+#define LINPUPPI_ptZeroNe   14.
+#define LINPUPPI_ptZeroPh   14.
+#define LINPUPPI_alphaSlope 0.6
+#define LINPUPPI_alphaZero  9.0
+#define LINPUPPI_alphaCrop  4.0
+#define LINPUPPI_priorNe    6.0
+#define LINPUPPI_priorPh    6.0
+#define LINPUPPI_ptCut      10.0
+
+
 #endif
 
 #endif

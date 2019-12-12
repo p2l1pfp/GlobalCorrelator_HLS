@@ -8,9 +8,12 @@
 
 
 int main() {
-
+#if defined(REG_HGCalNoTk)
     //DiscretePFInputsReader inputs("TTbar_PU200_HGCalNoTK.dump");
     DiscretePFInputsReader inputs("VBFHToBB_PU200_HGCalNoTK.dump");
+#elif defined(REG_HF)
+    DiscretePFInputsReader inputs("VBFHToBB_PU200_HF.dump");
+#endif
     
     // input TP objects (used)
     HadCaloObj calo[NCALO];
