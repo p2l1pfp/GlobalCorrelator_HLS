@@ -7,6 +7,7 @@ set_top pfalgo3
 add_files firmware/pfalgo3.cpp -cflags "-std=c++0x -DREG_Barrel"
 add_files -tb pfalgo3_test.cpp -cflags "-std=c++0x -DREG_Barrel"
 add_files -tb pfalgo3_ref.cpp  -cflags "-std=c++0x -DREG_Barrel"
+add_files -tb pfalgo_common_ref.cpp  -cflags "-std=c++0x -DREG_Barrel"
 add_files -tb utils/pattern_serializer.cpp -cflags "-std=c++0x -DREG_Barrel"
 add_files -tb utils/test_utils.cpp -cflags "-std=c++0x -DREG_Barrel"
 add_files -tb data/TTbar_PU200_Barrel.dump

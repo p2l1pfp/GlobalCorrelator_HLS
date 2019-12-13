@@ -22,6 +22,10 @@ int main() {
     PFNeutralObj outne[NSELCALO], outne_ref[NSELCALO];
     PFChargedObj outmupf[NMU], outmupf_ref[NMU];
 
+    pfalgo_config cfg(NTRACK,NCALO,NMU, NSELCALO,
+                      PFALGO_DR2MAX_TK_MU, PFALGO_DR2MAX_TK_CALO,
+                      PFALGO_TK_MAXINVPT_LOOSE, PFALGO_TK_MAXINVPT_TIGHT);
+
     // -----------------------------------------
     // run multiple tests
     for (int test = 1; test <= NTEST; ++test) {
@@ -29,7 +33,7 @@ int main() {
         if (!inputs.nextRegion(calo, emcalo, track, mu, hwZPV)) break;
 
         pfalgo2hgc(calo, track, mu, outch, outne, outmupf);
-        pfalgo2hgc_ref(calo, track, mu, outch_ref, outne_ref, outmupf_ref);
+        pfalgo2hgc_ref(cfg, calo, track, mu, outch_ref, outne_ref, outmupf_ref);
 
         // -----------------------------------------
         // validation against the reference algorithm

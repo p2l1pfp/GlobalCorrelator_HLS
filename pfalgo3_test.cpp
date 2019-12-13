@@ -22,6 +22,10 @@ int main() {
     PFNeutralObj outpho[NPHOTON], outpho_ref[NPHOTON];
     PFChargedObj outmupf[NMU], outmupf_ref[NMU];
 
+    pfalgo3_config cfg(NTRACK,NEMCALO,NCALO,NMU, 
+                       NPHOTON,NSELCALO,NALLNEUTRALS,
+                       PFALGO_DR2MAX_TK_MU, PFALGO_DR2MAX_TK_EM, PFALGO_DR2MAX_EM_CALO, PFALGO_DR2MAX_TK_CALO,
+                       PFALGO_TK_MAXINVPT_LOOSE, PFALGO_TK_MAXINVPT_TIGHT);
     // -----------------------------------------
     // run multiple tests
     for (int test = 1; test <= NTEST; ++test) {
@@ -33,7 +37,7 @@ int main() {
         pfalgo3_ref_set_debug(verbose);
 
         pfalgo3(emcalo, hadcalo, track, mu, outch, outpho, outne, outmupf);
-        pfalgo3_ref(emcalo, hadcalo, track, mu, outch_ref, outpho_ref, outne_ref, outmupf_ref);
+        pfalgo3_ref(cfg, emcalo, hadcalo, track, mu, outch_ref, outpho_ref, outne_ref, outmupf_ref);
 
         // -----------------------------------------
         // validation against the reference algorithm
