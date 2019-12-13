@@ -1,5 +1,6 @@
 #include <cstdio>
 #include "firmware/linpuppi.h"
+#include "linpuppi_ref.h"
 #include "../utils/DiscretePFInputsReader.h"
 #include "../utils/pattern_serializer.h"
 #include "../utils/test_utils.h"
@@ -17,8 +18,21 @@
 int main() {
 #if defined(REG_Barrel)
     DiscretePFInputsReader inputs("TTbar_PU200_Barrel.dump");
+    pfalgo3_config pfcfg(NTRACK,NEMCALO,NCALO,NMU, 
+                         NPHOTON,NSELCALO,NALLNEUTRALS,
+                         PFALGO_DR2MAX_TK_MU, PFALGO_DR2MAX_TK_EM, PFALGO_DR2MAX_EM_CALO, PFALGO_DR2MAX_TK_CALO,
+                         PFALGO_TK_MAXINVPT_LOOSE, PFALGO_TK_MAXINVPT_TIGHT);
+    linpuppi_config pucfg(NTRACK, NCALO, NNEUTRALS,
+                          LINPUPPI_DR2MIN, LINPUPPI_DR2MAX, LINPUPPI_ptMax, LINPUPPI_dzCut,
+                          LINPUPPI_ptSlopeNe, LINPUPPI_ptSlopePh, LINPUPPI_ptZeroNe, LINPUPPI_ptZeroPh, 
+                          LINPUPPI_alphaSlope, LINPUPPI_alphaZero, LINPUPPI_alphaCrop, 
+                          LINPUPPI_priorNe, LINPUPPI_priorPh,
+                          LINPUPPI_ptCut);
 #elif defined(REG_HGCal)
     DiscretePFInputsReader inputs("TTbar_PU200_HGCal.dump");
+    pfalgo_config pfcfg(NTRACK,NCALO,NMU, NSELCALO,
+                        PFALGO_DR2MAX_TK_MU, PFALGO_DR2MAX_TK_CALO,
+                        PFALGO_TK_MAXINVPT_LOOSE, PFALGO_TK_MAXINVPT_TIGHT);
 #endif
     
     // input TP objects and PV
@@ -31,7 +45,7 @@ int main() {
 
     // Puppi objects
     PFChargedObj outallch[NTRACK], outallch_ref[NTRACK];
-    PFNeutralObj outallne[NALLNEUTRALS], outallne_ref[NALLNEUTRALS], outallne_flt[NALLNEUTRALS];
+    PFNeutralObj outallne[NALLNEUTRALS], outallne_ref_nocut[NALLNEUTRALS], outallne_ref[NALLNEUTRALS], outallne_flt_nocut[NALLNEUTRALS], outallne_flt[NALLNEUTRALS];
     PFNeutralObj outselne[NNEUTRALS], outselne_ref[NNEUTRALS], outselne_flt[NNEUTRALS];
 
     PuppiChecker checker;
@@ -50,21 +64,21 @@ int main() {
 #endif
 
 #if defined(REG_Barrel)
-        pfalgo3_ref(emcalo, hadcalo, track, mu, pfch, pfpho, pfne, pfmu);
-        pfalgo3_merge_neutrals_ref(pfpho, pfne, pfallne);
+        pfalgo3_ref(pfcfg, emcalo, hadcalo, track, mu, pfch, pfpho, pfne, pfmu);
+        pfalgo3_merge_neutrals_ref(pfcfg, pfpho, pfne, pfallne);
 #elif defined(REG_HGCal)
-        pfalgo2hgc(hadcalo, track, mu, pfch, pfallne, pfmu); 
+        pfalgo2hgc(pfcfg, hadcalo, track, mu, pfch, pfallne, pfmu); 
 #endif
 
         bool verbose = true;
         if (verbose) printf("test case %d\n", test);
 
-        linpuppi_chs_ref(hwZPV, pfch, outallch_ref);
-        linpuppi_ref(track, hwZPV, pfallne, outallne_ref, outselne_ref, verbose);
-        linpuppi_flt(track, hwZPV, pfallne, outallne_flt, outselne_flt, verbose);
+        linpuppi_chs_ref(pucfg, hwZPV, pfch, outallch_ref);
+        linpuppi_ref(pucfg, track, hwZPV, pfallne, outallne_ref_nocut, outallne_ref, outselne_ref, verbose);
+        linpuppi_flt(pucfg, track, hwZPV, pfallne, outallne_flt_nocut, outallne_flt, outselne_flt, verbose);
 
         // validate numerical accuracy 
-        checker.checkIntVsFloat<PFNeutralObj,NALLNEUTRALS>(pfallne, outallne_ref, outallne_flt, verbose);
+        checker.checkIntVsFloat<PFNeutralObj,NALLNEUTRALS>(pfallne, outallne_ref_nocut, outallne_flt_nocut, verbose);
 
         bool ok = true;
                   //checker.check<NTRACK>(outallch, outallch_ref, outallch_flt) && 
@@ -74,6 +88,7 @@ int main() {
             HumanReadablePatternSerializer dumper("-", true);
             dumper.dump_puppi(NALLNEUTRALS, "    ", outallne);
             dumper.dump_puppi(NALLNEUTRALS, "ref ", outallne_ref);
+            dumper.dump_puppi(NALLNEUTRALS, "rnc ", outallne_ref_nocut);
             dumper.dump_puppi(NALLNEUTRALS, "flt ", outallne_flt);
             return 1;
         }

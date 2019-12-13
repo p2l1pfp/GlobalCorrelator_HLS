@@ -1,5 +1,6 @@
 #include <cstdio>
 #include "firmware/linpuppi.h"
+#include "linpuppi_ref.h"
 #include "../utils/DiscretePFInputsReader.h"
 #include "../utils/pattern_serializer.h"
 #include "../utils/test_utils.h"
@@ -15,6 +16,13 @@ int main() {
 #elif defined(REG_HF)
     DiscretePFInputsReader inputs("VBFHToBB_PU200_HF.dump");
 #endif
+
+    linpuppi_config cfg(NTRACK, NCALO, NNEUTRALS,
+                        LINPUPPI_DR2MIN, LINPUPPI_DR2MAX, LINPUPPI_ptMax, LINPUPPI_dzCut,
+                        LINPUPPI_ptSlopeNe, LINPUPPI_ptSlopePh, LINPUPPI_ptZeroNe, LINPUPPI_ptZeroPh, 
+                        LINPUPPI_alphaSlope, LINPUPPI_alphaZero, LINPUPPI_alphaCrop, 
+                        LINPUPPI_priorNe, LINPUPPI_priorPh,
+                        LINPUPPI_ptCut);
     
     // input TP objects (used)
     HadCaloObj calo[NCALO];
@@ -27,8 +35,8 @@ int main() {
     PFNeutralObj outselne_ref[NNEUTRALS];
     PFNeutralObj outselne_flt[NNEUTRALS];
     PFNeutralObj outallne[NCALO];
-    PFNeutralObj outallne_ref[NCALO];
-    PFNeutralObj outallne_flt[NCALO];
+    PFNeutralObj outallne_ref_nocut[NCALO], outallne_ref[NCALO];
+    PFNeutralObj outallne_flt_nocut[NCALO], outallne_flt[NCALO];
 
     PuppiChecker checker;
 
@@ -54,18 +62,14 @@ int main() {
 #else
         fwdlinpuppi(calo, outselne);
 #endif
-        fwdlinpuppi_ref(calo, outallne_ref, outselne_ref, verbose);
-        fwdlinpuppi_flt(calo, outallne_flt, outselne_flt, verbose);
+        fwdlinpuppi_ref(cfg, calo, outallne_ref_nocut, outallne_ref, outselne_ref, verbose);
+        fwdlinpuppi_flt(cfg, calo, outallne_flt_nocut, outallne_flt, outselne_flt, verbose);
 
         // validate numerical accuracy 
-        checker.checkIntVsFloat<HadCaloObj,NCALO>(calo, outallne_ref, outallne_flt, verbose);
+        checker.checkIntVsFloat<HadCaloObj,NCALO>(calo, outallne_ref_nocut, outallne_flt_nocut, verbose);
 
         // check vs reference
 #if defined(TEST_PUPPI_NOCROP)
-        // apply pT cut to the reference
-        for (int i = 0; i < NCALO; ++i){
-            if (outallne_ref[i].hwPtPuppi < LINPUPPI_ptCut/LINPUPPI_ptLSB) clear(outallne_ref[i]);
-        }
         bool ok = checker.check<NCALO>(outallne, outallne_ref, outallne_flt);
 #else
         bool ok = checker.check<NSELCALO>(outselne, outselne_ref, outselne_flt);
@@ -75,7 +79,8 @@ int main() {
             HumanReadablePatternSerializer dumper("-", true);
             dumper.dump_puppi(NCALO, "    ", outallne);
             dumper.dump_puppi(NCALO, "ref ", outallne_ref);
-            dumper.dump_puppi(NCALO, "flt ", outallne_flt);
+            dumper.dump_puppi(NCALO, "rnc ", outallne_ref_nocut);
+            dumper.dump_puppi(NCALO, "flt ", outallne_flt_nocut);
             return 1;
         }
 

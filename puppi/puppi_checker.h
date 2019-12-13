@@ -72,10 +72,10 @@ bool PuppiChecker::check(const PFNeutralObj puppi[N], const PFNeutralObj puppi_r
     }
     if (!ret) {
         for (int i = 0; i < N; ++i){
-            printf("particle %02d:  puppiPt_hw %7.2f eta %+7d phi %+7d    puppiPt_ref %7.2f eta %+7d phi %+7d   puppiPt_flt %7.2f eta %+7d phi %+7d\n", i,
+            printf("particle %02d:  puppiPt_hw %7.2f eta %+5d phi %+5d    puppiPt_ref %7.2f eta %+5d phi %+5d   puppiPt_flt %7.2f eta %+5d phi %+5d\n", i,
                     puppi[i].hwPtPuppi     * LINPUPPI_ptLSB, int(puppi[i].hwEta), int(puppi[i].hwPhi),
-                    puppi_ref[i].hwPtPuppi * LINPUPPI_ptLSB, int(puppi[i].hwEta), int(puppi[i].hwPhi), 
-                    puppi_flt[i].hwPtPuppi * LINPUPPI_ptLSB, int(puppi[i].hwEta), int(puppi[i].hwPhi));
+                    puppi_ref[i].hwPtPuppi * LINPUPPI_ptLSB, int(puppi_ref[i].hwEta), int(puppi_ref[i].hwPhi), 
+                    puppi_flt[i].hwPtPuppi * LINPUPPI_ptLSB, int(puppi_flt[i].hwEta), int(puppi_flt[i].hwPhi));
         }
     }
     return ret;

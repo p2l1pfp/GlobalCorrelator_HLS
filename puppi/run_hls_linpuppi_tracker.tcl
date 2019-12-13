@@ -15,6 +15,7 @@ if { $puppiReg == "Barrel" } {
 } elseif { $puppiReg == "HGCal" } {
     add_files -tb ../pfalgo2hgc_ref.cpp   -cflags "-DREG_${puppiReg} -std=c++0x"
 }
+add_files -tb ../pfalgo_common_ref.cpp   -cflags "-DREG_${puppiReg} -std=c++0x"
 add_files -tb ../data/TTbar_PU200_${puppiReg}.dump
 
 # reset the solution
