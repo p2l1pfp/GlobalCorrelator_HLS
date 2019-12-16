@@ -110,20 +110,7 @@ pt_t linpuppi_ref_sum2puppiPt(const linpuppi_config &cfg, uint64_t sum, pt_t pt,
 
     int x2 = x2a + x2pt - prior;
 
-    // -- simplest version
-    // int weight = 1.0/(1.0 + std::exp(- float(x2)/(1<<x2_bits))) * ( 1 << weight_bits ) + 0.5;
-    // -- make explicit the max range of |x| values that yield a weight different from 0 or 1, to allow implementing as LUT
-    // 1/(1+exp(-x*2^-A)) = 2^-B -->  |x| < 2^A*log(2^B) = 2^A * B * log(2)   with [ A = x2_bits, B = weight_bits ] 
-    assert(weight_bits * std::log(2.0f) < 8);
-    const int x2_abs_max = 1 << ( x2_bits + 3 );
-
-    int weight = 0;
-    if (x2 >= x2_abs_max) { 
-        weight = (1 << weight_bits); // note: in practice here we should just skip the multiplication
-    } else if (x2 >= -x2_abs_max) {
-        weight = int(1.0/(1.0 + std::exp(- float(x2)/(1<<x2_bits))) * ( 1 << weight_bits ) + 0.5);
-        assert(weight >= 0 && weight <= (1 << weight_bits));
-    }
+    int weight = std::min<int>( 1.0/(1.0 + std::exp(- float(x2)/(1<<x2_bits))) * ( 1 << weight_bits ) + 0.5, (1 << weight_bits) );
 
     pt_t ptPuppi = ( pt * weight ) >> weight_bits;
 

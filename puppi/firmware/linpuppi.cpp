@@ -88,17 +88,17 @@ int fwdlinpuppi_calc_x2a(ap_uint<32> sum) {
     }
 }
 
-void fwdlinpuppi_init_w(ap_uint<8> table[1024]) {
+void fwdlinpuppi_init_w(ap_uint<9> table[1024]) {
     const int xavg = 512;
     for (int i = 0; i <= 1023; ++i) {
         int x2 = i - xavg;
         int val = 1.0/(1.0 + std::exp(- float(x2)/(1<<6))) * ( 1 << 8 ) + 0.5;
-        table[i] = std::min<int>(val, 255);
+        table[i] = val;
     }
 }
 
 pt_t fwdlinpuppi_calc_wpt(pt_t pt, int x2) {
-    static ap_uint<8> table[1024];
+    static ap_uint<9> table[1024];
 #ifdef __SYNTHESIS__
     fwdlinpuppi_init_w(table);
 #else // initialize the table only once, otherwise this is really slow
@@ -107,16 +107,11 @@ pt_t fwdlinpuppi_calc_wpt(pt_t pt, int x2) {
 #endif
 
     const int xavg = 512;
-    const int x2_max = 400;  
-    // the smallest number at which the table overflows because the number would round to 256
-    // for (int x2 = 0; x2 < 1024; ++x2) { if (int(1/(1+std::exp(-float(x2)/(1<<6))) * 256 + 0.5) == 256) { printf( "x2_max = %d\n", x2); break; } }
-    if (x2 >= x2_max) {
-        return pt;
-    } else if (x2 <= -xavg) {
-        return pt_t(0);
-    } else {
-        return pt_t( int(pt * table[x2 + xavg]) >> 8 );
-    }
+    int index;
+    if (x2 < -xavg) index = 0;
+    else if (x2 > xavg) index = 1023;
+    else index = x2 + xavg;
+    return pt_t( int(pt * table[index]) >> 8 );
 }
 
 void fwdlinpuppiSum(const HadCaloObj caloin[NCALO], ap_uint<32> sums[NCALO]) {
