@@ -56,20 +56,11 @@ enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=
       #warning "No region defined, assuming it's barrel (#define REG_Barrel to suppress this)"
    #endif
    #if defined(TESTMP7)
-       #define NTRACK 5
-       #define NCALO 5
-       #define NMU 2
-       #define NEMCALO 4
-       #define NPHOTON NEMCALO
-       #define NSELCALO 4
+       #error "NOT SUPPORTED ANYMORE"
    #elif defined(TESTCTP7)
-       #define NTRACK 7
-       #define NCALO 5
-       #define NMU 2
-       #define NEMCALO 5
-       #define NPHOTON NEMCALO
-       #define NSELCALO 4
+       #error "NOT SUPPORTED ANYMORE"
    #elif defined(VCU118)
+       #warning "NOT TESTED ANYMORE"
        #define NTRACK 15
        #define NCALO 15
        #define NEMCALO 15

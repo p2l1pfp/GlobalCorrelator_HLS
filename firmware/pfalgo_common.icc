@@ -2,7 +2,12 @@
 
 template<int NB>
 ap_uint<NB> dr2_int_cap(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2, ap_uint<NB> max) {
-#if 0
+#if 0 // original version (breaks if deta or dphi wrap around because of integer overflow)
+    etaphi_t deta = (eta1-eta2);
+    etaphi_t dphi = (phi1-phi2);
+    int dr2 = deta*deta + dphi*dphi;
+    return (dr2 < int(max) ? ap_uint<NB>(dr2) : max);
+#elif 0 // from Dylan with fix to the overflow?
     //hardcode for etaphi size
     int tmpe = eta1-eta2;
     ap_uint<NB> deta = (tmpe > 0 ? tmpe : -tmpe);
@@ -15,7 +20,7 @@ ap_uint<NB> dr2_int_cap(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t ph
         dr2 = deta2 + dphi2;
     }
     return (dr2 < int(max) ? ap_uint<NB>(dr2) : max);
-#else
+#elif 1 // original version + fix for the overflow
     ap_int<etaphi_t::width+1> deta = (eta1-eta2);
     ap_int<etaphi_t::width+1> dphi = (phi1-phi2);
     int dr2 = deta*deta + dphi*dphi;
@@ -127,7 +132,7 @@ void tk2calo_drdptvals(const HadCaloObj calo[NCALO], const TkObj track[NTRACK], 
             } else {
                 calo_track_drval[it][icalo] = eDQMAX;
             }
-#else
+#else // alternative, used when saving dr2 for later
             int dr2 = dr2_int_cap(track[it].hwEta, track[it].hwPhi, calo[icalo].hwEta, calo[icalo].hwPhi, eDR2MAX);
             if (calo[icalo].hwPt > caloPtMin) {
                 calo_track_drval[it][icalo] = dr2_plus_dpt_int_cap(dr2, track[it].hwPt, calo[icalo].hwPt, dptscale, eDR2MAXcut, eDQMAX);
@@ -144,7 +149,7 @@ template<int DR2MAX, int NTK, int NCA, typename DR_T>
 void pick_closest(const DR_T calo_track_drval[NTK][NCA], ap_uint<NCA> calo_track_link_bit[NTK]) {
     const DR_T eDR2MAX = DR2MAX;
     for (int it = 0; it < NTK; ++it) {
-#if 1
+#if 0 // original version
         for (int icalo = 0; icalo < NCA; ++icalo) {
             DR_T mydr = calo_track_drval[it][icalo];
             bool link = (mydr != eDR2MAX);
@@ -154,7 +159,7 @@ void pick_closest(const DR_T calo_track_drval[NTK][NCA], ap_uint<NCA> calo_track
             }
             calo_track_link_bit[it][icalo] = link;
         }
-#else
+#else  // fix from Dylan (the nested loop above explodes for large numbers in some Vivado versions) 
         DR_T mydr = calo_track_drval[it][0];
         int index = 0;
         for (int icalo = 1; icalo < NCA; ++icalo) {

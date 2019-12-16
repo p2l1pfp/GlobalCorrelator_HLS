@@ -5,7 +5,7 @@
 #include "utils/pattern_serializer.h"
 #include "utils/test_utils.h"
 
-#define NTEST 10000
+#define NTEST 1000
 
 
 int main() {

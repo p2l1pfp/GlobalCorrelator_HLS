@@ -20,8 +20,8 @@ create_clock -period 3.0 -name default
 config_interface -trim_dangling_port
 # do stuff
 csim_design
-#csynth_design
-#cosim_design -trace_level all
+csynth_design
+cosim_design -trace_level all
 #export_design -format ip_catalog -vendor "cern-cms" -version ${l1pfIPVersion} -description "${l1pfTopFunc}"
 
 # exit Vivado HLS
