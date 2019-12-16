@@ -15,6 +15,9 @@ class PuppiChecker {
         template<unsigned int N>
         bool check(const PFNeutralObj puppi[N], const PFNeutralObj puppi_ref[N], const PFNeutralObj puppi_flt[N]) ;
 
+        template<unsigned int N>
+        bool checkChs(z0_t pvZ0, const PFChargedObj puppi[N], const PFChargedObj puppi_ref[N]);
+
         void printIntVsFloatReport() {
             int nmiss = n1bit_ + nalmostok_ + nbad_, nall = nok_ + nmiss;
             float fall = 1.0/std::max(nall,1), fmiss = 1.0/std::max(nmiss,1);
@@ -43,20 +46,24 @@ void PuppiChecker::checkIntVsFloat(const T input[N], const PFNeutralObj puppi[N]
             int hwPtDiff = (puppi_flt[i].hwPtPuppi - puppi[i].hwPtPuppi);
             float ptDiff = hwPtDiff * LINPUPPI_ptLSB;
 
+            bool warn = 0;
             if (hwPtDiff == 0) {
                 nok_++; 
             } else if (std::abs(hwPtDiff) == 1) {
                 n1bit_++;
             } else if (std::abs(ptDiff)< 1 + 0.01 * puppi_flt[i].hwPtPuppi*LINPUPPI_ptLSB) {
                 nalmostok_++;
+                warn = 1;
             } else {
                 nbad_++;
+                warn = 2;
             }
             sumDiff_ += ptDiff;
             sumAbsDiff_ += std::abs(ptDiff);
-            if (verbose)  printf("particle %02d pT %7.2f :  puppiPt_int %7.2f   puppiPt_flt %7.2f    diff %+7.2f\n",
+            if (verbose)  printf("particle %02d pT %7.2f :  puppiPt_int %7.2f   puppiPt_flt %7.2f    diff %+7.2f %s\n",
                     i, input[i].hwPt * LINPUPPI_ptLSB, 
-                    puppi[i].hwPtPuppi * LINPUPPI_ptLSB, puppi_flt[i].hwPtPuppi * LINPUPPI_ptLSB, ptDiff);
+                    puppi[i].hwPtPuppi * LINPUPPI_ptLSB, puppi_flt[i].hwPtPuppi * LINPUPPI_ptLSB, ptDiff,
+                    warn ? (warn == 1 ? "small" : "LARGE") : ""); 
         }
     }
 }
@@ -80,6 +87,26 @@ bool PuppiChecker::check(const PFNeutralObj puppi[N], const PFNeutralObj puppi_r
     }
     return ret;
 }
+
+template<unsigned int N>
+bool PuppiChecker::checkChs(z0_t pvZ0, const PFChargedObj puppi[N], const PFChargedObj puppi_ref[N]) {
+    bool ret = true;
+    for (int i = 0; i < N; ++i){
+        if (!pf_equals(puppi_ref[i], puppi[i], "PFCHS", i)) {
+            ret = false;
+        }
+    }
+    if (!ret) {
+        for (int i = 0; i < N; ++i){
+            printf("particle %02d:  puppiPt_hw %7.2f eta %+5d phi %+5d dz %+5d   puppiPt_ref %7.2f eta %+5d phi %+5d dz %+5d\n", i,
+                    puppi[i].hwPt     * LINPUPPI_ptLSB, int(puppi[i].hwEta), int(puppi[i].hwPhi), int(puppi[i].hwZ0 - pvZ0),
+                    puppi_ref[i].hwPt * LINPUPPI_ptLSB, int(puppi_ref[i].hwEta), int(puppi_ref[i].hwPhi), int(puppi_ref[i].hwZ0 - pvZ0)); 
+        }
+    }
+    return ret;
+}
+
+
 
 
 #endif

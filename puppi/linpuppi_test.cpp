@@ -22,7 +22,7 @@ int main() {
                          NPHOTON,NSELCALO,NALLNEUTRALS,
                          PFALGO_DR2MAX_TK_MU, PFALGO_DR2MAX_TK_EM, PFALGO_DR2MAX_EM_CALO, PFALGO_DR2MAX_TK_CALO,
                          PFALGO_TK_MAXINVPT_LOOSE, PFALGO_TK_MAXINVPT_TIGHT);
-    linpuppi_config pucfg(NTRACK, NCALO, NNEUTRALS,
+    linpuppi_config pucfg(NTRACK, NALLNEUTRALS, NNEUTRALS,
                           LINPUPPI_DR2MIN, LINPUPPI_DR2MAX, LINPUPPI_ptMax, LINPUPPI_dzCut,
                           LINPUPPI_ptSlopeNe, LINPUPPI_ptSlopePh, LINPUPPI_ptZeroNe, LINPUPPI_ptZeroPh, 
                           LINPUPPI_alphaSlope, LINPUPPI_alphaZero, LINPUPPI_alphaCrop, 
@@ -56,7 +56,7 @@ int main() {
 
 #ifdef TEST_PT_CUT
         float minpt = 0;
-        for (unsigned int i = 0; i < NCALO; ++i) minpt += hadcalo[i].hwPt*LINPUPPI_ptLSB;
+        for (unsigned int i = 0; i < NTRACK; ++i) minpt += track[i].hwPt*LINPUPPI_ptLSB;
         if (minpt < TEST_PT_CUT) { 
             //std::cout << "Skipping region with total calo pt " << minpt << " below threshold." << std::endl; 
             --test; continue; 
@@ -72,6 +72,14 @@ int main() {
 
         bool verbose = true;
         if (verbose) printf("test case %d\n", test);
+        linpuppi_set_debug(verbose);
+
+        linpuppi_chs(hwZPV, pfch, outallch);
+#if defined(TEST_PUPPI_NOCROP)
+        linpuppiNoCrop(track, hwZPV, pfallne, outallne);
+#else
+        linpuppi(track, hwZPV, pfallne, outselne);
+#endif
 
         linpuppi_chs_ref(pucfg, hwZPV, pfch, outallch_ref);
         linpuppi_ref(pucfg, track, hwZPV, pfallne, outallne_ref_nocut, outallne_ref, outselne_ref, verbose);
@@ -80,16 +88,24 @@ int main() {
         // validate numerical accuracy 
         checker.checkIntVsFloat<PFNeutralObj,NALLNEUTRALS>(pfallne, outallne_ref_nocut, outallne_flt_nocut, verbose);
 
-        bool ok = true;
-                  //checker.check<NTRACK>(outallch, outallch_ref, outallch_flt) && 
-                  //checker.check<NALLNEUTRALS>(outallne, outallne_ref, outallne_flt);
+        bool ok = checker.checkChs<NTRACK>(hwZPV, outallch, outallch_ref) && 
+#if defined(TEST_PUPPI_NOCROP)
+                  checker.check<NALLNEUTRALS>(outallne, outallne_ref, outallne_flt);
+#else
+                  checker.check<NNEUTRALS>(outselne, outselne_ref, outselne_flt);
+#endif
         if (!ok) {
             printf("FAILED test %d\n", test);
             HumanReadablePatternSerializer dumper("-", true);
-            dumper.dump_puppi(NALLNEUTRALS, "    ", outallne);
-            dumper.dump_puppi(NALLNEUTRALS, "ref ", outallne_ref);
-            dumper.dump_puppi(NALLNEUTRALS, "rnc ", outallne_ref_nocut);
-            dumper.dump_puppi(NALLNEUTRALS, "flt ", outallne_flt);
+#if defined(TEST_PUPPI_NOCROP)
+            dumper.dump_puppi(NALLNEUTRALS, "all    ", outallne);
+            dumper.dump_puppi(NALLNEUTRALS, "all ref", outallne_ref);
+#else
+            dumper.dump_puppi(NNEUTRALS,    "sel    ", outselne);
+            dumper.dump_puppi(NNEUTRALS,    "sel ref", outselne_ref);
+#endif
+            dumper.dump_puppi(NALLNEUTRALS, "all rnc", outallne_ref_nocut);
+            dumper.dump_puppi(NALLNEUTRALS, "all flt", outallne_flt_nocut);
             return 1;
         }
 

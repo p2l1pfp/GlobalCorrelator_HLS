@@ -6,7 +6,7 @@
 #include "../utils/test_utils.h"
 #include "puppi_checker.h"
 
-#define NTEST 100
+#define NTEST 500
 
 
 int main() {
@@ -55,7 +55,7 @@ int main() {
 
         bool verbose = true;
         if (verbose) printf("test case %d\n", test);
-        fwdlinpuppi_set_debug(verbose);
+        linpuppi_set_debug(verbose);
 
 #if defined(TEST_PUPPI_NOCROP)
         fwdlinpuppiNoCrop(calo, outallne);

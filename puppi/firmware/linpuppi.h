@@ -17,7 +17,7 @@ void linpuppi(const TkObj track[NTRACK], z0_t pvZ0, const PFNeutralObj pfallne[N
 void fwdlinpuppi(const HadCaloObj caloin[NCALO], PFNeutralObj pfselne[NNEUTRALS]);
 void fwdlinpuppiNoCrop(const HadCaloObj caloin[NCALO], PFNeutralObj pfallne[NCALO]);
 
-void fwdlinpuppi_set_debug(bool debug);
+void linpuppi_set_debug(bool debug);
 
 #define LINPUPPI_ptLSB 0.25
 #define LINPUPPI_DR2LSB 1.9e-5
