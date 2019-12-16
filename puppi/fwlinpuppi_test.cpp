@@ -53,7 +53,7 @@ int main() {
         }
 #endif
 
-        bool verbose = true;
+        bool verbose = 1;
         if (verbose) printf("test case %d\n", test);
         linpuppi_set_debug(verbose);
 

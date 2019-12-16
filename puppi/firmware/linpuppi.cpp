@@ -35,22 +35,29 @@ int _lut_shift15_divide(ap_uint<17> num, ap_uint<9> den) { // returns (num * 2^1
     return (num * _table[den]);
 }
 
-void fwdlinpuppi_init_x2a_short(ap_int<14> table[1024]) {
-    for (int i = 0; i < 1024; ++i) {
+#define fwdlinpuppi_init_x2a_table_size 1024
+#define x2a_t ap_int<16>
+void fwdlinpuppi_init_x2a_short(x2a_t table[fwdlinpuppi_init_x2a_table_size]) {
+    for (int i = 0; i < fwdlinpuppi_init_x2a_table_size; ++i) {
         // NOTE: HLS doesn't wants this constants to be inside of the loop in order to properly infer a ROM :-/
-        const int sum_bitShift = 15;
-        const int alpha_bits = 4; // decimal bits of the alpha values
-        const int alphaSlope_bits = 4; // decimal bits of the alphaSlope values
+        const int sum_bitShift = LINPUPPI_sum_bitShift;
+        const int alpha_bits = LINPUPPI_alpha_bits; // decimal bits of the alpha values
+        const int alphaSlope_bits = LINPUPPI_alphaSlope_bits; // decimal bits of the alphaSlope values
         const int alphaSlope = LINPUPPI_alphaSlope * std::log(2) * (1 << alphaSlope_bits); // we put a log(2) here since we compute alpha as log2(sum) instead of ln(sum)
         const int alphaZero = LINPUPPI_alphaZero / std::log(2) * (1 << alpha_bits);
         const int C0 = - alphaSlope * alphaZero;
         const int C1 =   alphaSlope * int((std::log2(LINPUPPI_pt2DR2_scale) - sum_bitShift)*(1 << alpha_bits) + 0.5); 
-        table[i] = C0 + (i >  0 ? alphaSlope * int(std::log2(float(i))*(1 << alpha_bits)) + C1 : 0);
+        int val = C0 + (i >  0 ? alphaSlope * int(std::log2(float(i))*(1 << alpha_bits)) + C1 : 0);
+        if (!(val >= -(1<<(x2a_t::width-1)) && val < (1<<(x2a_t::width-1)))) {
+            printf("ERROR: overflow in x2a table[%d] with ap_int<%d> at index %d, val = %d, maxval = %d\n", fwdlinpuppi_init_x2a_table_size, x2a_t::width, i, val, 1<<(x2a_t::width-1));
+        }
+        assert(val >= -(1<<(x2a_t::width-1)) && val < (1<<(x2a_t::width-1)));
+        table[i] = val;
     }
 }
 
 int fwdlinpuppi_calc_x2a(ap_uint<32> sum) {
-    static ap_int<14> table[1024];
+    static x2a_t table[fwdlinpuppi_init_x2a_table_size];
 #ifdef __SYNTHESIS__
     fwdlinpuppi_init_x2a_short(table);
 #else // initialize the table only once, otherwise this is really slow
@@ -59,9 +66,9 @@ int fwdlinpuppi_calc_x2a(ap_uint<32> sum) {
 #endif
 
     const int log2lut_bits = 10;
-    const int x2_bits = 6;    // decimal bits the discriminator values
-    const int alpha_bits = 4; // decimal bits of the alpha values
-    const int alphaSlope_bits = 4; // decimal bits of the alphaSlope values
+    const int x2_bits = LINPUPPI_x2_bits;    // decimal bits the discriminator values
+    const int alpha_bits = LINPUPPI_alpha_bits; // decimal bits of the alpha values
+    const int alphaSlope_bits = LINPUPPI_alphaSlope_bits; // decimal bits of the alphaSlope values
     const int alphaSlope = LINPUPPI_alphaSlope * std::log(2) * (1 << alphaSlope_bits); // we put a log(2) here since we compute alpha as log2(sum) instead of ln(sum)
     const int alphaCrop = LINPUPPI_alphaCrop * (1 << x2_bits);
 
@@ -75,10 +82,17 @@ int fwdlinpuppi_calc_x2a(ap_uint<32> sum) {
         }
     }
 
-    assert(logarg >= 0 && logarg <= 1023);
+#ifndef __SYNTHESIS__
+    if (logarg < 0 || logarg >= fwdlinpuppi_init_x2a_table_size) {
+        printf("hw  x2a(sum = %9d): sumterm = %9d, logarg = %9d, ERROR\n", int(sum), sumterm, logarg);
+    }
+#endif
+    assert(logarg >= 0 && logarg < fwdlinpuppi_init_x2a_table_size);
     int ret = (table[logarg] + sumterm) >> (alphaSlope_bits + alpha_bits - x2_bits);
+#ifndef __SYNTHESIS__
     //printf("hw  x2a(sum = %9d): logarg = %9d, sumterm = %9d, table[logarg] = %9d, ret pre-crop = %9d\n", 
-    //            sum, logarg, sumterm, int(table[logarg]), ret);
+    //            int(sum), logarg, sumterm, int(table[logarg]), ret);
+#endif
     if (ret < -alphaCrop) {
         return -alphaCrop;
     } else if (ret > alphaCrop) {
@@ -88,8 +102,9 @@ int fwdlinpuppi_calc_x2a(ap_uint<32> sum) {
     }
 }
 
-void fwdlinpuppi_init_w(ap_uint<9> table[1024]) {
-    const int xavg = 512;
+#define fwdlinpuppi_x2w_table_size 1024
+void fwdlinpuppi_init_w(ap_uint<9> table[fwdlinpuppi_x2w_table_size]) {
+    const int xavg = fwdlinpuppi_x2w_table_size/2;
     for (int i = 0; i <= 1023; ++i) {
         int x2 = i - xavg;
         int val = 1.0/(1.0 + std::exp(- float(x2)/(1<<6))) * ( 1 << 8 ) + 0.5;
@@ -98,7 +113,7 @@ void fwdlinpuppi_init_w(ap_uint<9> table[1024]) {
 }
 
 pt_t fwdlinpuppi_calc_wpt(pt_t pt, int x2) {
-    static ap_uint<9> table[1024];
+    static ap_uint<9> table[fwdlinpuppi_x2w_table_size];
 #ifdef __SYNTHESIS__
     fwdlinpuppi_init_w(table);
 #else // initialize the table only once, otherwise this is really slow
@@ -106,10 +121,10 @@ pt_t fwdlinpuppi_calc_wpt(pt_t pt, int x2) {
     if (!is_init) { fwdlinpuppi_init_w(table); is_init = true; }
 #endif
 
-    const int xavg = 512;
+    const int xavg = fwdlinpuppi_x2w_table_size/2;
     int index;
     if (x2 < -xavg) index = 0;
-    else if (x2 > xavg) index = 1023;
+    else if (x2 >= xavg) index = fwdlinpuppi_x2w_table_size-1;
     else index = x2 + xavg;
     return pt_t( int(pt * table[index]) >> 8 );
 }
@@ -166,9 +181,9 @@ void fwdlinpuppiSum2Pt(const HadCaloObj caloin[NCALO], const ap_uint<32> sums[NC
     #pragma HLS ARRAY_PARTITION variable=puppiPts complete
     #pragma HLS inline
 
-    const int x2_bits = 6;    // decimal bits the discriminator values
-    const int ptSlope_bits = 6;    // decimal bits of the ptSlope values 
-    const int weight_bits = 8;
+    const int x2_bits = LINPUPPI_x2_bits;    // decimal bits the discriminator values
+    const int ptSlope_bits = LINPUPPI_ptSlope_bits;    // decimal bits of the ptSlope values 
+    const int weight_bits = LINPUPPI_weight_bits;
 
     const int ptSlopeNe = LINPUPPI_ptSlopeNe * (1 << ptSlope_bits);
     const int ptSlopePh = LINPUPPI_ptSlopePh * (1 << ptSlope_bits);
@@ -293,6 +308,10 @@ inline bool linpuppi_fromPV(const T & obj, z0_t pvZ0) {
 }
 
 void linpuppi_chs(z0_t pvZ0, const PFChargedObj pfch[NTRACK], PFChargedObj outallch[NTRACK]) {
+    #pragma HLS ARRAY_PARTITION variable=pfch complete
+    #pragma HLS ARRAY_PARTITION variable=outallch complete
+    #pragma HLS pipeline II=2
+
     for (unsigned int i = 0; i < NTRACK; ++i) {
         if (linpuppi_fromPV(pfch[i], pvZ0) || pfch[i].hwId == PID_Muon) {
             outallch[i] = pfch[i];
@@ -348,9 +367,9 @@ void linpuppiSum2All(const PFNeutralObj caloin[NALLNEUTRALS], const ap_uint<32> 
     #pragma HLS ARRAY_PARTITION variable=sums complete
     #pragma HLS ARRAY_PARTITION variable=out complete
 
-    const int x2_bits = 6;    // decimal bits the discriminator values
-    const int ptSlope_bits = 6;    // decimal bits of the ptSlope values 
-    const int weight_bits = 8;
+    const int x2_bits = LINPUPPI_x2_bits;    // decimal bits the discriminator values
+    const int ptSlope_bits = LINPUPPI_ptSlope_bits;    // decimal bits of the ptSlope values 
+    const int weight_bits = LINPUPPI_weight_bits;
 
     const int ptSlopeNe = LINPUPPI_ptSlopeNe * (1 << ptSlope_bits);
     const int ptSlopePh = LINPUPPI_ptSlopePh * (1 << ptSlope_bits);

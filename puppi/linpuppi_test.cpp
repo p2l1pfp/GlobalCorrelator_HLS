@@ -12,7 +12,7 @@
     #include "../pfalgo2hgc_ref.h"
 #endif
 
-#define NTEST 100
+#define NTEST 500
 
 
 int main() {
@@ -70,7 +70,7 @@ int main() {
         pfalgo2hgc(pfcfg, hadcalo, track, mu, pfch, pfallne, pfmu); 
 #endif
 
-        bool verbose = true;
+        bool verbose = 1;
         if (verbose) printf("test case %d\n", test);
         linpuppi_set_debug(verbose);
 

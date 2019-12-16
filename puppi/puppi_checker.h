@@ -46,7 +46,7 @@ void PuppiChecker::checkIntVsFloat(const T input[N], const PFNeutralObj puppi[N]
             int hwPtDiff = (puppi_flt[i].hwPtPuppi - puppi[i].hwPtPuppi);
             float ptDiff = hwPtDiff * LINPUPPI_ptLSB;
 
-            bool warn = 0;
+            int warn = 0;
             if (hwPtDiff == 0) {
                 nok_++; 
             } else if (std::abs(hwPtDiff) == 1) {

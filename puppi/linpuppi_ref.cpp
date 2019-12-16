@@ -47,12 +47,12 @@ unsigned int linpuppi_ieta_ref(const linpuppi_config &cfg, etaphi_t eta) {
 }
 
 pt_t linpuppi_ref_sum2puppiPt(const linpuppi_config &cfg, uint64_t sum, pt_t pt, unsigned int ieta, bool isEM, int icand, bool debug) {
-    const int sum_bitShift = 15;
-    const int x2_bits = 6;    // decimal bits the discriminator values
-    const int alpha_bits = 4; // decimal bits of the alpha values
-    const int alphaSlope_bits = 4; // decimal bits of the alphaSlope values
-    const int ptSlope_bits = 6;    // decimal bits of the ptSlope values 
-    const int weight_bits = 8;
+    const int sum_bitShift = LINPUPPI_sum_bitShift;
+    const int x2_bits = LINPUPPI_x2_bits;    // decimal bits the discriminator values
+    const int alpha_bits = LINPUPPI_alpha_bits; // decimal bits of the alpha values
+    const int alphaSlope_bits = LINPUPPI_alphaSlope_bits; // decimal bits of the alphaSlope values
+    const int ptSlope_bits = LINPUPPI_ptSlope_bits;    // decimal bits of the ptSlope values 
+    const int weight_bits = LINPUPPI_weight_bits;
 
     const int ptSlopeNe = cfg.ptSlopeNe[ieta] * (1 << ptSlope_bits);
     const int ptSlopePh = cfg.ptSlopePh[ieta] * (1 << ptSlope_bits);
@@ -139,7 +139,7 @@ void fwdlinpuppi_ref(const linpuppi_config &cfg, const HadCaloObj caloin[/*cfg.n
         clear(outallne[i]);
     }
 
-    const int sum_bitShift = 15;
+    const int sum_bitShift = LINPUPPI_sum_bitShift;
 
     for (int in = 0; in < cfg.nIn; ++in) {
         if (caloin[in].hwPt == 0) continue;
@@ -178,7 +178,7 @@ void linpuppi_ref(const linpuppi_config &cfg, const TkObj track[/*cfg.nTrack*/],
     const int DR2MIN = LINPUPPI_DR2MIN; 
     const int PTMAX2 = (LINPUPPI_ptMax*LINPUPPI_ptMax);
 
-    const int sum_bitShift = 15;
+    const int sum_bitShift = LINPUPPI_sum_bitShift;
 
     for (int in = 0; in < cfg.nIn; ++in) {
         outallne_nocut[in] = pfallne[in]; clear(outallne[in]);
