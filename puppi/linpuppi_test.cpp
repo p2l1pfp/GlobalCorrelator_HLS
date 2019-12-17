@@ -48,6 +48,13 @@ int main() {
     PFNeutralObj outallne[NALLNEUTRALS], outallne_ref_nocut[NALLNEUTRALS], outallne_ref[NALLNEUTRALS], outallne_flt_nocut[NALLNEUTRALS], outallne_flt[NALLNEUTRALS];
     PFNeutralObj outselne[NNEUTRALS], outselne_ref[NNEUTRALS], outselne_flt[NNEUTRALS];
 
+#if defined(PACKING_DATA_SIZE) && defined(PACKING_NCHANN)
+    PatternSerializer serPatternsIn("linpuppi_input_patterns.txt"), serPatternsOut("linpuppi_output_patterns.txt");
+    PatternSerializer serPatternsChsIn("linpuppi_chs_input_patterns.txt"), serPatternsChsOut("linpuppi_chs_output_patterns.txt");
+    ap_uint<PACKING_DATA_SIZE> packed_input[PACKING_NCHANN], packed_input_chs[PACKING_NCHANN], packed_output[PACKING_NCHANN], packed_output_chs[PACKING_NCHANN];
+    for (unsigned int i = 0; i < PACKING_NCHANN; ++i) { packed_input[i] = 0; packed_input_chs[i] = 0; packed_output[i] = 0; packed_output_chs[i] = 0; }
+#endif
+
     PuppiChecker checker;
 
     for (int test = 1; test <= NTEST; ++test) {
@@ -70,15 +77,30 @@ int main() {
         pfalgo2hgc(pfcfg, hadcalo, track, mu, pfch, pfallne, pfmu); 
 #endif
 
-        bool verbose = 1;
+        bool verbose = 0;
         if (verbose) printf("test case %d\n", test);
         linpuppi_set_debug(verbose);
 
-        linpuppi_chs(hwZPV, pfch, outallch);
-#if defined(TEST_PUPPI_NOCROP)
-        linpuppiNoCrop(track, hwZPV, pfallne, outallne);
+#if defined(PACKING_DATA_SIZE) && defined(PACKING_NCHANN)
+        linpuppi_chs_pack_in(hwZPV, pfch, packed_input_chs); serPatternsChsIn(packed_input_chs);
+        linpuppi_pack_in(track, hwZPV, pfallne, packed_input); serPatternsIn(packed_input);
+        packed_linpuppi_chs(packed_input_chs, packed_output_chs);
+    #if defined(TEST_PUPPI_NOCROP)
+        packed_linpuppiNoCrop(packed_input, packed_output);
+        l1pf_pattern_unpack<NALLNEUTRALS,0>(packed_output, outallne);
+    #else
+        packed_linpuppi(packed_input, packed_output);
+        l1pf_pattern_unpack<NNEUTRALS,0>(packed_output, outselne);
+    #endif
+        l1pf_pattern_unpack<NTRACK,0>(packed_output_chs, outallch);
+        serPatternsOut(packed_output); serPatternsChsOut(packed_output_chs);
 #else
+        linpuppi_chs(hwZPV, pfch, outallch);
+    #if defined(TEST_PUPPI_NOCROP)
+        linpuppiNoCrop(track, hwZPV, pfallne, outallne);
+    #else
         linpuppi(track, hwZPV, pfallne, outselne);
+    #endif
 #endif
 
         linpuppi_chs_ref(pucfg, hwZPV, pfch, outallch_ref);

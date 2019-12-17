@@ -38,6 +38,12 @@ int main() {
     PFNeutralObj outallne_ref_nocut[NCALO], outallne_ref[NCALO];
     PFNeutralObj outallne_flt_nocut[NCALO], outallne_flt[NCALO];
 
+#if defined(PACKING_DATA_SIZE) && defined(PACKING_NCHANN)
+    PatternSerializer serPatternsIn("fwlinpuppi_input_patterns.txt"), serPatternsOut("fwlinpuppi_output_patterns.txt");
+    ap_uint<PACKING_DATA_SIZE> packed_input[PACKING_NCHANN], packed_output[PACKING_NCHANN];
+    for (unsigned int i = 0; i < PACKING_NCHANN; ++i) { packed_input[i] = 0; packed_output[i] = 0; }
+#endif
+
     PuppiChecker checker;
 
     for (int test = 1; test <= NTEST; ++test) {
@@ -53,15 +59,29 @@ int main() {
         }
 #endif
 
-        bool verbose = 1;
+        bool verbose = 0;
         if (verbose) printf("test case %d\n", test);
         linpuppi_set_debug(verbose);
 
-#if defined(TEST_PUPPI_NOCROP)
-        fwdlinpuppiNoCrop(calo, outallne);
+#if defined(PACKING_DATA_SIZE) && defined(PACKING_NCHANN)
+        l1pf_pattern_pack<NCALO,0>(calo, packed_input);
+        serPatternsIn(packed_input);
+  #if defined(TEST_PUPPI_NOCROP)
+        packed_fwdlinpuppiNoCrop(packed_input, packed_output);
+        l1pf_pattern_unpack<NCALO,0>(packed_output, outallne);
+  #else
+        packed_fwdlinpuppi(packed_input, packed_output);
+        l1pf_pattern_unpack<NNEUTRALS,0>(packed_output, outselne);
+  #endif
+        serPatternsOut(packed_output);
 #else
+  #if defined(TEST_PUPPI_NOCROP)
+        fwdlinpuppiNoCrop(calo, outallne);
+  #else
         fwdlinpuppi(calo, outselne);
+  #endif
 #endif
+
         fwdlinpuppi_ref(cfg, calo, outallne_ref_nocut, outallne_ref, outselne_ref, verbose);
         fwdlinpuppi_flt(cfg, calo, outallne_flt_nocut, outallne_flt, outselne_flt, verbose);
 

@@ -469,3 +469,115 @@ void linpuppi(const TkObj track[NTRACK], z0_t pvZ0, const PFNeutralObj pfallne[N
     }
 }
 
+#if defined(PACKING_DATA_SIZE) && defined(PACKING_NCHANN)
+void packed_fwdlinpuppi(const ap_uint<PACKING_DATA_SIZE> input[PACKING_NCHANN], ap_uint<PACKING_DATA_SIZE> output[PACKING_NCHANN]) {
+    #pragma HLS ARRAY_PARTITION variable=input complete
+    #pragma HLS ARRAY_PARTITION variable=output complete
+    #pragma HLS pipeline II=2
+
+    HadCaloObj caloin[NCALO]; PFNeutralObj pfselne[NNEUTRALS];
+    #pragma HLS ARRAY_PARTITION variable=caloin complete
+    #pragma HLS ARRAY_PARTITION variable=pfselne complete
+    l1pf_pattern_unpack<NCALO,0>(input, caloin);
+    fwdlinpuppi(caloin, pfselne);
+    l1pf_pattern_pack<NNEUTRALS,0>(pfselne, output);
+}
+
+void packed_fwdlinpuppiNoCrop(const ap_uint<PACKING_DATA_SIZE> input[PACKING_NCHANN], ap_uint<PACKING_DATA_SIZE> output[PACKING_NCHANN]) {
+    #pragma HLS ARRAY_PARTITION variable=input complete
+    #pragma HLS ARRAY_PARTITION variable=output complete
+    #pragma HLS pipeline II=2
+
+    HadCaloObj caloin[NCALO]; PFNeutralObj pfallne[NCALO];
+    #pragma HLS ARRAY_PARTITION variable=caloin complete
+    #pragma HLS ARRAY_PARTITION variable=pfallne complete
+    l1pf_pattern_unpack<NCALO,0>(input, caloin);
+    fwdlinpuppiNoCrop(caloin, pfallne);
+    l1pf_pattern_pack<NCALO,0>(pfallne, output);
+}
+
+void packed_linpuppi_chs(const ap_uint<PACKING_DATA_SIZE> input[PACKING_NCHANN], ap_uint<PACKING_DATA_SIZE> output[PACKING_NCHANN]) {
+    #pragma HLS ARRAY_PARTITION variable=input complete
+    #pragma HLS ARRAY_PARTITION variable=output complete
+    #pragma HLS pipeline II=2
+
+    z0_t pvZ0; PFChargedObj pfch[NTRACK], outallch[NTRACK];
+    #pragma HLS ARRAY_PARTITION variable=pfch complete
+    #pragma HLS ARRAY_PARTITION variable=outallch complete
+    linpuppi_chs_unpack_in(input, pvZ0, pfch);
+    linpuppi_chs(pvZ0, pfch, outallch);
+    l1pf_pattern_pack<NTRACK,0>(outallch, output);
+}
+
+void packed_linpuppi(const ap_uint<PACKING_DATA_SIZE> input[PACKING_NCHANN], ap_uint<PACKING_DATA_SIZE> output[PACKING_NCHANN]) {
+    #pragma HLS ARRAY_PARTITION variable=input complete
+    #pragma HLS ARRAY_PARTITION variable=output complete
+    #pragma HLS pipeline II=2
+
+    TkObj track[NTRACK]; z0_t pvZ0; PFNeutralObj pfallne[NALLNEUTRALS], outselne[NNEUTRALS];
+    #pragma HLS ARRAY_PARTITION variable=track complete
+    #pragma HLS ARRAY_PARTITION variable=pfallne complete
+    #pragma HLS ARRAY_PARTITION variable=outselne complete
+    linpuppi_unpack_in(input, track, pvZ0, pfallne);
+    linpuppi(track, pvZ0, pfallne, outselne);
+    l1pf_pattern_pack<NNEUTRALS,0>(outselne, output);
+}
+
+void packed_linpuppiNoCrop(const ap_uint<PACKING_DATA_SIZE> input[PACKING_NCHANN], ap_uint<PACKING_DATA_SIZE> output[PACKING_NCHANN]) {
+    #pragma HLS ARRAY_PARTITION variable=input complete
+    #pragma HLS ARRAY_PARTITION variable=output complete
+    #pragma HLS pipeline II=2
+
+    TkObj track[NTRACK]; z0_t pvZ0; PFNeutralObj pfallne[NALLNEUTRALS], outallne[NALLNEUTRALS];
+    #pragma HLS ARRAY_PARTITION variable=track complete
+    #pragma HLS ARRAY_PARTITION variable=pfallne complete
+    #pragma HLS ARRAY_PARTITION variable=outallne complete
+    linpuppi_unpack_in(input, track, pvZ0, pfallne);
+    linpuppiNoCrop(track, pvZ0, pfallne, outallne);
+    l1pf_pattern_pack<NALLNEUTRALS,0>(outallne, output);
+}
+
+void linpuppi_pack_in(const TkObj track[NTRACK], z0_t pvZ0, const PFNeutralObj pfallne[NALLNEUTRALS], ap_uint<PACKING_DATA_SIZE> input[PACKING_NCHANN]) {
+    assert(NTRACK+1+NALLNEUTRALS <= PACKING_NCHANN);
+    const int TK_OFFS = 0, PV_OFFS = TK_OFFS + NTRACK, PFNE_OFFS = PV_OFFS + 1;
+    l1pf_pattern_pack<NTRACK, TK_OFFS>(track, input);
+    linpuppi_pack_pv(pvZ0, input[PV_OFFS]);
+    l1pf_pattern_pack<NALLNEUTRALS, PFNE_OFFS>(pfallne, input);
+}
+
+void linpuppi_unpack_in(const ap_uint<PACKING_DATA_SIZE> input[PACKING_NCHANN], TkObj track[NTRACK], z0_t & pvZ0, PFNeutralObj pfallne[NALLNEUTRALS]) {
+    #pragma HLS ARRAY_PARTITION variable=input complete
+    #pragma HLS ARRAY_PARTITION variable=track complete
+    #pragma HLS ARRAY_PARTITION variable=pfallne complete
+    #pragma HLS inline
+    assert(NTRACK+1+NALLNEUTRALS <= PACKING_NCHANN);
+    const int TK_OFFS = 0, PV_OFFS = TK_OFFS + NTRACK, PFNE_OFFS = PV_OFFS + 1;
+    l1pf_pattern_unpack<NTRACK, TK_OFFS>(input, track);
+    linpuppi_unpack_pv(input[PV_OFFS], pvZ0);
+    l1pf_pattern_unpack<NALLNEUTRALS, PFNE_OFFS>(input, pfallne);
+}
+
+void linpuppi_chs_pack_in(z0_t pvZ0, const PFChargedObj pfch[NTRACK], ap_uint<PACKING_DATA_SIZE> input[PACKING_NCHANN]) {
+    assert(NTRACK+1 <= PACKING_NCHANN);
+    linpuppi_pack_pv(pvZ0, input[0]);
+    l1pf_pattern_pack<NTRACK, 1>(pfch, input);
+}
+
+void linpuppi_chs_unpack_in(const ap_uint<PACKING_DATA_SIZE> input[PACKING_NCHANN], z0_t & pvZ0, PFChargedObj pfch[NTRACK]) {
+    #pragma HLS ARRAY_PARTITION variable=input complete
+    #pragma HLS ARRAY_PARTITION variable=pfch complete
+    #pragma HLS inline
+    assert(NTRACK+1 <= PACKING_NCHANN);
+    linpuppi_unpack_pv(input[0], pvZ0);
+    l1pf_pattern_unpack<NTRACK,1>(input, pfch);
+}     
+
+void linpuppi_pack_pv(z0_t pvZ0, ap_uint<PACKING_DATA_SIZE> & word) {
+    word = 0;
+    word(z0_t::width-1,0) = pvZ0;
+}
+void linpuppi_unpack_pv(ap_uint<PACKING_DATA_SIZE> word, z0_t & pvZ0) {
+    pvZ0 = word(z0_t::width-1,0);
+}
+
+#endif

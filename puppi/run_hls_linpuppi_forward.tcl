@@ -1,15 +1,24 @@
 set puppiReg "HGCalNoTK"
 #set puppiReg "HF"
+#set puppiBoard "none"
+set puppiBoard "VCU118"
+set cflags "-std=c++0x -DREG_${puppiReg} -DBOARD_${puppiBoard}" 
 
-open_project -reset proj_linpuppi_${puppiReg}
+open_project -reset proj_linpuppi_${puppiReg}_${puppiBoard}
 
-set_top fwdlinpuppiNoCrop
-add_files firmware/linpuppi.cpp  -cflags "-DREG_${puppiReg} -std=c++0x"
-add_files -tb linpuppi_ref.cpp   -cflags "-DREG_${puppiReg} -std=c++0x"
-add_files -tb ../utils/test_utils.cpp  -cflags "-DREG_${puppiReg}"
-add_files -tb ../utils/pattern_serializer.cpp -cflags "-std=c++0x -DREG_${puppiReg}"
-add_files -tb fwlinpuppi_test.cpp   -cflags "-DREG_${puppiReg} -DTEST_PUPPI_NOCROP -DTEST_PT_CUT=120"
-#add_files -tb fwlinpuppi_test.cpp   -cflags "-DREG_${puppiReg} -DTEST_PT_CUT=120"
+if { $puppiBoard == "none" } {
+    set_top fwdlinpuppiNoCrop
+} else {
+    set_top packed_fwdlinpuppiNoCrop
+
+}
+
+add_files firmware/linpuppi.cpp  -cflags "${cflags}"
+add_files -tb linpuppi_ref.cpp   -cflags "${cflags}"
+add_files -tb ../utils/test_utils.cpp  -cflags "${cflags}"
+add_files -tb ../utils/pattern_serializer.cpp -cflags "${cflags}"
+add_files -tb fwlinpuppi_test.cpp   -cflags "${cflags} -DTEST_PUPPI_NOCROP -DTEST_PT_CUT=120"
+#add_files -tb fwlinpuppi_test.cpp   -cflags "${cflags}  -DTEST_PT_CUT=120"
 #add_files -tb ../data/TTbar_PU200_${puppiReg}.dump
 add_files -tb ../data/VBFHToBB_PU200_${puppiReg}.dump
 

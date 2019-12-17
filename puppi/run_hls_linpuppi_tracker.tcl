@@ -1,21 +1,32 @@
 set puppiReg "Barrel"
 #set puppiReg "HGCal"
+#set puppiBoard "none"
+set puppiBoard "VCU118"
+set cflags "-std=c++0x -DREG_${puppiReg} -DBOARD_${puppiBoard}" 
 
-open_project -reset proj_linpuppi_${puppiReg}
+open_project -reset proj_linpuppi_${puppiReg}_${puppiBoard}
 
-set_top linpuppiNoCrop
-add_files firmware/linpuppi.cpp  -cflags "-DREG_${puppiReg} -std=c++0x"
-add_files -tb linpuppi_ref.cpp   -cflags "-DREG_${puppiReg} -std=c++0x"
-add_files -tb ../utils/test_utils.cpp  -cflags "-DREG_${puppiReg}"
-add_files -tb ../utils/pattern_serializer.cpp -cflags "-std=c++0x -DREG_${puppiReg}"
-add_files -tb linpuppi_test.cpp   -cflags "-DREG_${puppiReg} -DTEST_PUPPI_NOCROP -DTEST_PT_CUT=80" 
-#add_files -tb linpuppi_test.cpp   -cflags "-DREG_${puppiReg} -DTEST_PT_CUT=80"
-if { $puppiReg == "Barrel" } {
-    add_files -tb ../pfalgo3_ref.cpp   -cflags "-DREG_${puppiReg} -std=c++0x"
-} elseif { $puppiReg == "HGCal" } {
-    add_files -tb ../pfalgo2hgc_ref.cpp   -cflags "-DREG_${puppiReg} -std=c++0x"
+if { $puppiBoard == "none" } {
+    set_top linpuppiNoCrop
+    #set_top linpuppi
+    #set_top linpuppi_chs
+} else {
+    set_top packed_linpuppiNoCrop
+    #set_top packed_linpuppi
+    #set_top packed_linpuppi_chs
 }
-add_files -tb ../pfalgo_common_ref.cpp   -cflags "-DREG_${puppiReg} -std=c++0x"
+add_files firmware/linpuppi.cpp  -cflags "${cflags}"
+add_files -tb linpuppi_ref.cpp   -cflags "${cflags}"
+add_files -tb ../utils/test_utils.cpp  -cflags "${cflags}"
+add_files -tb ../utils/pattern_serializer.cpp -cflags "${cflags}"
+add_files -tb linpuppi_test.cpp   -cflags "${cflags} -DTEST_PUPPI_NOCROP -DTEST_PT_CUT=80" 
+#add_files -tb linpuppi_test.cpp   -cflags "${cflags} -DTEST_PT_CUT=80"
+if { $puppiReg == "Barrel" } {
+    add_files -tb ../pfalgo3_ref.cpp   -cflags "${cflags}"
+} elseif { $puppiReg == "HGCal" } {
+    add_files -tb ../pfalgo2hgc_ref.cpp   -cflags "${cflags}"
+}
+add_files -tb ../pfalgo_common_ref.cpp   -cflags "${cflags}"
 add_files -tb ../data/TTbar_PU200_${puppiReg}.dump
 
 # reset the solution

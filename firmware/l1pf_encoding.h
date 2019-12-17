@@ -1,3 +1,6 @@
+#ifndef FIRMWARE_L1PF_ENCODING_H
+#define FIRMWARE_L1PF_ENCODING_H
+
 template<unsigned int N, unsigned int OFFS> 
 inline void l1pf_pattern_pack(const EmCaloObj emcalo[N], ap_uint<32> data[]) {
     #pragma HLS inline
@@ -270,3 +273,5 @@ inline void l1pf_pattern_unpack(const ap_uint<64> data[], PFNeutralObj pfne[N]) 
         pfne[i].hwPhi = data[i+OFFS](19,10);
     }
 }
+
+#endif
