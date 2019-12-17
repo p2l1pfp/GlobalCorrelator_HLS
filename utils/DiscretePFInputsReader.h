@@ -75,6 +75,26 @@ class DiscretePFInputsReader {
         }
         const Event & event() { return event_; }
 
+        template<unsigned int EVNTRACKS>
+        void allTracks(TkObj track[EVNTRACKS]){
+            for(int i = 0; i < EVNTRACKS; i++){
+                clear(track[i]);
+            }
+            std::vector<l1tpf_impl::PropagatedTrack> evTracks;
+            for(int ir = 0; ir < event_.regions.size(); ir++){
+                const std::vector<l1tpf_impl::PropagatedTrack> & rTracks = event_.regions[ir].track;
+                evTracks.insert(evTracks.end(), rTracks.begin(), rTracks.end());
+            } 
+            std::vector<TkObj> evTracksHW(evTracks.size());
+            std::transform(evTracks.begin(), evTracks.end(), evTracksHW.begin(), dpf2fw::transformConvert); 
+            int lim = EVNTRACKS < evTracksHW.size() ? EVNTRACKS : evTracksHW.size();
+            for(int i = 0; i < lim; i++){
+                track[i] = evTracksHW.at(i);
+            }
+        }
+
+
+
     private:
         bool nextRegion() {
             while(true) {

@@ -8,7 +8,6 @@ typedef ap_int<10>  etaphi_t;
 typedef ap_int<5>  vtx_t;
 typedef ap_uint<3>  particleid_t;
 typedef ap_int<10> z0_t;  // 40cm / 0.1
-	
 typedef ap_uint<14> tk2em_dr_t;
 typedef ap_uint<14> tk2calo_dr_t;
 typedef ap_uint<10> em2calo_dr_t;
@@ -55,11 +54,28 @@ enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=
    #ifndef REG_Barrel
       #warning "No region defined, assuming it's barrel (#define REG_Barrel to suppress this)"
    #endif
-   #if defined(TESTMP7)
+   #if defined(BOARD_MP7)
+       #warning "MP7 NOT SUPPORTED ANYMORE"
+       #define NTRACK 14
+       #define NCALO 10
+       #define NMU 2
+       #define NEMCALO 10
+       #define NPHOTON NEMCALO
+       #define NSELCALO 10
+       #define NALLNEUTRALS (NPHOTON+NSELCALO)
+       #define NNEUTRALS 15
+   #elif defined(BOARD_CTP7)
        #error "NOT SUPPORTED ANYMORE"
-   #elif defined(TESTCTP7)
-       #error "NOT SUPPORTED ANYMORE"
-   #elif defined(VCU118)
+   #elif defined(BOARD_KU15P)
+       #define NTRACK 14
+       #define NCALO 10
+       #define NMU 2
+       #define NEMCALO 10
+       #define NPHOTON NEMCALO
+       #define NSELCALO 10
+       #define NALLNEUTRALS (NPHOTON+NSELCALO)
+       #define NNEUTRALS 15
+   #elif defined(BOARD_VCU118)
        #warning "NOT TESTED ANYMORE"
        #define NTRACK 15
        #define NCALO 15
@@ -79,6 +95,21 @@ enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=
        #define NALLNEUTRALS (NPHOTON+NSELCALO)
        #define NNEUTRALS 25
    #endif
+
+#endif // region
+
+#if defined(BOARD_MP7)
+    #define PACKING_DATA_SIZE 32
+    #define PACKING_NCHANN    72
+#elif defined(BOARD_KU15P)
+    #define PACKING_DATA_SIZE 64
+    #define PACKING_NCHANN    42
+#elif defined(BOARD_VCU118)
+    #define PACKING_DATA_SIZE 64
+    #define PACKING_NCHANN    96
+#elif defined(BOARD_APD1)
+    #define PACKING_DATA_SIZE 64
+    #define PACKING_NCHANN    96
 #endif
 
 
@@ -153,10 +184,4 @@ inline void clear(PFNeutralObj & c) {
 #define NEMCALO_TMUX (NEMCALO*TMUX_OUT*NETA_TMUX*NPHI_TMUX)
 #define NMU_TMUX (NMU*TMUX_OUT*NETA_TMUX*NPHI_TMUX)
 
-
-
-typedef ap_uint<32> MP7DataWord;
-#define MP7_NCHANN 72
-#define CTP7_NCHANN_IN 67
-#define CTP7_NCHANN_OUT 48
 #endif
