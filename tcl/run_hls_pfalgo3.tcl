@@ -1,15 +1,23 @@
 # get the configuration
 #source config_hls_fullpfalgo_mp7.tcl
+#set pfBoard "none"
+set pfBoard "VCU118"
+set pfReg "Barrel"
+set cflags "-std=c++0x -DREG_${pfReg} -DBOARD_${pfBoard}"
 
 # open the project, don't forget to reset
-open_project -reset "proj_pfbarrel"
-set_top pfalgo3
-add_files firmware/pfalgo3.cpp -cflags "-std=c++0x -DREG_Barrel"
-add_files -tb pfalgo3_test.cpp -cflags "-std=c++0x -DREG_Barrel"
-add_files -tb pfalgo3_ref.cpp  -cflags "-std=c++0x -DREG_Barrel"
-add_files -tb pfalgo_common_ref.cpp  -cflags "-std=c++0x -DREG_Barrel"
-add_files -tb utils/pattern_serializer.cpp -cflags "-std=c++0x -DREG_Barrel"
-add_files -tb utils/test_utils.cpp -cflags "-std=c++0x -DREG_Barrel"
+open_project -reset "proj_pf${pfReg}_${pfBoard}"
+if { $pfBoard == "none" } {
+    set_top pfalgo3
+} else {
+    set_top packed_pfalgo3
+}
+add_files firmware/pfalgo3.cpp -cflags "${cflags}"
+add_files -tb pfalgo3_test.cpp -cflags "${cflags}"
+add_files -tb pfalgo3_ref.cpp  -cflags "${cflags}"
+add_files -tb pfalgo_common_ref.cpp  -cflags "${cflags}"
+add_files -tb utils/pattern_serializer.cpp -cflags "${cflags}"
+add_files -tb utils/test_utils.cpp -cflags "${cflags}"
 add_files -tb data/TTbar_PU200_Barrel.dump
 
 # reset the solution

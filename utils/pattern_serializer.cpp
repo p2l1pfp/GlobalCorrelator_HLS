@@ -17,9 +17,9 @@ PatternSerializer::PatternSerializer(const std::string &fname, unsigned int nmux
         file_ = fopen(fname.c_str(), "w");
         fprintf(file_, "Board %s\n", boardName.c_str());
         fprintf(file_, " Quad/Chan :    ");
-        for (unsigned int i = 0; i < nlinks_; ++i) fprintf(file_, "q%02dc%1d%s      ", i/4, i % 4, extra_spacer);
+        for (unsigned int i = 0; i < nout_; ++i) fprintf(file_, "q%02dc%1d%s      ", i/4, i % 4, extra_spacer);
         fprintf(file_, "\n      Link :     ");
-        for (unsigned int i = 0; i < nlinks_; ++i) fprintf(file_, "%02d%s         ", i, extra_spacer);
+        for (unsigned int i = 0; i < nout_; ++i) fprintf(file_, "%02d%s         ", i, extra_spacer);
         fprintf(file_, "\n");
     }
     if (nmux_ > 1) {
@@ -49,8 +49,7 @@ PatternSerializer::~PatternSerializer()
 void PatternSerializer::operator()(const ap_uint<PACKING_DATA_SIZE> event[PACKING_NCHANN]) 
 {
     if (!file_) return;
-    if (nmux_ == 1) {
-    for (unsigned int j = 0; j < nmux_; ++i) {
+    for (unsigned int j = 0; j < nmux_; ++j) {
         print(event, true, j, nmux_);
     }
     for (unsigned int j = 0; j < nzero_; ++j) {
@@ -58,12 +57,12 @@ void PatternSerializer::operator()(const ap_uint<PACKING_DATA_SIZE> event[PACKIN
     }
 }
 
-template<typename T> void PatternSerializer::print(unsigned int iframe, const T & event, bool valid, unsigned int ifirst, unsigned int stride) 
+template<typename T> void PatternSerializer::print(const T & event, bool valid, unsigned int ifirst, unsigned int stride) 
 {
     assert(PACKING_DATA_SIZE == 32 || PACKING_DATA_SIZE == 64);
 
-    fprintf(file_, "Frame %04u :", iframe);
-    for (unsigned int i = 0, j = ifirst; i < nlinks_; ++i, j += stride) {
+    fprintf(file_, "Frame %04u :", ipattern_);
+    for (unsigned int i = 0, j = ifirst; i < nout_; ++i, j += stride) {
 #if PACKING_DATA_SIZE == 32
         fprintf(file_, " %dv%08x", int(valid), event[j].to_uint32());
 #else 

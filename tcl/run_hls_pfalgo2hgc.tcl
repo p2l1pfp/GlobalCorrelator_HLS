@@ -1,15 +1,23 @@
 # get the configuration
 #source config_hls_fullpfalgo_mp7.tcl
+#set pfBoard "none"
+set pfBoard "VCU118"
+set pfReg "HGCal"
+set cflags "-std=c++0x -DREG_${pfReg} -DBOARD_${pfBoard}"
 
 # open the project, don't forget to reset
-open_project -reset "proj_pfhgc"
-set_top pfalgo2hgc
-add_files firmware/pfalgo2hgc.cpp -cflags "-std=c++0x -DREG_HGCal"
-add_files -tb pfalgo2hgc_test.cpp  -cflags "-std=c++0x -DREG_HGCal"
-add_files -tb pfalgo2hgc_ref.cpp  -cflags "-std=c++0x -DREG_HGCal"
-add_files -tb pfalgo_common_ref.cpp  -cflags "-std=c++0x -DREG_HGCal"
-add_files -tb utils/pattern_serializer.cpp -cflags "-std=c++0x -DREG_HGCal"
-add_files -tb utils/test_utils.cpp -cflags "-std=c++0x -DREG_HGCal"
+open_project -reset "proj_pf${pfReg}_${pfBoard}"
+if { $pfBoard == "none" } {
+    set_top pfalgo2hgc
+} else {
+    set_top packed_pfalgo2hgc
+}
+add_files firmware/pfalgo2hgc.cpp -cflags "${cflags}"
+add_files -tb pfalgo2hgc_test.cpp  -cflags "${cflags}"
+add_files -tb pfalgo2hgc_ref.cpp  -cflags "${cflags}"
+add_files -tb pfalgo_common_ref.cpp  -cflags "${cflags}"
+add_files -tb utils/pattern_serializer.cpp -cflags "${cflags}"
+add_files -tb utils/test_utils.cpp -cflags "${cflags}"
 add_files -tb data/TTbar_PU200_HGCal.dump
 
 # reset the solution

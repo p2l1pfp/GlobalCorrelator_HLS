@@ -26,13 +26,28 @@ int main() {
                       PFALGO_DR2MAX_TK_MU, PFALGO_DR2MAX_TK_CALO,
                       PFALGO_TK_MAXINVPT_LOOSE, PFALGO_TK_MAXINVPT_TIGHT);
 
+#if defined(PACKING_DATA_SIZE) && defined(PACKING_NCHANN)
+    PatternSerializer serPatternsIn("pfalgo2hgc_input_patterns.txt"), serPatternsOut("pfalgo2hgc_output_patterns.txt");
+    ap_uint<PACKING_DATA_SIZE> packed_input[PACKING_NCHANN], packed_output[PACKING_NCHANN];
+    for (unsigned int i = 0; i < PACKING_NCHANN; ++i) { packed_input[i] = 0; packed_output[i] = 0; }
+#endif
+    
     // -----------------------------------------
     // run multiple tests
     for (int test = 1; test <= NTEST; ++test) {
         // get the inputs from the input object
         if (!inputs.nextRegion(calo, emcalo, track, mu, hwZPV)) break;
 
+#if defined(PACKING_DATA_SIZE) && defined(PACKING_NCHANN)
+        pfalgo2hgc_pack_in(calo, track, mu, packed_input); 
+        serPatternsIn(packed_input);
+        packed_pfalgo2hgc(packed_input, packed_output);
+        serPatternsOut(packed_output);
+        pfalgo2hgc_unpack_out(packed_output, outch, outne, outmupf);
+#else
         pfalgo2hgc(calo, track, mu, outch, outne, outmupf);
+#endif
+
         pfalgo2hgc_ref(cfg, calo, track, mu, outch_ref, outne_ref, outmupf_ref);
 
         // -----------------------------------------

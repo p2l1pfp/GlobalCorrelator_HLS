@@ -6,7 +6,7 @@
 #include "../firmware/data.h"
 
 
-#if defined(PACKING_DATA_SIZE) and defined(PACKING_NCHANN)
+#if defined(PACKING_DATA_SIZE) && defined(PACKING_NCHANN)
 class PatternSerializer {
     public:
         /** 
@@ -64,20 +64,15 @@ class PatternSerializer {
         
         void operator()(const Word event[PACKING_NCHANN]) ;
     
-        void push(const Word event[PACKING_NCHANN]);
-        template<typename T> void print(unsigned int iframe, const T & event, bool valid = true, unsigned int ifirst = 0, unsigned int stride = 1);
+        template<typename T> void print(const T & event, bool valid = true, unsigned int ifirst = 0, unsigned int stride = 1);
         
     protected:
         const std::string fname_;
-        const unsigned int nin_, nlinks_, nmux_, nzero_, nprefix_, npostfix_;
+        const unsigned int nin_, nout_, nmux_, nzero_, nprefix_, npostfix_;
         const bool zerovalid_;
         FILE *file_;
         unsigned int ipattern_;
         std::vector<Word> zeroframe_;
-
-        void flush();
-        void zero();
-    
 };
 #endif
 
