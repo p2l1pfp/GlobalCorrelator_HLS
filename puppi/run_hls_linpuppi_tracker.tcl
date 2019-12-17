@@ -22,11 +22,11 @@ add_files -tb ../utils/pattern_serializer.cpp -cflags "${cflags}"
 add_files -tb linpuppi_test.cpp   -cflags "${cflags} -DTEST_PUPPI_NOCROP -DTEST_PT_CUT=80" 
 #add_files -tb linpuppi_test.cpp   -cflags "${cflags} -DTEST_PT_CUT=80"
 if { $puppiReg == "Barrel" } {
-    add_files -tb ../pfalgo3_ref.cpp   -cflags "${cflags}"
+    add_files -tb ../ref/pfalgo3_ref.cpp   -cflags "${cflags}"
 } elseif { $puppiReg == "HGCal" } {
-    add_files -tb ../pfalgo2hgc_ref.cpp   -cflags "${cflags}"
+    add_files -tb ../ref/pfalgo2hgc_ref.cpp   -cflags "${cflags}"
 }
-add_files -tb ../pfalgo_common_ref.cpp   -cflags "${cflags}"
+add_files -tb ../ref/pfalgo_common_ref.cpp   -cflags "${cflags}"
 add_files -tb ../data/TTbar_PU200_${puppiReg}.dump
 
 # reset the solution

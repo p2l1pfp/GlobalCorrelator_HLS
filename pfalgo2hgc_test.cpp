@@ -1,6 +1,6 @@
 #include <cstdio>
 #include "firmware/pfalgo2hgc.h"
-#include "pfalgo2hgc_ref.h"
+#include "ref/pfalgo2hgc_ref.h"
 #include "utils/DiscretePFInputsReader.h"
 #include "utils/pattern_serializer.h"
 #include "utils/test_utils.h"

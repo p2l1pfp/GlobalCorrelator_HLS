@@ -1,8 +1,8 @@
 #ifndef PFALGO_COMMON_REF_H
 #define PFALGO_COMMON_REF_H
 
-#include "firmware/data.h"
-#include "firmware/pfalgo_common.h"
+#include "../firmware/data.h"
+#include "../firmware/pfalgo_common.h"
 
 template <typename T> inline int sqr(const T & t) { return t*t; }
 

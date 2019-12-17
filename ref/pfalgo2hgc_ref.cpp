@@ -1,7 +1,7 @@
 #include "pfalgo2hgc_ref.h"
 
-#include "DiscretePFInputs.h"
-#include "utils/Firmware2DiscretePF.h"
+#include "../DiscretePFInputs.h"
+#include "../utils/Firmware2DiscretePF.h"
 #include <cmath>
 #include <algorithm>
 

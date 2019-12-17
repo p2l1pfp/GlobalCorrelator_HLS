@@ -1,7 +1,7 @@
 #ifndef PFALGO3_REF_H
 #define PFALGO3_REF_H
 
-#include "firmware/pfalgo3.h"
+#include "../firmware/pfalgo3.h"
 #include "pfalgo_common_ref.h"
 
 struct pfalgo3_config : public pfalgo_config {

@@ -14,8 +14,8 @@ if { $pfBoard == "none" } {
 }
 add_files firmware/pfalgo3.cpp -cflags "${cflags}"
 add_files -tb pfalgo3_test.cpp -cflags "${cflags}"
-add_files -tb pfalgo3_ref.cpp  -cflags "${cflags}"
-add_files -tb pfalgo_common_ref.cpp  -cflags "${cflags}"
+add_files -tb ref/pfalgo3_ref.cpp  -cflags "${cflags}"
+add_files -tb ref/pfalgo_common_ref.cpp  -cflags "${cflags}"
 add_files -tb utils/pattern_serializer.cpp -cflags "${cflags}"
 add_files -tb utils/test_utils.cpp -cflags "${cflags}"
 add_files -tb data/TTbar_PU200_Barrel.dump

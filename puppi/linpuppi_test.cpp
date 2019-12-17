@@ -7,9 +7,9 @@
 #include "puppi_checker.h"
 
 #if defined(REG_Barrel)
-    #include "../pfalgo3_ref.h"
+    #include "../ref/pfalgo3_ref.h"
 #elif defined(REG_HGCal)
-    #include "../pfalgo2hgc_ref.h"
+    #include "../ref/pfalgo2hgc_ref.h"
 #endif
 
 #define NTEST 500
