@@ -124,6 +124,8 @@ int main() {
         int philo = -MAXPHI_INT+int(float(2*MAXPHI_INT*ip)/float(NPHI_TMUX))-PHI_BUFFER;
         int phihi = -MAXPHI_INT+int(float(2*MAXPHI_INT*(ip+1))/float(NPHI_TMUX))+PHI_BUFFER;
 
+        etahi=31; // was 32. fixme!
+
         int i_temp = 0;
         int ireg = 0;
         int ntracks = 0;

@@ -29,9 +29,13 @@ nemcalo=(15 13 14 13)
 #ncalo=(20)
 #nemcalo=(15)
 
-for ip in 1 2 3
+ntrk=(22)
+ncalo=(15)
+nemcalo=(13)
+
+for ip in 0
 do
-  for ii in 3 4
+  for ii in 4
   do
     for iclk in 0
     do

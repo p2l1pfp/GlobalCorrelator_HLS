@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PF_DIR=/data/drankin/GlobalCorrelator_HLS/
+PF_DIR=/home/therwig/sandbox/GlobalCorrelator_HLS/
 
 echo -e `date +"%h%y %T"` "BB [${LINENO}]  \t "
 

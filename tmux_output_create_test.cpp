@@ -18,7 +18,6 @@ unsigned int outputOrder[TMUX_IN] = {0,2,1,3,11,4,12,5,13,6,14,7,15,8,16,9,17,10
 //  0,0 - 0,2 - 0,1 - 0,3 - 1,2 - 0,4 - 1,3 - 0,5 - 1,4 - 0,6 - 1,5 - 0,7 - 1,6 - 0,8 - 1,7 - 1,0 - 1,8 - 1,1
 //  0     2     1     3     11    4     12    5     13    6     14    7     15    8     16    9     17    10
 
-
 int main() {
 
     if (theEtaRegion>=NETA_TMUX) theEtaRegion = NETA_TMUX-1;
@@ -48,8 +47,6 @@ int main() {
         }
     }
 
-
-
     // -----------------------------------------
     // run multiple tests
 
@@ -74,19 +71,6 @@ int main() {
 
         // get the inputs from the input object
         if (!inputs.nextRegion_tmux(calo, emcalo, track, mu, hwZPV)) break;
-
-        /*for (int i = 0; i < NTRACK_TMUX; ++i) {
-            std::cout<<track[i].hwPt<<"\t "<<track[i].hwEta<<"\t "<<track[i].hwPhi<<std::endl;
-        }
-        for (int i = 0; i < NCALO_TMUX; ++i) {
-            std::cout<<calo[i].hwPt<<"\t "<<calo[i].hwEta<<"\t "<<calo[i].hwPhi<<std::endl;
-        }
-        for (int i = 0; i < NEMCALO_TMUX; ++i) {
-            std::cout<<emcalo[i].hwPt<<"\t "<<emcalo[i].hwEta<<"\t "<<emcalo[i].hwPhi<<std::endl;
-        }
-        for (int i = 0; i < NMU_TMUX; ++i) {
-            std::cout<<mu[i].hwPt<<"\t "<<mu[i].hwEta<<"\t "<<mu[i].hwPhi<<std::endl;
-        }*/
 
         //VtxObj curvtx;    
         //simple_vtx_ref(track,&curvtx);
@@ -124,7 +108,7 @@ int main() {
             p2 = (MAXPHI_INT-NPHI_INT) + PHI_BUFFER + phi_step*(ip+1) + std::min(ip+1,phi_rmdr);
             phi_bounds_lo.push_back( p1 );
             phi_bounds_hi.push_back( p2 );
-            // std::cout << "TEST " << phi_bounds_lo[ip] << "  to  " << phi_bounds_hi[ip] << std::endl;
+            std::cout << "TEST " << phi_bounds_lo[ip] << "  to  " << phi_bounds_hi[ip] << std::endl;
         }
 
         // Determine eta boundaries
@@ -154,6 +138,10 @@ int main() {
         if (eta_bounds_lo.front() < -243) eta_bounds_lo.front() = -243;
         if (eta_bounds_hi.back() > 243) eta_bounds_hi.back() = 243;
 
+        // std::cout  << " HERE! ";
+        // for (int i=0;i<eta_bounds_hi.size();i++) std::cout << eta_bounds_hi[i] << "  ";
+        // std::cout << "  \n";
+        eta_bounds_hi[1]=31; // clip from 32 for now
 
         int i_temp[TMUX_IN] = {0};
         int ireg = 0;

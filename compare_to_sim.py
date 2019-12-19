@@ -2,8 +2,10 @@ import sys
 import os
 import argparse
 import subprocess
+import time
 
 NEVENTS=10
+#NEVENTS=1
 NLARGE=1
 NSMALL=18
 
@@ -17,6 +19,11 @@ NTRACK=22
 NEM=13
 NCALO=15
 NMU=2
+#
+NPHOTON=NEM
+NSELCALO=10
+
+#NTRACK+NPHOTON+NSELCALO+NMU=47
 
 ORDERING = [(0,0), (0,2), (0,1), (0,3), (1,2),
             (0,4), (1,3), (0,5), (1,4), (0,6),
@@ -61,11 +68,32 @@ class Region:
         self.nems    = 0
         self.ncalos  = 0
         self.nmus    = 0
+        self.pf_ch=[]
+        self.pf_ph=[]
+        self.pf_ne=[]
+        self.pf_mu=[]
+        self.npf_ch=0
+        self.npf_ph=0
+        self.npf_ne=0
+        self.npf_mu=0
     def counts(self): return (
             self.ntracks,
             self.nems   ,
             self.ncalos ,
             self.nmus   ,)
+    def countsPFPUPPI(self): return (
+            self.npf_ch,
+            self.npf_ph,
+            self.npf_ne,
+            self.npf_mu,)
+    def resize_subregions(self, n_resize): 
+        if n_resize <= self.n_subregions: return
+        for i in range(n_resize-self.n_subregions):
+            smallR = Region()
+            smallR.reg_type = "small"
+            self.subregions.append(smallR)        
+        self.n_subregions = n_resize
+        return
 
 class Event:
     def __init__(self, n_large = 1, n_small = 1):
@@ -80,14 +108,35 @@ class Event:
         self.nems    = 0
         self.ncalos  = 0
         self.nmus    = 0
+        self.npf_ch=0
+        self.npf_ph=0
+        self.npf_ne=0
+        self.npf_mu=0
         self.obj_to_regions={}
         self.obj_to_regions_filled=False
+        self.obj_to_regions_pf={}
+        self.obj_to_regions_filled_pf=False
         self.index   = -1
     def counts(self): return (
             self.ntracks,
             self.nems   ,
             self.ncalos ,
             self.nmus   ,)
+    def countsPFPUPPI(self): return (
+            self.npf_ch,
+            self.npf_ph,
+            self.npf_ne,
+            self.npf_mu,)
+    def allPF(self,tag):
+        x=[]
+        for l in self.large_regions: 
+            for s in l.subregions: 
+                x += getattr(s,"pf_"+tag)
+                # if tag=="ch": x += s.pf_ch
+                # if tag=="ph": x += s.pf_ph
+                # if tag=="ne": x += s.pf_ne
+                # if tag=="mu": x += s.pf_mu
+        return x
     def allTracks(self):
         x=[]
         for l in self.large_regions: 
@@ -110,24 +159,31 @@ class Event:
         return x
     def findRegions(self,x):
         if(self.obj_to_regions_filled==False):
-            #if x==0x0463c00d000a000a: print("running findRegions() for 0x0463c00d000a000a. Entry exists? ",x in self.obj_to_regions)
             for li,l in enumerate(self.large_regions): 
                 for si,s in enumerate(l.subregions): 
-                   for obj in s.tracks+s.calos+s.ems+s.mus: 
+                    for obj in s.tracks+s.calos+s.ems+s.mus: 
+                        # if obj == 0x793fdfa5000c000e:
+                        #     print(li,si)
                         if obj in self.obj_to_regions: self.obj_to_regions[obj] += [ (li,si) ]
                         else: self.obj_to_regions[obj] = [ (li,si) ]
-                    # for x in s.tracks: 
-                    #     self.obj_to_regions[x]=(li,si)
-                    # for x in s.calos: 
-                    #     self.obj_to_regions[x]=(li,si)
-                    # for x in s.ems: 
-                    #     self.obj_to_regions[x]=(li,si)
-                    # for x in s.mus: 
-                    #     self.obj_to_regions[x]=(li,si)            
-            #if x==0x0463c00d000a000a: print("  finished filling: got ",self.obj_to_regions[x])
             self.obj_to_regions_filled=True
             return self.obj_to_regions[x]
+        # if x == 0x793fdfa5000c000e:
+        #     if x in self.obj_to_regions: 
+        #         print (self.obj_to_regions[x])
+        #     else: print ((-1,-1))
         if x in self.obj_to_regions: return self.obj_to_regions[x]
+        else: return (-1,-1)
+    def findRegionsPF(self,x):
+        if(self.obj_to_regions_filled_pf==False):
+            for li,l in enumerate(self.large_regions): 
+                for si,s in enumerate(l.subregions): 
+                   for obj in s.pf_ch+s.pf_ph+s.pf_ne+s.pf_mu:
+                        if obj in self.obj_to_regions_pf: self.obj_to_regions_pf[obj] += [ (li,si) ]
+                        else: self.obj_to_regions_pf[obj] = [ (li,si) ]
+            self.obj_to_regions_filled_pf=True
+            return self.obj_to_regions_pf[x]
+        if x in self.obj_to_regions_pf: return self.obj_to_regions_pf[x]
         else: return (-1,-1)
 
     # def AddLargeRegion(self):
@@ -168,6 +224,22 @@ def GetEMParams(x):
     phi  =  SelectBitsInt(x,10,42)
     return pt, pte, eta, phi
     #print("EM: pt={}, pte={}, eta={}, phi={} ({})".format(pt, pte, eta, phi, x))
+def GetPFChParams(x):
+    # (2 null)+(10 z0)+(10 phi)+(10 eta)+(13 NULL)+(3 ID)+(16 pt)
+    pt   =  SelectBitsInt(x,16, 0)
+    ID   =  SelectBits   (x, 3,16)
+    eta  =  SelectBitsInt(x,10,32)
+    phi  =  SelectBitsInt(x,10,42)
+    z0   =  SelectBitsInt(x,10,52)
+    return ID, pt, z0, eta, phi
+def GetPFNeParams(x):
+    # (9 null)+(3 ID)++(10 phi)+(10 eta)+(16 Puppi)+(16 pt)
+    pt   =  SelectBitsInt(x,16, 0)
+    puppi=  SelectBitsInt(x,16,16)
+    eta  =  SelectBitsInt(x,10,32)
+    phi  =  SelectBitsInt(x,10,42)
+    ID   =  SelectBits   (x, 3,52)
+    return puppi, pt, ID, eta, phi
 
 def GetPtEtaPhi(x,tag):
     if tag=="track" or tag=="tk" or tag=="mu":
@@ -178,6 +250,12 @@ def GetPtEtaPhi(x,tag):
         return pt, eta, phi
     if tag=="em":
         pt, pte, eta, phi = GetEMParams(x)
+        return pt, eta, phi
+    if tag=="PFch":
+        ID, pt, z0, eta, phi = GetPFChParams(x)
+        return pt, eta, phi
+    if tag=="PFne":
+        puppi, pt, ID, eta, phi = GetPFNeParams(x)
         return pt, eta, phi
     return None
 
@@ -240,6 +318,7 @@ def GetEmulationData(parser):
             sr.ID     = step
 
             #if 0x0463c00d000a000a in sr.tracks: print("We found it",ctr,sreg_ctr)
+            #if 0x793fdfa5000c000e in sr.tracks: print("We found it",ctr,sreg_ctr)
 
             sr.ntracks  += len(sr.tracks)
             sr.nems     += len(sr.ems   )
@@ -326,38 +405,205 @@ def GetSimulationData(parser):
                         sr.ems.append(val)
                         sr.nems  += 1
                         evts[evt_ctr].nems  += 1
-                        # vals = "{:0>16x}".format(val)
-                        # if (vals[0:8]=="00000000" or vals[8:16]=="00000000"): sr.nems -= 0.5
-                        # if (vals[0:8]=="00000000" or vals[8:16]=="00000000"): evts[evt_ctr].nems -= 0.5
                     elif ii<NEM+NCALO: 
                         #if GetPtEtaPhi(val,"calo")[1]==32: continue # TODO TEMP TEST
                         if GetPtEtaPhi(val,"calo")[1]!=32: 
                             sr.calos.append(val)
                             sr.ncalos  += 1
                             evts[evt_ctr].ncalos  += 1
-                        # vals = "{:0>16x}".format(val)
-                        # if (vals[0:8]=="00000000" or vals[8:16]=="00000000"): sr.ncalos -= 0.5
-                        # if (vals[0:8]=="00000000" or vals[8:16]=="00000000"): evts[evt_ctr].ncalos -= 0.5
                     elif ii<NEM+NCALO+NTRACK:
                         #if GetPtEtaPhi(val,"tk")[1]==32: continue # TODO TEMP TEST
+                        #if 0x793fdfa5000c000e ==val: print("We found it",ctr,sreg_ctr)
                         sr.tracks.append(val)
                         sr.track_clks[val]=ctr
                         sr.ntracks  += 1
                         evts[evt_ctr].ntracks  += 1
-                        # vals = "{:0>16x}".format(val)
-                        # if (vals[0:8]=="00000000" or vals[8:16]=="00000000"): sr.ntracks -= 0.5
-                        # if (vals[0:8]=="00000000" or vals[8:16]=="00000000"): evts[evt_ctr].ntracks -= 0.
                     elif ii<NEM+NCALO+NTRACK+NMU:
                         #if GetPtEtaPhi(val,"mu")[1]==32: continue # TODO TEMP TEST
                         sr.mus.append(val)
                         sr.nmus  += 1
                         evts[evt_ctr].nmus  += 1
-                        # vals = "{:0>16x}".format(val)
-                        # if (vals[0:8]=="00000000" or vals[8:16]=="00000000"): sr.nmus -= 0.5
-                        # if (vals[0:8]=="00000000" or vals[8:16]=="00000000"): evts[evt_ctr].nmus -= 0.5
                 ctr += 1
 
     return evts
+
+def GetEmulationDataPFPUPPI(evts, parser):
+    '''
+    Get sequence of regional info out
+    Sequence should be same as for regionizer
+    (see 'ORDERING' list above) = [(0,0), (0,2), ...]
+
+    Emulation data (after layer-1 PF+PUPPI alg) is in a single file.
+    Each line has 47 = NTRACK + NNEUTRALS(=NPHOTON+NSELCALO) + NMU + ZPV = 22+(13+10)+2+1 entries
+    The number of lines is equal to TMUX_OUT*NTEST
+    This may be 18*6=108 if running 6 events
+    '''
+    
+    # local vars
+    EM_NEVENTS = NEVENTS if (NEVENTS>0) else 6
+    #EM_NEVENTS=21
+    EM_NLARGE=NLARGE if (NLARGE>0) else 1
+    EM_NSMALL=NSMALL if (NSMALL>0) else 18
+
+
+    with open(parser.emulator_output_pfpuppi,'r') as f:
+        ctr = 0
+        sreg_ctr = 0
+        lreg_ctr = 0
+        evt_ctr  = 0
+        for l in f:
+
+            # retrieve the small region
+            if evt_ctr >= len(evts): 
+                print("Trying to fill an emulation event that doesn't exist!")
+                return
+            evt=evts[evt_ctr]
+            sr = evt.large_regions[lreg_ctr].subregions[sreg_ctr]
+
+            # extract data and fill
+            arr = list(map(lambda x : int(x,16), l.split()))
+            step = arr[0] # unused
+            sr.pf_ch = list(filter(lambda x: x, arr[1:NTRACK+1]                                             ))
+            sr.pf_ph = list(filter(lambda x: x, arr[1+NTRACK:NTRACK+NPHOTON+1]                              ))
+            sr.pf_ne = list(filter(lambda x: x, arr[1+NTRACK+NPHOTON:NTRACK+NPHOTON+NSELCALO+1]             ))
+            sr.pf_mu = list(filter(lambda x: x, arr[1+NTRACK+NPHOTON+NSELCALO:NTRACK+NPHOTON+NSELCALO+NMU+1]))
+            #remove 0 pt
+            sr.pf_ch = list(filter(lambda x: GetPtEtaPhi(x,"PFch")[0], sr.pf_ch))
+            sr.pf_ph = list(filter(lambda x: GetPtEtaPhi(x,"PFne")[0], sr.pf_ph))
+            sr.pf_ne = list(filter(lambda x: GetPtEtaPhi(x,"PFne")[0], sr.pf_ne))
+            sr.pf_mu = list(filter(lambda x: GetPtEtaPhi(x,"PFch")[0], sr.pf_mu))
+            sr.ID     = step
+
+            sr.npf_ch += len(sr.pf_ch)
+            sr.npf_ph += len(sr.pf_ph)
+            sr.npf_ne += len(sr.pf_ne)
+            sr.npf_mu += len(sr.pf_mu)
+            evt.large_regions[lreg_ctr].npf_ch += len(sr.pf_ch)
+            evt.large_regions[lreg_ctr].npf_ph += len(sr.pf_ph)
+            evt.large_regions[lreg_ctr].npf_ne += len(sr.pf_ne)
+            evt.large_regions[lreg_ctr].npf_mu += len(sr.pf_mu)
+            evt.npf_ch += len(sr.pf_ch)
+            evt.npf_ph += len(sr.pf_ph)
+            evt.npf_ne += len(sr.pf_ne)
+            evt.npf_mu += len(sr.pf_mu)
+
+            # increment counters
+            # (add support for large region ctr later)
+            ctr = ctr+1
+            sreg_ctr = ctr % EM_NSMALL
+            if ctr and (ctr % EM_NSMALL)==0: 
+                evt_ctr = evt_ctr+1
+
+    return evts
+
+def GetSimulationDataPFPUPPI(evts, parser):
+    '''
+    Simulation data is stored across multiple files,
+    each corresponding to a time series of single-object outputs.
+    #files is #em+#calo+#track, which may equal 15+20+25=60 --> 22+13+15+2=52?
+    Each line corresonds to a 'step' of the output and...
+    TODO add comment on length of each file.
+
+    LOL
+    1
+    2
+    2
+    3
+    4
+    4
+    5
+    6
+    6
+    ...
+
+    '''
+
+    # local vars
+    SIM_NEVENTS = NEVENTS if (NEVENTS>0) else 6
+    SIM_NLARGE  = NLARGE if (NLARGE>0) else 1
+    SIM_NSMALL  = NSMALL if (NSMALL>0) else 18
+    #SIM_NSMALL  = 18
+    # SIM_NSMALL  = 27
+
+    sreg_ctr = 0
+    lreg_ctr = 0
+    evt_ctr  = 0
+
+    # mask = [[0]*SIM_NSMALL for i in range(SIM_NEVENTS)]
+    # summask = [0]*SIM_NSMALL
+    # for i in range(SIM_NEVENTS): print("".join(str(mask[i])))
+    # print('-')
+    # mask[3][7]=1
+
+    for ii in range(NTRACK+NPHOTON+NSELCALO+NMU):
+        with open("{}/sim_output_fiber_{}.dat".format(parser.sim_output_dir,ii),'r') as f:
+            ctr=0
+            line_ctr=-1 # so syncs to 0 after initial increment
+            for l in f:
+                #print('ctr = ',ctr)
+                val = int(l,base=16)
+                #ignore repeated lines (18->27 issue)
+                line_ctr+=1 #_always_ increment
+                #if line_ctr%3==2: continue
+                # ignore empty lines
+                sreg_ctr = ctr % SIM_NSMALL
+                evt_ctr  = int(ctr / SIM_NSMALL)
+                if evt_ctr >= NEVENTS:
+                    break
+                if evt_ctr >= len(evts): 
+                    print("Trying to fill a simulation event that doesn't exist! evt_ctr={}".format(evt_ctr))
+                    return
+                # (assume only one large region for now)
+                if sreg_ctr >= len(evts[evt_ctr].large_regions[lreg_ctr].subregions):
+                    evts[evt_ctr].large_regions[lreg_ctr].resize_subregions(sreg_ctr+1)
+                    # todo todo
+                    # print("adding subregion {} in PF/PUPPI step (event {})".format(sreg_ctr+1,evt_ctr))
+
+                sr = evts[evt_ctr].large_regions[lreg_ctr].subregions[sreg_ctr]
+                if GetPFChParams(val)[1]: #pt is stored in same bits for charged and neutral PF objs
+                    # print("Event {} SR {} file {}".format(evt_ctr,sreg_ctr,ii))
+                    # print("  Charged pt={1}, eta={3}, phi={4}, puppi={0}, ID={2}".format(*GetPFChParams(val)) )
+                    # print("  Neutral pt={1}, eta={3}, phi={4}, z0={2}, ID={0}".format(*GetPFNeParams(val)) )
+                    # mask[evt_ctr][sreg_ctr]+=1
+                    if ii<NTRACK:
+                        #if GetPtEtaPhi(val,"em")[1]==32: continue # TODO TEMP TEST
+                        sr.pf_ch.append(val)
+                        sr.npf_ch  += 1
+                        evts[evt_ctr].npf_ch  += 1
+                        evts[evt_ctr].large_regions[lreg_ctr].npf_ch += 1
+                    elif ii<NTRACK+NPHOTON: 
+                        #if GetPtEtaPhi(val,"calo")[1]==32: continue # TODO TEMP TEST
+                        #if GetPtEtaPhi(val,"calo")[1]!=32: 
+                        sr.pf_ph.append(val)
+                        sr.npf_ph  += 1
+                        evts[evt_ctr].npf_ph  += 1
+                        evts[evt_ctr].large_regions[lreg_ctr].npf_ph += 1
+                    elif ii<NTRACK+NPHOTON+NSELCALO:
+                        #if GetPtEtaPhi(val,"tk")[1]==32: continue # TODO TEMP TEST
+                        sr.pf_ne.append(val)
+                        sr.npf_ne  += 1
+                        evts[evt_ctr].npf_ne  += 1
+                        evts[evt_ctr].large_regions[lreg_ctr].npf_ne += 1
+                    elif ii<NTRACK+NPHOTON+NSELCALO+NMU:
+                        #if GetPtEtaPhi(val,"mu")[1]==32: continue # TODO TEMP TEST
+                        sr.pf_mu.append(val)
+                        sr.npf_mu  += 1
+                        evts[evt_ctr].npf_mu  += 1
+                        evts[evt_ctr].large_regions[lreg_ctr].npf_mu += 1
+                ctr += 1
+
+    # #for i in range(SIM_NEVENTS): print("".join(str(mask[i])))
+    # for i in range(SIM_NEVENTS): print((27*"{:2} ").format(*mask[i]))
+    # mask2 = [[mask[i][j] if j>=18 else (mask[i][j]+mask[i][j-9] if j>=9 else 0) for j in range(SIM_NSMALL)] for i in range(SIM_NEVENTS)]
+    # print('-')
+    # for i in range(SIM_NEVENTS): print((27*"{:2} ").format(*mask2[i]))
+    # print('-')
+    # for j in range(SIM_NSMALL):
+    #     for i in range(SIM_NEVENTS):
+    #         summask[j] += mask[i][j]
+    # print((27*"{:2} ").format(*summask))
+    # for i in range(SIM_NEVENTS): print("".join(mask[i]))
+    #return evts
 
 def GetInputLink(xin, parser):
     #could definitely make this function fancier
@@ -838,7 +1084,7 @@ def GetCommonEmSim(emlist, simlist):
     return common, em.difference(common), sim.difference(common)
 
 def DumpCollection(parser, xlist, title, tag, mult=True, inLink=True,
-                   printReg=False, sim_evt=None, em_evt=None):
+                   printReg=False, printRegPF=False, sim_evt=None, em_evt=None):
     record=title
     suff=""
     if mult: record += " ({})".format(len(xlist))
@@ -850,14 +1096,21 @@ def DumpCollection(parser, xlist, title, tag, mult=True, inLink=True,
         suff=""
         pt, eta, phi = GetPtEtaPhi(x, tag)
         record += " "*nblank + "{:5} {:5} {:5} {:0>16x}".format(pt,eta,phi,x)
-        if printReg and sim_evt and em_evt:
-            #if x==0x0463c00d000a000a: print("Found it (0463c00d000a000a)",sim_evt.findRegions(x),em_evt.findRegions(x))
-            sim_srs = tuple(sorted([ xx[1] for xx in sim_evt.findRegions(x)]))
-            em_srs =  tuple(sorted([ xx[1] for xx in em_evt.findRegions(x) ]))
-            sim_srs2 = [ORDERING[x] for x in sim_srs]
-            em_srs2 =  [ORDERING[x] for x in  em_srs]
-            match = (sim_srs==em_srs)
-            suff = " match?={} (SRs emulator vs sim are  {} vs {} OR IN ETA/PHI {} vs {})".format(int(match),sim_srs,em_srs,sim_srs2,em_srs2)
+        if sim_evt and em_evt:
+            if printReg:
+                sim_srs = tuple(sorted([ xx[1] for xx in sim_evt.findRegions(x)]))
+                em_srs =  tuple(sorted([ xx[1] for xx in em_evt.findRegions(x) ]))
+                sim_srs2 = [ORDERING[x] for x in sim_srs]
+                em_srs2 =  [ORDERING[x] for x in  em_srs]
+                match = (sim_srs==em_srs)
+                suff = " match?={} (SRs sim vs emulator are  {} vs {} OR IN ETA/PHI {} vs {})".format(int(match),sim_srs,em_srs,sim_srs2,em_srs2)
+            if printRegPF:
+                sim_srs = tuple(sorted([ xx[1] for xx in sim_evt.findRegionsPF(x)]))
+                em_srs =  tuple(sorted([ xx[1] for xx in  em_evt.findRegionsPF(x) ]))
+                sim_srs2 = [ORDERING[x] for x in sim_srs]
+                em_srs2 =  [ORDERING[x] for x in  em_srs]
+                match = (sim_srs==em_srs)
+                suff = " match?={} (SRs sim vs emulator are  {} vs {} OR IN ETA/PHI {} vs {})".format(int(match),sim_srs,em_srs,sim_srs2,em_srs2)
         if inLink and ((("ommon" in title) and not match) or ("mulation" in title)): 
         # adding this criterion so that the grepping is only run if needed
             suff = " (link {:2}, clock {:4})".format(*GetInputLink(x, parser)) + suff
@@ -871,6 +1124,7 @@ def DumpCollectionReg(parser, xlist, title, tag, sim_evt, em_evt, mult=True, inL
 def DumpEventComparison(parser, em_evts, sim_evts, fname, 
                         nevts=1, compareSmallRegion=False, compareEvent=True, tracksOnly=True, summary=True):
     
+    ts = time.time()
     with open(fname,'w') as f:
         f.write("Dumping comparison to file: {}\n".format(fname))
         f.write("    (object outputs are all: pt  eta  phi  64bID)\n")
@@ -977,6 +1231,104 @@ def DumpEventComparison(parser, em_evts, sim_evts, fname,
                             f.write( DumpCollection(parser, com_mus,"      Common Muons",tag) )
                             f.write( DumpCollection(parser,  em_mus,"      Emulation-only Muons",tag) )
                             f.write( DumpCollection(parser, sim_mus,"      Simulation-only Muons",tag) )
+
+
+        f.write("\n")
+    te = time.time()
+    print("Wrote {} (in {:.1f} sec)".format(fname, te-ts) )
+
+
+def DumpEventComparisonPFPUPPI(parser, em_evts, sim_evts, fname, 
+                        nevts=1, compareSmallRegion=False, compareEvent=True, chargedOnly=True, summary=True):
+    
+    with open(fname,'w') as f:
+        f.write("Dumping comparison to file: {}\n".format(fname))
+        f.write("    (object outputs are all: pt eta  phi  64bID)\n")
+
+        f.write("Found {} events in sim, {} in emulation \n".format(len(sim_evts),len(em_evts)))
+        if len(sim_evts) != len(em_evts): 
+            f.write("Event mismatch!\n")
+            return
+
+        for ei in range(len(sim_evts)):
+            sim_e = sim_evts[ei]
+            em_e = em_evts[ei]
+            sim_lrs = sim_e.large_regions
+            em_lrs = em_e.large_regions
+            if len(sim_lrs) != len(em_lrs): 
+                f.write("Large region mismatch!\n")
+                return
+            f.write("Event {} has (#ch,ph,neu,mu) = EM {} vs SIM {}\n".format(
+                ei,em_evts[ei].countsPFPUPPI(),sim_evts[ei].countsPFPUPPI()))
+            # f.write( DumpCollection(parser,  em_e.allPF("ch"), "DEBUG  EM ","PFch") )
+            # f.write( DumpCollection(parser, sim_e.allPF("ch"), "DEBUG SIM ","PFch") )
+
+            for tag in ["ch","ph","ne","mu"]:
+                tagpf="PFne"
+                if tag=="ch" or tag=="mu": tagpf="PFch" 
+                #evt.findRegions(x)
+                common, em_only, sim_only = GetCommonEmSim(em_e.allPF(tag), sim_e.allPF(tag))
+                f.write( DumpCollection(parser,   common,"      Common "+tag,         tagpf,
+                                        inLink = False,printRegPF=True,sim_evt=sim_e,em_evt=em_e) )
+                f.write( DumpCollection(parser,  em_only,"      Emulation-only "+tag, tagpf,inLink = False) )
+                f.write( DumpCollection(parser, sim_only,"      Simulation-only "+tag,tagpf,inLink = False) )
+                    
+            continue
+            for li in range(len(sim_lrs)):
+                sim_srs = sim_lrs[li].subregions
+                em_srs  = em_lrs[li].subregions
+                # if len(sim_srs) != len(em_srs): 
+                #     f.write("Small region mismatch!\n")
+                #     return
+                f.write("  Large region {} has (#ch,ph,neu,mu) = EM {} vs SIM {}\n".format(
+                    li,em_lrs[li].countsPFPUPPI(),sim_lrs[li].countsPFPUPPI()))
+
+
+                for si in range(len(sim_srs)):
+                    if si >= len(em_srs):
+                        sim_sr = sim_srs[si]
+                        f.write("    Small region {} has (#ch,ph,neu,mu) = SIM {} \n".format(si, sim_sr.countsPFPUPPI()))
+                    else:
+                        sim_sr = sim_srs[si]
+                        em_sr  = em_srs[si]
+                        f.write("    Small region {} has (#ch,ph,neu,mu) = EM {} vs SIM {}, (matchSR={})\n".format(
+                            si,em_sr.countsPFPUPPI(),sim_sr.countsPFPUPPI(),em_sr.countsPFPUPPI()==sim_sr.countsPFPUPPI()))
+
+
+            #     for si in range(len(sim_srs)):
+            #         sim_sr = sim_srs[si]
+            #         em_sr  = em_srs[si]
+            #         f.write("    Small region {} has (#ch,ph,neu,mu) = EM {} vs SIM {}, (matchSR={})\n".format(
+            #             si,em_sr.countsPFPUPPI(),sim_sr.countsPFPUPPI(),em_sr.countsPFPUPPI()==sim_sr.countsPFPUPPI()))
+            #         if not (em_sr.countsPFPUPPI()==sim_sr.countsPFPUPPI()):
+            #             f.write( DumpCollection(parser,  em_sr.calos, "DEBUG  EM ","calo") )
+            #             f.write( DumpCollection(parser, sim_sr.calos, "DEBUG SIM ","calo") )
+
+            #         if compareSmallRegion:
+            #             tag="tk"
+            #             com_tracks, em_tracks, sim_tracks = GetCommonEmSim(em_sr.tracks, sim_sr.tracks)
+            #             f.write( DumpCollection(parser, com_tracks,"      Common Tracks",tag) )
+            #             f.write( DumpCollection(parser,  em_tracks,"      Emulation-only Tracks",tag) )
+            #             f.write( DumpCollection(parser, sim_tracks,"      Simulation-only Tracks",tag) )
+
+            #             if not tracksOnly:
+            #                 tag="em"
+            #                 com_ems, em_ems, sim_ems = GetCommonEmSim(em_sr.ems, sim_sr.ems)
+            #                 f.write( DumpCollection(parser, com_ems,"      Common EMs",tag) )
+            #                 f.write( DumpCollection(parser,  em_ems,"      Emulation-only EMs",tag) )
+            #                 f.write( DumpCollection(parser, sim_ems,"      Simulation-only EMs",tag) )
+                            
+            #                 tag="calo"
+            #                 com_calos, em_calos, sim_calos = GetCommonEmSim(em_sr.calos, sim_sr.calos)
+            #                 f.write( DumpCollection(parser, com_calos,"      Common Calos",tag) )
+            #                 f.write( DumpCollection(parser,  em_calos,"      Emulation-only Calos",tag) )
+            #                 f.write( DumpCollection(parser, sim_calos,"      Simulation-only Calos",tag) )
+                            
+            #                 tag="mu"
+            #                 com_mus, em_mus, sim_mus = GetCommonEmSim(em_sr.mus, sim_sr.mus)
+            #                 f.write( DumpCollection(parser, com_mus,"      Common Muons",tag) )
+            #                 f.write( DumpCollection(parser,  em_mus,"      Emulation-only Muons",tag) )
+            #                 f.write( DumpCollection(parser, sim_mus,"      Simulation-only Muons",tag) )
 
 
         f.write("\n")
@@ -1144,15 +1496,17 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--input", default="",  dest = "input_file", help = "regionizer input from emulator")
     parser.add_argument("-e", "--emulation-output", default="outputs.txt",  dest = "emulator_output", help = "regionizer output from emulator")
+    parser.add_argument("-l", "--emulation-output-pfpuppi", default="",  dest = "emulator_output_pfpuppi", help = "PF+PUPPI output text file from emulator")
     parser.add_argument("-s", "--simulation-data-dir", default="/home/therwig/sandbox/otsdaq-cms-firmware/regionizer_full_small/sim/sim_data/", dest = "sim_output_dir", help = "regionizer output directory from simulation")
     parser.add_argument("-a", "--all", action='store_true', default=False,  dest = "all_dumps", help = "produce object dumps for all object types")
     parser.add_argument("-r", "--root", action='store_true', default=False, help = "produce root histograms from logs")
     parser.add_argument("-p", "--plot", action='store_true', default=False, help = "produce root plots from hists")
     parser = parser.parse_args(sys.argv[1:])
     print()
-    print("Reading from emulation output: "+parser.emulator_output)
-    print("Reading from simulation output: "+parser.sim_output_dir)
     if len(parser.input_file): print("Checking inputs from: "+parser.input_file)
+    print("Reading from emulation regionizer output:        "+parser.emulator_output)
+    print("Reading from emulation PF+PUPPI (layer1) output: "+parser.emulator_output_pfpuppi)
+    print("Reading from simulation output: "+parser.sim_output_dir)
 
     if len(parser.input_file):
         in_tracks, in_ems, in_calos = GetInputs(parser)
@@ -1170,8 +1524,42 @@ if __name__ == "__main__":
         exit(0)
 
     # fill objects from log files
+    print("Getting emulation data")
     em_events  = GetEmulationData(parser)
+    print("Getting simulation data")
     sim_events = GetSimulationData(parser)
+
+    # get PF+PUPPI outputs
+    if len(parser.emulator_output_pfpuppi):
+        GetEmulationDataPFPUPPI(em_events, parser)
+        GetSimulationDataPFPUPPI(sim_events, parser)
+    
+    # for e in sim_events:
+    #     print( len(e.allPF("ch")) )
+    # exit(0)
+    # for ei,e in enumerate(em_events):
+    #     #        print ( e.large_regions )
+    #     for si,sr in enumerate(e.large_regions[0].subregions):
+    #         print("Evt {}, SR {:2}: Found {:2} charged, {:2} photons, {:2} neutrals, and {} muons".format(ei,si,sr.npf_ch,sr.npf_ph,sr.npf_ne,sr.npf_mu))
+    #         if True:
+    #             for x in sr.pf_ch:
+    #                 print("Charged pt={1}, eta={3}, phi={4}, puppi={0}, ID={2}".format(*GetPFChParams(x)) )
+    #             for x in sr.pf_ph:
+    #                 print("Photon  pt={1}, eta={3}, phi={4}, z0={2}, ID={0}".format(*GetPFNeParams(x)) )
+    #             for x in sr.pf_ne:
+    #                 print("Neutral pt={1}, eta={3}, phi={4}, z0={2}, ID={0}".format(*GetPFNeParams(x)) )
+    #             for x in sr.pf_mu:
+    #                 print("Muon    pt={1}, eta={3}, phi={4}, puppi={0}, ID={2}".format(*GetPFChParams(x)) )
+    #             # for x in sr.pf_ch:
+    #             #     print (x)
+    #             #     print (GetPFChParams(x))
+    #             #     print( "charged track with pt {}, eta {}, phi {}".format(*GetPtEtaPhi(x,"PFch")) )
+    # exit(0)
+
+
+    if len(parser.emulator_output_pfpuppi):
+        DumpEventComparisonPFPUPPI(parser, em_events,sim_events,dname+"/comp_pfpuppi.txt",nevts=NEVENTS)
+    #exit(0)
 
     #basic event information w/ and w/o object details
     DumpEventsToText(em_events,dname+"/events_emu.txt")
