@@ -1239,7 +1239,7 @@ def DumpEventComparison(parser, em_evts, sim_evts, fname,
 
 
 def DumpEventComparisonPFPUPPI(parser, em_evts, sim_evts, fname, 
-                        nevts=1, compareSmallRegion=False, compareEvent=True, chargedOnly=True, summary=True):
+                               nevts=1, compareSmallRegion=False, compareEvent=True, chargedOnly=True, summary=True, skipCommon=False):
     
     with open(fname,'w') as f:
         f.write("Dumping comparison to file: {}\n".format(fname))
@@ -1268,7 +1268,7 @@ def DumpEventComparisonPFPUPPI(parser, em_evts, sim_evts, fname,
                 if tag=="ch" or tag=="mu": tagpf="PFch" 
                 #evt.findRegions(x)
                 common, em_only, sim_only = GetCommonEmSim(em_e.allPF(tag), sim_e.allPF(tag))
-                f.write( DumpCollection(parser,   common,"      Common "+tag,         tagpf,
+                if not skipCommon: f.write( DumpCollection(parser,   common,"      Common "+tag,         tagpf,
                                         inLink = False,printRegPF=True,sim_evt=sim_e,em_evt=em_e) )
                 f.write( DumpCollection(parser,  em_only,"      Emulation-only "+tag, tagpf,inLink = False) )
                 f.write( DumpCollection(parser, sim_only,"      Simulation-only "+tag,tagpf,inLink = False) )
@@ -1559,6 +1559,7 @@ if __name__ == "__main__":
 
     if len(parser.emulator_output_pfpuppi):
         DumpEventComparisonPFPUPPI(parser, em_events,sim_events,dname+"/comp_pfpuppi.txt",nevts=NEVENTS)
+        DumpEventComparisonPFPUPPI(parser, em_events,sim_events,dname+"/comp_pfpuppi_short.txt",nevts=NEVENTS,skipCommon=True)
     #exit(0)
 
     #basic event information w/ and w/o object details
