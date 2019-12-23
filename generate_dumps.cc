@@ -57,10 +57,12 @@ void WriteEvent(Config& c,FILE *f, uint64_t event){
     Region r{etaCenter, etaMin, etaMax, phiCenter, phiHalfWidth,
             etaExtra, phiExtra};
     // fill objects according to config, add to region
-    std::vector<Calo>  calos  ; c.FillObjs(calos, kCa);
-    std::vector<Calo>  emcalos; c.FillObjs(emcalos, kEM);
-    std::vector<Track> tracks ; c.FillObjs(tracks, kTk);
-    std::vector<Muon>  muons  ; c.FillObjs(muons, kMu);
+    std::vector<Calo>  calos  ; 
+    std::vector<Calo>  emcalos; 
+    std::vector<Track> tracks ; 
+    std::vector<Muon>  muons  ; 
+    c.FillAllObjects(calos, emcalos, tracks, muons);
+
     cout << "Event counts: calos "
          << calos.size()  << ", EM "
          << emcalos.size() << ", tracks "
@@ -112,7 +114,8 @@ int main(int argc, char **argv)
     WriteFile(c,"data/test.dump");
 
     // write events based on PF objects
-    //c.Poisson();
+    c.GenFromPF();
+    WriteFile(c,"data/testPF.dump");
 
     // l1tpf_int::CaloCluster x{1,2,3};
     // //    x.fill(10.,5.,2.,1,1,false,0);
