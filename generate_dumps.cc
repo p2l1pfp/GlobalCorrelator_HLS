@@ -63,11 +63,14 @@ void WriteEvent(Config& c,FILE *f, uint64_t event){
     std::vector<Muon>  muons  ; 
     c.FillAllObjects(calos, emcalos, tracks, muons);
 
-    cout << "Event counts: calos "
+    if(event==1) cout << "Counts for file are " << endl;
+    if(event<=10){
+        cout << " event " << event << " : calos "
          << calos.size()  << ", EM "
-         << emcalos.size() << ", tracks "
-         << tracks.size() << ", muons "
-         << muons.size() << std::endl;
+             << emcalos.size() << ", tracks "
+             << tracks.size() << ", muons "
+             << muons.size() << std::endl;
+    } else if (event==11) cout << " supressing further events\n ..." << endl;
     r.calo   = calos  ;
     r.emcalo = emcalos;
     r.track  = tracks ;
@@ -110,12 +113,33 @@ int main(int argc, char **argv)
     // write standard events
     Config c;
     c.num_events=10;
-    c.Poisson();
-    WriteFile(c,"data/test.dump");
+    c.SetPoisson();
+    WriteFile(c,"data/genNominalOccupany10.dump");
+    c.num_events=100;
+    WriteFile(c,"data/genNominalOccupany100.dump");
+
+    c.SetPoisson(false);
+    c.SetMaxOccupancy();
+    c.num_events=10;
+    WriteFile(c,"data/genMaxOccupany10.dump");
+    c.num_events=100;
+    WriteFile(c,"data/genMaxOccupany100.dump");
+
 
     // write events based on PF objects
     c.GenFromPF();
-    WriteFile(c,"data/testPF.dump");
+    c.num_events=10;
+    c.SetPoisson();
+    WriteFile(c,"data/genPFNominalOccupany10.dump");
+    c.num_events=100;
+    WriteFile(c,"data/genPFNominalOccupany100.dump");
+
+    c.SetPoisson(false);
+    c.SetMaxOccupancy();
+    c.num_events=10;
+    WriteFile(c,"data/genPFMaxOccupany10.dump");
+    c.num_events=100;
+    WriteFile(c,"data/genPFMaxOccupany100.dump");
 
     // l1tpf_int::CaloCluster x{1,2,3};
     // //    x.fill(10.,5.,2.,1,1,false,0);

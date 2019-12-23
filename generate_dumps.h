@@ -24,8 +24,8 @@ typedef l1tpf_int::PropagatedTrack Track;
 
 #define NINTYPE 4
 enum InputType{kCa,kEM,kTk,kMu};
-#define NPFTYPE 5
-enum PFType{kPFCh,kPFNe,kPFPh,kPFEl,kPFMu};
+#define NPFTYPE 6
+enum PFType{kPFCh,kPFNe,kPFPh,kPFEl,kPFMu,kPFSoftTracks};
 
 class Config {
  public:
@@ -50,10 +50,12 @@ class Config {
 
     
     // gen a poisson number of objects or fixed
-    void Poisson();
+    inline void SetPoisson(bool set=true){_doPoisson=set;}
+    void SetNominalOccupancy();
+    void SetMaxOccupancy();
     // generate events using PF inputs quantities or outputs
     // i.e. pfch -> one track and calo, etc...
-    void GenFromPF();
+    inline void GenFromPF(bool set=true){_genFromPF=set;}
 
     // fill objects with random inputs
     uint GetNPF(PFType kObj);
@@ -78,7 +80,7 @@ class Config {
     float _PF_EMshare=0.2; // prob for a hadron to leave energy in EM also
 };
 
-Config::Config(){
+void Config::SetNominalOccupancy(){
     // PF Inputs
     avg_nObj[kCa] = 15.;
     avg_nObj[kEM] = 9.;
@@ -90,6 +92,27 @@ Config::Config(){
     avg_nPF[kPFPh] = 6.;
     avg_nPF[kPFEl] = 1.;
     avg_nPF[kPFMu] = 1.;
+    avg_nPF[kPFSoftTracks] = 4.;
+}
+
+void Config::SetMaxOccupancy(){
+    _doPoisson=false;
+    // PF Inputs
+    avg_nObj[kCa] = 15.;
+    avg_nObj[kEM] = 13.;
+    avg_nObj[kTk] = 22.;
+    avg_nObj[kMu] = 2.;
+    // PF outputs
+    avg_nPF[kPFCh] = 10.;
+    avg_nPF[kPFNe] = 10.;
+    avg_nPF[kPFPh] = 10.;
+    avg_nPF[kPFEl] = 2.;
+    avg_nPF[kPFMu] = 2.;
+    avg_nPF[kPFSoftTracks] = 10.;
+}
+
+Config::Config(){
+    SetNominalOccupancy();
 
     //initialize random number services
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
@@ -97,32 +120,25 @@ Config::Config(){
     //rng = new std::default_random_engine(1776); // seed
     rng_f  = new std::uniform_real_distribution<float>(0,1); // utility
     rng_gaus  = new std::normal_distribution<float>(); // defaults to unit
-}
 
-Config::~Config(){
-    /* if (!_initialized) return; */
-    delete rng;
-    delete rng_f;
-    delete rng_gaus;
-
-    if(!_doPoisson) return;
-    for(int i=0;i< NINTYPE;i++)
-        delete rng_nObj[i];
-    for(int i=0;i< NPFTYPE;i++)
-        delete rng_nPF[i];
-}
-
-void Config::Poisson(){
-    _doPoisson=true;
+    //poisson things
     for(int i=0;i< NINTYPE;i++)
         rng_nObj[i] = new std::poisson_distribution<int>(avg_nObj[i]);
     for(int i=0;i< NPFTYPE;i++)
         rng_nPF[i] = new std::poisson_distribution<int>(avg_nPF[i]);
 }
 
-void Config::GenFromPF(){
-    _genFromPF=true;
+Config::~Config(){
+    delete rng;
+    delete rng_f;
+    delete rng_gaus;
+
+    for(int i=0;i< NINTYPE;i++)
+        delete rng_nObj[i];
+    for(int i=0;i< NPFTYPE;i++)
+        delete rng_nPF[i];
 }
+
 
 template<typename T1, typename T2>
 void Config::Link(T1 &to, T2 &from){
@@ -188,7 +204,10 @@ void Config::FillAllObjects(std::vector<Calo>  &calos,
         tracks.push_back(t);
         muons.push_back(c); 
     }
-
+    for(int i=0;i<GetNPF(kPFSoftTracks);i++){ // soft unmatched tracks
+        Track t; FillObj(t, kTk);
+        t.hwPt=t.hwPt/10;
+    }
 }
 
 
