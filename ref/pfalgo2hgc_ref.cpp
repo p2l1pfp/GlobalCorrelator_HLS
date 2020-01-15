@@ -87,7 +87,7 @@ void pfalgo2hgc_ref(const pfalgo_config &cfg, const HadCaloObj calo[/*cfg.nCALO*
     for (unsigned int ic = 0; ic < cfg.nCALO; ++ic) {
         if (calo_sumtk[ic] > 0) {
             pt_t ptdiff = calo[ic].hwPt - calo_sumtk[ic];
-            int sigmamult = (calo_sumtkErr2[ic] + (calo_sumtkErr2[ic] >> 1)); // this multiplies by 1.5 = sqrt(1.5)^2 ~ (1.2)^2
+            int sigmamult = calo_sumtkErr2[ic]; //  + (calo_sumtkErr2[ic] >> 1)); // this multiplies by 1.5 = sqrt(1.5)^2 ~ (1.2)^2
             if (g_pfalgo2hgc_debug_ref_ && (calo[ic].hwPt > 0)) {
 #ifdef L1Trigger_Phase2L1ParticleFlow_DiscretePFInputs_MORE
                 l1tpf_impl::CaloCluster floatcalo; fw2dpf::convert(calo[ic], floatcalo); 

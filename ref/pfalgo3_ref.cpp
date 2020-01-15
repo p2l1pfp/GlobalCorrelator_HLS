@@ -24,6 +24,7 @@ int tk_best_match_ref(unsigned int nCAL, unsigned int dR2MAX, const CO_t calo[/*
     if (caloPtMin < 0) caloPtMin = 0;
     int  drmin = dR2MAX, ibest = -1;
     for (unsigned int ic = 0; ic < nCAL; ++ic) {
+            if (calo[ic].hwPt <= 0) continue;
             if (doPtMin && calo[ic].hwPt <= caloPtMin) continue;
             int dr = dr2_int(track.hwEta, track.hwPhi, calo[ic].hwEta, calo[ic].hwPhi);
             if (dr < drmin) { drmin = dr; ibest = ic; }
@@ -74,9 +75,9 @@ void pfalgo3_em_ref(const pfalgo3_config &cfg, const EmCaloObj emcalo[/*cfg.nEMC
         if (calo_sumtk[ic] > 0) {
             pt_t ptdiff = emcalo[ic].hwPt - calo_sumtk[ic];
             int sigma2 = sqr(emcalo[ic].hwPtErr);
-            int sigma2Lo = 4*sigma2, sigma2Hi = sigma2 + (sigma2>>1);
+            int sigma2Lo = 4*sigma2, sigma2Hi = sigma2; // + (sigma2>>1); // cut at 1 sigma instead of old cut at sqrt(1.5) sigma's
             int ptdiff2 = ptdiff*ptdiff;
-            if ((ptdiff > 0 && ptdiff2 <= sigma2Hi) || (ptdiff < 0 && ptdiff2 < sigma2Lo)) {
+            if ((ptdiff >= 0 && ptdiff2 <= sigma2Hi) || (ptdiff < 0 && ptdiff2 < sigma2Lo)) {
                 // electron
                 photonPt = 0; 
                 isEM[ic] = true;
@@ -230,7 +231,7 @@ void pfalgo3_ref(const pfalgo3_config &cfg, const EmCaloObj emcalo[/*cfg.nEMCALO
     for (unsigned int ic = 0; ic < cfg.nCALO; ++ic) {
         if (calo_sumtk[ic] > 0) {
             pt_t ptdiff = hadcalo_subem[ic].hwPt - calo_sumtk[ic];
-            int sigmamult = (calo_sumtkErr2[ic] + (calo_sumtkErr2[ic] >> 1)); // this multiplies by 1.5 = sqrt(1.5)^2 ~ (1.2)^2
+            int sigmamult = calo_sumtkErr2[ic]; // before we did (calo_sumtkErr2[ic] + (calo_sumtkErr2[ic] >> 1)); to multiply by 1.5 = sqrt(1.5)^2 ~ (1.2)^2
             if (g_pfalgo3_debug_ref_ && (hadcalo_subem[ic].hwPt > 0)) {
 #ifdef L1Trigger_Phase2L1ParticleFlow_DiscretePFInputs_MORE
                 l1tpf_impl::CaloCluster floatcalo; fw2dpf::convert(hadcalo_subem[ic], floatcalo); 

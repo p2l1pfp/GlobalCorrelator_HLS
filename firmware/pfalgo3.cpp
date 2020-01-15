@@ -16,7 +16,7 @@ void tk2em_drvals(const EmCaloObj calo[NEMCALO], const TkObj track[NTRACK], cons
     const tk2em_dr_t eDR2MAX = DR2MAX;
     for (int it = 0; it < NTRACK; ++it) {
         for (int icalo = 0; icalo < NEMCALO; ++icalo) {
-            if (isMu[it] || track[it].hwPt == 0) {calo_track_drval[it][icalo] = eDR2MAX; } // set to DR max if the track is a muon or null
+            if (isMu[it] || track[it].hwPt == 0 || calo[icalo].hwPt == 0) {calo_track_drval[it][icalo] = eDR2MAX; } // set to DR max if the track is a muon or null
             else { calo_track_drval[it][icalo] = dr2_int_cap(track[it].hwEta, track[it].hwPhi, calo[icalo].hwEta, calo[icalo].hwPhi, eDR2MAX); } 
         }
     }
@@ -128,7 +128,7 @@ void tk2calo_caloalgo(const HadCaloObj calo[NCALO], const pt_t sumtk[NCALO], con
             #endif
         } else {
             pt_t ptdiff = calo[icalo].hwPt - sumtk[icalo];
-            if (ptdiff > 0 && (ptdiff*ptdiff) > (sumtkerr2[icalo] + (sumtkerr2[icalo] >> 1))) {
+            if (ptdiff > 0 && (ptdiff*ptdiff > sumtkerr2[icalo])) {
                 calopt = ptdiff;
             } else {
                 calopt = 0;
@@ -154,8 +154,8 @@ void tk2em_emalgo(const EmCaloObj calo[NEMCALO], const pt_t sumtk[NEMCALO], bool
             pt_t ptdiff = calo[icalo].hwPt - sumtk[icalo];
             int ptdiff2 = ptdiff*ptdiff;
             int sigma2 = (calo[icalo].hwPtErr*calo[icalo].hwPtErr);
-            int sigma2Lo = (sigma2 << 2), sigma2Hi = sigma2 + (sigma2 >> 1);
-            if ((ptdiff > 0 && ptdiff2 <= sigma2Hi) || (ptdiff < 0 && ptdiff2 < sigma2Lo)) {
+            int sigma2Lo = (sigma2 << 2), sigma2Hi = sigma2; // + (sigma2 >> 1);
+            if ((ptdiff >= 0 && ptdiff2 <= sigma2Hi) || (ptdiff < 0 && ptdiff2 < sigma2Lo)) {
                 photonPt[icalo] = 0;    
                 isEM[icalo] = true;
             } else if (ptdiff > 0) {
