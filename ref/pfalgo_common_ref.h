@@ -3,6 +3,7 @@
 
 #include "../firmware/data.h"
 #include "../firmware/pfalgo_common.h"
+#include <algorithm>
 
 template <typename T> inline int sqr(const T & t) { return t*t; }
 

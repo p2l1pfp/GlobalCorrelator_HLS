@@ -54,6 +54,15 @@ namespace dpf2fw {
         }
     }
 
+    template<typename In, typename Out>
+    void convert(unsigned int NMAX, const std::vector<In> & in, Out out[]) {
+        for (unsigned int i = 0, n = std::min<unsigned int>(NMAX, in.size()); i < n; ++i) {
+            convert(in[i], out[i]);
+        }
+        for (unsigned int i = in.size(); i < NMAX; ++i) {
+            clear(out[i]);
+        }
+    }
 
 } // namespace
 

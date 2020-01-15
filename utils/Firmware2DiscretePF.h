@@ -19,6 +19,29 @@ namespace fw2dpf {
         pf.hwVtxPhi = src.hwPhi; // before propagation
         pf.track = track; // FIXME: ok only as long as there is a 1-1 mapping
         pf.cluster.hwPt = 0;
+        pf.cluster.src = nullptr;
+        pf.muonsrc = nullptr;
+        switch(src.hwId) {
+            case PID_Electron: pf.hwId =  1; break;
+            case PID_Muon: pf.hwId =  4; break;
+            default: pf.hwId = 0; break;
+        };
+        pf.hwStatus = 0;
+        out.push_back(pf);
+    }
+    // convert inputs from discrete to firmware
+    inline void convert(const TkObj & in, l1tpf_impl::PropagatedTrack & out) ;
+    inline void convert(const PFChargedObj & src, const TkObj & track, std::vector<l1tpf_impl::PFParticle> &out) {
+        l1tpf_impl::PFParticle pf;
+        pf.hwPt = src.hwPt;
+        pf.hwEta = src.hwEta;
+        pf.hwPhi = src.hwPhi;
+        pf.hwVtxEta = src.hwEta; // FIXME: get from the track
+        pf.hwVtxPhi = src.hwPhi; // before propagation
+        convert(track, pf.track); // FIXME: ok only as long as there is a 1-1 mapping
+        pf.cluster.hwPt = 0;
+        pf.cluster.src = nullptr;
+        pf.muonsrc = nullptr;
         switch(src.hwId) {
             case PID_Electron: pf.hwId =  1; break;
             case PID_Muon: pf.hwId =  4; break;
@@ -35,7 +58,10 @@ namespace fw2dpf {
         pf.hwVtxEta = src.hwEta;
         pf.hwVtxPhi = src.hwPhi;
         pf.track.hwPt = 0;
+        pf.track.src = nullptr;
         pf.cluster.hwPt = src.hwPt;
+        pf.cluster.src = nullptr;
+        pf.muonsrc = nullptr;
         switch(src.hwId) {
             case PID_Photon: pf.hwId = 3; break;
             default: pf.hwId = 2; break;
@@ -82,6 +108,12 @@ namespace fw2dpf {
             if (in[i].hwPt > 0) convert(in[i], out);
         }
     } 
+    template<typename In>
+    void convert(unsigned int NMAX, const In in[], std::vector<l1tpf_impl::PFParticle> &out) {
+        for (unsigned int i = 0; i < NMAX; ++i) {
+            if (in[i].hwPt > 0) convert(in[i], out);
+        }
+    } 
     template<unsigned int NMAX>
     void convert(const PFChargedObj in[NMAX], std::vector<l1tpf_impl::PropagatedTrack> srctracks, std::vector<l1tpf_impl::PFParticle> &out) {
         for (unsigned int i = 0; i < NMAX; ++i) {
@@ -91,7 +123,15 @@ namespace fw2dpf {
             }
         }
     }
-
+    inline void convert(unsigned int NMAX, const PFChargedObj in[], std::vector<l1tpf_impl::PropagatedTrack> srctracks, std::vector<l1tpf_impl::PFParticle> &out) {
+        for (unsigned int i = 0; i < NMAX; ++i) {
+            if (in[i].hwPt > 0) {
+                assert(i < srctracks.size());
+                convert(in[i], srctracks[i], out);
+            }
+        }
+    }
+ 
 } // namespace
 
 #endif

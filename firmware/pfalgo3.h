@@ -2,7 +2,9 @@
 #define FIRMWARE_PFALGO3_H
 
 #ifndef REG_Barrel
-#warning "REG_Barrel not defined in PFALGO3: not validated"
+  #ifndef CMSSW_GIT_HASH
+    #warning "REG_Barrel not defined in PFALGO3: not validated"
+  #endif
 #endif
 
 #include "pfalgo_common.h"
@@ -20,10 +22,12 @@ void pfalgo3_unpack_out(const ap_uint<PACKING_DATA_SIZE> output[PACKING_NCHANN],
 
 void pfalgo3_set_debug(bool debug);
 
+#ifndef CMSSW_GIT_HASH
 #define PFALGO_DR2MAX_TK_CALO 1182
 #define PFALGO_DR2MAX_EM_CALO 525
 #define PFALGO_DR2MAX_TK_EM   84
 #define PFALGO_TK_MAXINVPT_LOOSE    40
 #define PFALGO_TK_MAXINVPT_TIGHT    80
+#endif
 
 #endif

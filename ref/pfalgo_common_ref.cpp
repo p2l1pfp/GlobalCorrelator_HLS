@@ -1,18 +1,21 @@
 #include "pfalgo_common_ref.h"
 
+#include <cmath>
+#include <cstdio>
+
 void pfalgo_mu_ref(const pfalgo_config &cfg, const TkObj track[/*cfg.nTRACK*/], const MuObj mu[/*cfg.nMU*/], bool isMu[/*cfg.nTRACK*/], PFChargedObj outmu[/*cfg.nMU*/], bool debug) {
 
     // init
-    for (int ipf = 0; ipf < cfg.nMU; ++ipf) clear(outmu[ipf]);
-    for (int it = 0; it < cfg.nTRACK; ++it) isMu[it] = 0;
+    for (unsigned int ipf = 0; ipf < cfg.nMU; ++ipf) clear(outmu[ipf]);
+    for (unsigned int it = 0; it < cfg.nTRACK; ++it) isMu[it] = 0;
 
         // for each muon, find the closest track
-    for (int im = 0; im < cfg.nMU; ++im) {
+    for (unsigned int im = 0; im < cfg.nMU; ++im) {
         if (mu[im].hwPt > 0) {
             int ibest = -1;
             int dptmin = mu[im].hwPt >> 1;
-            for (int it = 0; it < cfg.nTRACK; ++it) {
-                int dr = dr2_int(mu[im].hwEta, mu[im].hwPhi, track[it].hwEta, track[it].hwPhi);
+            for (unsigned int it = 0; it < cfg.nTRACK; ++it) {
+                unsigned int dr = dr2_int(mu[im].hwEta, mu[im].hwPhi, track[it].hwEta, track[it].hwPhi);
                 //printf("deltaR2(mu %d float pt %5.1f, tk %2d float pt %5.1f) = int %d  (float deltaR = %.3f); int cut at %d\n", im, 0.25*int(mu[im].hwPt), it, 0.25*int(track[it].hwPt), dr, std::sqrt(float(dr))/229.2, cfg.dR2MAX_TK_MU);
                 if (dr < cfg.dR2MAX_TK_MU) { 
                     int dpt = std::abs(int(track[it].hwPt - mu[im].hwPt));
