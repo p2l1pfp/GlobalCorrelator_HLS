@@ -2,7 +2,9 @@
 #define FIRMWARE_PFALGO2HGC_H
 
 #ifndef REG_HGCal
-#warning "REG_HGCal is not #defined, but this algorithm has only been tested there"
+  #ifndef CMSSW_GIT_HASH
+    #warning "REG_HGCal is not #defined, but this algorithm has only been tested there"
+  #endif
 #endif
 
 #include "pfalgo_common.h"
@@ -17,8 +19,10 @@ void pfalgo2hgc_pack_out(const PFChargedObj outch[NTRACK], const PFNeutralObj ou
 void pfalgo2hgc_unpack_out(const ap_uint<PACKING_DATA_SIZE> output[PACKING_NCHANN], PFChargedObj outch[NTRACK], PFNeutralObj outne[NSELCALO], PFChargedObj outmu[NMU]) ;
 #endif
 
+#ifndef CMSSW_GIT_HASH
 #define PFALGO_DR2MAX_TK_CALO 525
 #define PFALGO_TK_MAXINVPT_LOOSE    40
 #define PFALGO_TK_MAXINVPT_TIGHT    80
+#endif
 
 #endif

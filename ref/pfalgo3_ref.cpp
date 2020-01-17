@@ -1,8 +1,14 @@
 #include "pfalgo3_ref.h"
 
-#include "../DiscretePFInputs.h"
+#ifndef CMSSW_GIT_HASH
+  #include "../DiscretePFInputs.h"
+#else
+  #include "../../interface/DiscretePFInputs.h"
+#endif
+
 #include "../utils/Firmware2DiscretePF.h"
 #include <cmath>
+#include <cstdio>
 #include <algorithm>
 #include <vector>
 #include <memory>
@@ -17,7 +23,8 @@ int tk_best_match_ref(unsigned int nCAL, unsigned int dR2MAX, const CO_t calo[/*
     pt_t caloPtMin = track.hwPt - 2*(track.hwPtErr);
     if (caloPtMin < 0) caloPtMin = 0;
     int  drmin = dR2MAX, ibest = -1;
-    for (int ic = 0; ic < nCAL; ++ic) {
+    for (unsigned int ic = 0; ic < nCAL; ++ic) {
+            if (calo[ic].hwPt <= 0) continue;
             if (doPtMin && calo[ic].hwPt <= caloPtMin) continue;
             int dr = dr2_int(track.hwEta, track.hwPhi, calo[ic].hwEta, calo[ic].hwPhi);
             if (dr < drmin) { drmin = dr; ibest = ic; }
@@ -27,7 +34,7 @@ int tk_best_match_ref(unsigned int nCAL, unsigned int dR2MAX, const CO_t calo[/*
 int em_best_match_ref(unsigned int nCAL, unsigned int dR2MAX, const HadCaloObj calo[/*nCAL*/], const EmCaloObj & em) {
     pt_t emPtMin = em.hwPt >> 1;
     int  drmin = dR2MAX, ibest = -1;
-    for (int ic = 0; ic < nCAL; ++ic) {
+    for (unsigned int ic = 0; ic < nCAL; ++ic) {
             if (calo[ic].hwEmPt <= emPtMin) continue;
             int dr = dr2_int(em.hwEta, em.hwPhi, calo[ic].hwEta, calo[ic].hwPhi);
             if (dr < drmin) { drmin = dr; ibest = ic; }
@@ -43,11 +50,11 @@ void pfalgo3_em_ref(const pfalgo3_config &cfg, const EmCaloObj emcalo[/*cfg.nEMC
 
     // initialize sum track pt
     std::vector<pt_t> calo_sumtk(cfg.nEMCALO);
-    for (int ic = 0; ic < cfg.nEMCALO; ++ic) {  calo_sumtk[ic] = 0; }
+    for (unsigned int ic = 0; ic < cfg.nEMCALO; ++ic) {  calo_sumtk[ic] = 0; }
     std::vector<int> tk2em(cfg.nTRACK); 
     std::vector<bool> isEM(cfg.nEMCALO);
     // for each track, find the closest calo
-    for (int it = 0; it < cfg.nTRACK; ++it) {
+    for (unsigned int it = 0; it < cfg.nTRACK; ++it) {
         if (track[it].hwPt > 0 && !isMu[it]) {
             tk2em[it] = tk_best_match_ref<false,EmCaloObj>(cfg.nEMCALO, DR2MAX_TE, emcalo, track[it]);
             if (tk2em[it] != -1) {
@@ -60,17 +67,17 @@ void pfalgo3_em_ref(const pfalgo3_config &cfg, const EmCaloObj emcalo[/*cfg.nEMC
     }
 
     if (g_pfalgo3_debug_ref_) {
-        for (int ic = 0; ic < cfg.nEMCALO; ++ic) {  if (emcalo[ic].hwPt > 0) printf("FW  \t emcalo %3d pt %7d has sumtk %7d\n", ic, int(emcalo[ic].hwPt), int(calo_sumtk[ic])); }
+        for (unsigned int ic = 0; ic < cfg.nEMCALO; ++ic) {  if (emcalo[ic].hwPt > 0) printf("FW  \t emcalo %3d pt %7d has sumtk %7d\n", ic, int(emcalo[ic].hwPt), int(calo_sumtk[ic])); }
     }
 
-    for (int ic = 0; ic < cfg.nEMCALO; ++ic) {
+    for (unsigned int ic = 0; ic < cfg.nEMCALO; ++ic) {
         pt_t photonPt;
         if (calo_sumtk[ic] > 0) {
             pt_t ptdiff = emcalo[ic].hwPt - calo_sumtk[ic];
             int sigma2 = sqr(emcalo[ic].hwPtErr);
-            int sigma2Lo = 4*sigma2, sigma2Hi = sigma2 + (sigma2>>1);
+            int sigma2Lo = 4*sigma2, sigma2Hi = sigma2; // + (sigma2>>1); // cut at 1 sigma instead of old cut at sqrt(1.5) sigma's
             int ptdiff2 = ptdiff*ptdiff;
-            if ((ptdiff > 0 && ptdiff2 <= sigma2Hi) || (ptdiff < 0 && ptdiff2 < sigma2Lo)) {
+            if ((ptdiff >= 0 && ptdiff2 <= sigma2Hi) || (ptdiff < 0 && ptdiff2 < sigma2Lo)) {
                 // electron
                 photonPt = 0; 
                 isEM[ic] = true;
@@ -99,26 +106,26 @@ void pfalgo3_em_ref(const pfalgo3_config &cfg, const EmCaloObj emcalo[/*cfg.nEMC
 
     }
 
-    for (int it = 0; it < cfg.nTRACK; ++it) {
+    for (unsigned int it = 0; it < cfg.nTRACK; ++it) {
         isEle[it] = (tk2em[it] != -1) && isEM[tk2em[it]];
         if (g_pfalgo3_debug_ref_ && isEle[it]) printf("FW  \t track  %3d pt %7d flagged as electron.\n", it, int(track[it].hwPt));
     }
 
     std::vector<int> em2calo(cfg.nEMCALO);
-    for (int ic = 0; ic < cfg.nEMCALO; ++ic) {
+    for (unsigned int ic = 0; ic < cfg.nEMCALO; ++ic) {
         em2calo[ic] = em_best_match_ref(cfg.nCALO, DR2MAX_EH, hadcalo, emcalo[ic]);
         if (g_pfalgo3_debug_ref_ && (emcalo[ic].hwPt > 0)) {
              printf("FW  \t emcalo %3d pt %7d isEM %d matched to hadcalo %7d pt %7d emPt %7d isEM %d\n", 
-                                ic, int(emcalo[ic].hwPt), isEM[ic], em2calo[ic], (em2calo[ic] >= 0 ? int(hadcalo[em2calo[ic]].hwPt) : -1), 
+                                ic, int(emcalo[ic].hwPt), int(isEM[ic]), em2calo[ic], (em2calo[ic] >= 0 ? int(hadcalo[em2calo[ic]].hwPt) : -1), 
                                 (em2calo[ic] >= 0 ? int(hadcalo[em2calo[ic]].hwEmPt) : -1), (em2calo[ic] >= 0 ? int(hadcalo[em2calo[ic]].hwIsEM) : 0));
         }
     }
     
-    for (int ih = 0; ih < cfg.nCALO; ++ih) {
+    for (unsigned int ih = 0; ih < cfg.nCALO; ++ih) {
         hadcalo_out[ih] = hadcalo[ih];
         pt_t sub = 0; bool keep = false;
-        for (int ic = 0; ic < cfg.nEMCALO; ++ic) {
-            if (em2calo[ic] == ih) {
+        for (unsigned int ic = 0; ic < cfg.nEMCALO; ++ic) {
+            if (em2calo[ic] == int(ih)) {
                 if (isEM[ic]) sub += emcalo[ic].hwPt;
                 else keep = true;
             }
@@ -149,22 +156,22 @@ void pfalgo3_ref(const pfalgo3_config &cfg, const EmCaloObj emcalo[/*cfg.nEMCALO
 
     if (g_pfalgo3_debug_ref_) {
 #ifdef L1Trigger_Phase2L1ParticleFlow_DiscretePFInputs_MORE
-        for (int i = 0; i < cfg.nTRACK; ++i) { if (track[i].hwPt == 0) continue;
+        for (unsigned int i = 0; i < cfg.nTRACK; ++i) { if (track[i].hwPt == 0) continue;
             l1tpf_impl::PropagatedTrack tk; fw2dpf::convert(track[i], tk); 
-            printf("FW  \t track %3d: pt %8d [ %7.2f ]  calo eta %+7d [ %+5.2f ]  calo phi %+7d [ %+5.2f ]  calo ptErr %6d [ %7.2f ] \n", 
-                                i, tk.hwPt, tk.floatPt(), tk.hwEta, tk.floatEta(), tk.hwPhi, tk.floatPhi(), tk.hwCaloPtErr, tk.floatCaloPtErr());
+            printf("FW  \t track %3d: pt %8d [ %7.2f ]  calo eta %+7d [ %+5.2f ]  calo phi %+7d [ %+5.2f ]  calo ptErr %6d [ %7.2f ]   tight %d\n", 
+                                i, tk.hwPt, tk.floatPt(), tk.hwEta, tk.floatEta(), tk.hwPhi, tk.floatPhi(), tk.hwCaloPtErr, tk.floatCaloPtErr(), int(track[i].hwTightQuality));
         }
-        for (int i = 0; i < cfg.nEMCALO; ++i) { if (emcalo[i].hwPt == 0) continue;
+        for (unsigned int i = 0; i < cfg.nEMCALO; ++i) { if (emcalo[i].hwPt == 0) continue;
             l1tpf_impl::CaloCluster em; fw2dpf::convert(emcalo[i], em); 
             printf("FW  \t EM    %3d: pt %8d [ %7.2f ]  calo eta %+7d [ %+5.2f ]  calo phi %+7d [ %+5.2f ]  calo ptErr %6d [ %7.2f ] \n", 
                                 i, em.hwPt, em.floatPt(), em.hwEta, em.floatEta(), em.hwPhi, em.floatPhi(), em.hwPtErr, em.floatPtErr());
         } 
-        for (int i = 0; i < cfg.nCALO; ++i) { if (hadcalo[i].hwPt == 0) continue;
+        for (unsigned int i = 0; i < cfg.nCALO; ++i) { if (hadcalo[i].hwPt == 0) continue;
             l1tpf_impl::CaloCluster calo; fw2dpf::convert(hadcalo[i], calo); 
             printf("FW  \t calo  %3d: pt %8d [ %7.2f ]  calo eta %+7d [ %+5.2f ]  calo phi %+7d [ %+5.2f ]  calo emPt %7d [ %7.2f ]   isEM %d \n", 
                                 i, calo.hwPt, calo.floatPt(), calo.hwEta, calo.floatEta(), calo.hwPhi, calo.floatPhi(), calo.hwEmPt, calo.floatEmPt(), calo.isEM);
         } 
-        for (int i = 0; i < cfg.nMU; ++i) { if (mu[i].hwPt == 0) continue;
+        for (unsigned int i = 0; i < cfg.nMU; ++i) { if (mu[i].hwPt == 0) continue;
             l1tpf_impl::Muon muon; fw2dpf::convert(mu[i], muon); 
             printf("FW  \t muon  %3d: pt %8d [ %7.2f ]  muon eta %+7d [ %+5.2f ]  muon phi %+7d [ %+5.2f ]   \n", 
                                 i, muon.hwPt, muon.floatPt(), muon.hwEta, muon.floatEta(), muon.hwPhi, muon.floatPhi());
@@ -195,20 +202,20 @@ void pfalgo3_ref(const pfalgo3_config &cfg, const EmCaloObj emcalo[/*cfg.nEMCALO
     // initialize sum track pt
     std::vector<pt_t> calo_sumtk(cfg.nCALO), calo_subpt(cfg.nCALO);
     std::vector<int>  calo_sumtkErr2(cfg.nCALO);
-    for (int ic = 0; ic < cfg.nCALO; ++ic) { calo_sumtk[ic] = 0;  calo_sumtkErr2[ic] = 0;}
+    for (unsigned int ic = 0; ic < cfg.nCALO; ++ic) { calo_sumtk[ic] = 0;  calo_sumtkErr2[ic] = 0;}
 
     // initialize good track bit
     std::unique_ptr<bool[]>  track_good(new bool[cfg.nTRACK]);
-    for (int it = 0; it < cfg.nTRACK; ++it) { 
+    for (unsigned int it = 0; it < cfg.nTRACK; ++it) { 
         track_good[it] = (track[it].hwPt < (track[it].hwTightQuality ? TKPT_MAX_TIGHT : TKPT_MAX_LOOSE) || isEle[it] || isMu[it]); 
     }
 
     // initialize output
-    for (int ipf = 0; ipf < cfg.nTRACK; ++ipf) { clear(outch[ipf]); }
-    for (int ipf = 0; ipf < cfg.nSELCALO; ++ipf) { clear(outne[ipf]); }
+    for (unsigned int ipf = 0; ipf < cfg.nTRACK; ++ipf) { clear(outch[ipf]); }
+    for (unsigned int ipf = 0; ipf < cfg.nSELCALO; ++ipf) { clear(outne[ipf]); }
 
     // for each track, find the closest calo
-    for (int it = 0; it < cfg.nTRACK; ++it) {
+    for (unsigned int it = 0; it < cfg.nTRACK; ++it) {
         if (track[it].hwPt > 0 && !isEle[it] && !isMu[it]) {
             int  ibest = best_match_with_pt_ref<HadCaloObj>(cfg.nCALO, DR2MAX, &hadcalo_subem[0], track[it]);
             //int  ibest = tk_best_match_ref<true,HadCaloObj>(cfg.nCALO, DR2MAX, &hadcalo_subem[0], track[it]);
@@ -221,10 +228,10 @@ void pfalgo3_ref(const pfalgo3_config &cfg, const EmCaloObj emcalo[/*cfg.nEMCALO
         }
     }
 
-    for (int ic = 0; ic < cfg.nCALO; ++ic) {
+    for (unsigned int ic = 0; ic < cfg.nCALO; ++ic) {
         if (calo_sumtk[ic] > 0) {
             pt_t ptdiff = hadcalo_subem[ic].hwPt - calo_sumtk[ic];
-            int sigmamult = (calo_sumtkErr2[ic] + (calo_sumtkErr2[ic] >> 1)); // this multiplies by 1.5 = sqrt(1.5)^2 ~ (1.2)^2
+            int sigmamult = calo_sumtkErr2[ic]; // before we did (calo_sumtkErr2[ic] + (calo_sumtkErr2[ic] >> 1)); to multiply by 1.5 = sqrt(1.5)^2 ~ (1.2)^2
             if (g_pfalgo3_debug_ref_ && (hadcalo_subem[ic].hwPt > 0)) {
 #ifdef L1Trigger_Phase2L1ParticleFlow_DiscretePFInputs_MORE
                 l1tpf_impl::CaloCluster floatcalo; fw2dpf::convert(hadcalo_subem[ic], floatcalo); 
@@ -246,7 +253,7 @@ void pfalgo3_ref(const pfalgo3_config &cfg, const EmCaloObj emcalo[/*cfg.nEMCALO
     }
 
     // copy out charged hadrons
-    for (int it = 0; it < cfg.nTRACK; ++it) {
+    for (unsigned int it = 0; it < cfg.nTRACK; ++it) {
         if (track_good[it]) {
             outch[it].hwPt = track[it].hwPt;
             outch[it].hwEta = track[it].hwEta;
@@ -258,8 +265,8 @@ void pfalgo3_ref(const pfalgo3_config &cfg, const EmCaloObj emcalo[/*cfg.nEMCALO
 
     // copy out neutral hadrons
     std::vector<PFNeutralObj> outne_all(cfg.nCALO);
-    for (int ipf = 0; ipf < cfg.nCALO; ++ipf) { clear(outne_all[ipf]); }
-    for (int ic = 0; ic < cfg.nCALO; ++ic) {
+    for (unsigned int ipf = 0; ipf < cfg.nCALO; ++ipf) { clear(outne_all[ipf]); }
+    for (unsigned int ic = 0; ic < cfg.nCALO; ++ic) {
         if (calo_subpt[ic] > 0) {
             outne_all[ic].hwPt  = calo_subpt[ic];
             outne_all[ic].hwEta = hadcalo_subem[ic].hwEta;
@@ -269,12 +276,35 @@ void pfalgo3_ref(const pfalgo3_config &cfg, const EmCaloObj emcalo[/*cfg.nEMCALO
     }
 
     ptsort_ref(cfg.nCALO, cfg.nSELCALO, outne_all, outne);
+
+    if (g_pfalgo3_debug_ref_) {
+#ifdef L1Trigger_Phase2L1ParticleFlow_DiscretePFInputs_MORE
+        std::vector<l1tpf_impl::PFParticle> tmp;
+        for (unsigned int i = 0; i < cfg.nTRACK; ++i) { if (outch[i].hwPt == 0) continue;
+            fw2dpf::convert(outch[i], track[i], tmp); auto & pf = tmp.back();
+            printf("FW  \t outch %3d: pt %8d [ %7.2f ]  calo eta %+7d [ %+5.2f ]  calo phi %+7d [ %+5.2f ]  pid %d\n", 
+                                i, pf.hwPt, pf.floatPt(), pf.hwEta, pf.floatEta(), pf.hwPhi, pf.floatPhi(), pf.hwId);
+        }
+        for (unsigned int i = 0; i < cfg.nPHOTON; ++i) { if (outpho[i].hwPt == 0) continue;
+            fw2dpf::convert(outpho[i], tmp); auto & pf = tmp.back();
+            printf("FW  \t outph %3d: pt %8d [ %7.2f ]  calo eta %+7d [ %+5.2f ]  calo phi %+7d [ %+5.2f ]  pid %d\n", 
+                                i, pf.hwPt, pf.floatPt(), pf.hwEta, pf.floatEta(), pf.hwPhi, pf.floatPhi(), pf.hwId);
+        }
+        for (unsigned int i = 0; i < cfg.nSELCALO; ++i) { if (outne[i].hwPt == 0) continue;
+            fw2dpf::convert(outne[i], tmp); auto & pf = tmp.back();
+            printf("FW  \t outne %3d: pt %8d [ %7.2f ]  calo eta %+7d [ %+5.2f ]  calo phi %+7d [ %+5.2f ]  pid %d\n", 
+                                i, pf.hwPt, pf.floatPt(), pf.hwEta, pf.floatEta(), pf.hwPhi, pf.floatPhi(), pf.hwId);
+        }
+#endif
+    }
+
+
 }
 
 void pfalgo3_merge_neutrals_ref(const pfalgo3_config &cfg, const PFNeutralObj pho[/*cfg.nPHOTON*/], const PFNeutralObj ne[/*cfg.nSELCALO*/], PFNeutralObj allne[/*cfg.nALLNEUTRALS*/]) 
 {
     int j = 0;
-    for (int i = 0; i < cfg.nPHOTON;  ++i, ++j) allne[j] = pho[i];
-    for (int i = 0; i < cfg.nSELCALO; ++i, ++j) allne[j] = ne[i];
+    for (unsigned int i = 0; i < cfg.nPHOTON;  ++i, ++j) allne[j] = pho[i];
+    for (unsigned int i = 0; i < cfg.nSELCALO; ++i, ++j) allne[j] = ne[i];
 }
 

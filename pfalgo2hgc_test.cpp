@@ -9,7 +9,7 @@
 
 
 int main() {
-    HumanReadablePatternSerializer debugHR("-"); // this will print on stdout, we'll use it for errors
+    HumanReadablePatternSerializer debugHR("-", /*zerosuppress=*/true); // this will print on stdout, we'll use it for errors
 
     DiscretePFInputsReader inputs("TTbar_PU200_HGCal.dump");
     

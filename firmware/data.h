@@ -1,7 +1,12 @@
 #ifndef FIRMWARE_DATA_H
 #define FIRMWARE_DATA_H
 
-#include <ap_int.h>
+#ifndef CMSSW_GIT_HASH
+  #include <ap_int.h>
+#else
+  // until ap_int is in a CMSSW release we can use
+  #include "ap_int_fake.h"
+#endif
 
 typedef ap_int<16> pt_t;
 typedef ap_int<10>  etaphi_t;
@@ -52,7 +57,9 @@ enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=
 //--------------------------------
 #else // BARREL
    #ifndef REG_Barrel
-      #warning "No region defined, assuming it's barrel (#define REG_Barrel to suppress this)"
+     #ifndef CMSSW_GIT_HASH
+       #warning "No region defined, assuming it's barrel (#define REG_Barrel to suppress this)"
+     #endif
    #endif
    #if defined(BOARD_MP7)
        #warning "MP7 NOT SUPPORTED ANYMORE"
