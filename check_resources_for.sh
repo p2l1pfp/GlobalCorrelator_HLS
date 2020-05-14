@@ -14,15 +14,15 @@ mkdir -p reports_forward
 #clock=(5.000 3.571)
 #clock_freq=(200.000 280.000)
 
-clock=(4.167)
+clock=(3.333)
 clock_freq=(240.000)
 
 #clock=(3.3333)
 #clock_freq=(300.000)
 
-for ncalo in 20 30 40
+for ncalo in 5 9 10 12 15
 do
-  for ii in 2
+  for ii in 3
   do
     for iclk in 0
     do

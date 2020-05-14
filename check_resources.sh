@@ -35,7 +35,7 @@ nemcalo=(13)
 
 for ip in 0
 do
-  for ii in 4
+  for ii in 3 4
   do
     for iclk in 0
     do

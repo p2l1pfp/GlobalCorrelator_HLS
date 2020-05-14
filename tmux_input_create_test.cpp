@@ -198,6 +198,7 @@ int main() {
                     track_temp [0][it].hwPt = 1 + (it%16) * 16 + (it/16) * 16*16; // one of each object per TMUX_OUT
             }
         }
+
         /*std::cout<<"Totals:"<<std::endl;
         std::cout<<"\ttrack  = "<<ntracks<<std::endl;
         std::cout<<"\tcalo   = "<<ncalos<<std::endl;
