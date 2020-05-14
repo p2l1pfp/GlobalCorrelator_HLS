@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <fstream>
 #include <iomanip>
 #include "firmware/simple_fullpfalgo.h"
 #include "vertexing/firmware/simple_vtx.h"
@@ -9,7 +10,7 @@
 #include "utils/test_utils.h"
 #include "firmware/mp7pf_encoding.h"
 
-#define NTEST 10
+#define NTEST 1
 #define NLINKS_APX_GEN0 96
 #define NFRAMES_APX_GEN0 3
 #define NCLK_PER_BX 8

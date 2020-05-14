@@ -21,11 +21,13 @@ int main() {
 
     // input format: could be random or coming from simulation
     //RandomPFInputs inputs(37); // 37 is a good random number
-    //DiscretePFInputs inputs("regions_TTbar_PU140.dump");
+    // DiscretePFInputs inputs("regions_TTbar_PU140.dump");
     //DiscretePFInputs inputs("barrel_sectors_1x1_TTbar_PU140.dump");
     DiscretePFInputs inputs("barrel_sectors_1x1_TTbar_PU200.dump");
-    //DiscretePFInputs inputs("dummy.dump");
+    // DiscretePFInputs inputs("dummy.dump");
     
+    // DiscretePFInputs inputs("genNominalOccupany10.dump");
+
     // input TP objects
     HadCaloObj calo[NCALO_TMUX]; EmCaloObj emcalo[NEMCALO_TMUX]; TkObj track[NTRACK_TMUX]; z0_t hwZPV;
     HadCaloObj calo_subem[NCALO_TMUX], calo_subem_ref[NCALO_TMUX]; 
@@ -307,15 +309,17 @@ int main() {
     
     }
     //std::cout<<std::endl;
+    std::ofstream outfile;
+    outfile.open("../../../../inputs.txt");
     for (int ib = 0; ib < listLength; ib++){
-        // std::cout << ib << " ";
-        std::cout << "0x" << std::setfill('0') << std::setw(4) << std::hex << ib << "   " <<std::dec;
+        outfile << "0x" << std::setfill('0') << std::setw(4) << std::hex << ib << "   " <<std::dec;
         for (int ia = 0; ia < NLINKS_APX_GEN0; ia++){
-            //datawords[ia][ib] = "0x0000000000000000";
-            std::cout << datawords[ia][ib] << "    ";
+        //for (int ia = NLINKS_APX_GEN0-1; ia>=0; ia--){ // reverse links
+            outfile << datawords[ia][ib] << "    ";
         }
-        std::cout << std::endl;
+        outfile << std::endl;
     }
+    outfile.close();
 
     // std::cout<<"For all events: "<<std::endl;
     // std::cout<<"\ttrack  = "<<n_alltracks<<std::endl;
