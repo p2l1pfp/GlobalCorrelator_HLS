@@ -7,8 +7,6 @@
 #include <cstdio>
 #endif
 
-//typedef ap_uint<10> em2calo_dr_t;
-
 bool match_box(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2, etaphi_t boxSize) {
     etaphi_t deta = (eta1-eta2);
     etaphi_t dphi = (phi1-phi2);
