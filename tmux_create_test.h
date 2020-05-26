@@ -9,7 +9,7 @@
 #include "utils/test_utils.h"
 #include "firmware/mp7pf_encoding.h"
 
-#define NTEST 6
+#define NTEST 1
 #define NLINKS_APX_GEN0 96
 #define NFRAMES_APX_GEN0 3
 
@@ -18,6 +18,11 @@
 #define NLINKS_PER_EMCALO 10
 #define NLINKS_PER_MU 2
 #define NLINKS_PER_REG (NLINKS_PER_TRACK+NLINKS_PER_CALO+NLINKS_PER_EMCALO+NLINKS_PER_MU)
+#define NLINKS_PER_PFCH 10
+#define NLINKS_PER_PFNH 10
+#define NLINKS_PER_PFPHO 10
+#define NLINKS_PER_PFMU 2
+#define NLINKS_PER_PFREG (NLINKS_PER_PFCH+NLINKS_PER_PFNH+NLINKS_PER_PFPHO+NLINKS_PER_PFMU)
 
 #define MAXETA_INT 243
 #define MAXPHI_INT 510
