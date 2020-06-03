@@ -58,6 +58,34 @@ class DiscretePFInputs {
 			iregion_++;
 			return true;
 		}
+                // dont convert
+		bool nextRegion_raw(l1tpf_int::CaloCluster calo[NCALO], l1tpf_int::CaloCluster emcalo[NEMCALO], l1tpf_int::PropagatedTrack track[NTRACK], l1tpf_int::Muon mu[NMU], z0_t & hwZPV) {
+			if (!nextRegion()) return false;
+		    	const Region &r = event_.regions[iregion_];
+
+                        for (int io = 0; io < r.track.size(); io++) {
+                            track[io] = r.track[io];
+                        }
+                        for (int io = 0; io < r.calo.size(); io++) {
+                             calo[io] = r.calo[io];
+                        }
+                        for (int io = 0; io < r.emcalo.size(); io++) {
+                             emcalo[io] = r.emcalo[io];
+                        }
+                        for (int io = 0; io < r.muon.size(); io++) {
+                             mu[io] = r.muon[io];
+                        }
+
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
+			hwZPV = event_.z0 * l1tpf_int::InputTrack::Z0_SCALE;
+#else
+			hwZPV = event_.z0 * 20;
+#endif
+
+			printf("Read region %u with %lu tracks, %lu em calo, %lu had calo, %lu muons\n", iregion_, r.track.size(), r.emcalo.size(), r.calo.size(), r.muon.size());
+			iregion_++;
+			return true;
+		}
                 // using tmux regions (big)
 		bool nextRegion_tmux(HadCaloObj calo[NCALO_TMUX], EmCaloObj emcalo[NEMCALO_TMUX], TkObj track[NTRACK_TMUX], MuObj mu[NMU_TMUX], z0_t & hwZPV) {
 			if (!nextRegion()) return false;
@@ -67,6 +95,34 @@ class DiscretePFInputs {
                         dpf2fw::convert<NCALO_TMUX>(r.calo, calo);
                         dpf2fw::convert<NEMCALO_TMUX>(r.emcalo, emcalo);
                         dpf2fw::convert<NMU_TMUX>(r.muon, mu);
+
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
+			hwZPV = event_.z0 * l1tpf_int::InputTrack::Z0_SCALE;
+#else
+			hwZPV = event_.z0 * 20;
+#endif
+
+			printf("Read region %u with %lu tracks, %lu em calo, %lu had calo, %lu muons\n", iregion_, r.track.size(), r.emcalo.size(), r.calo.size(), r.muon.size());
+			iregion_++;
+			return true;
+		}
+                //using tmux regions (big), dont covnert
+		bool nextRegion_tmux_raw(l1tpf_int::CaloCluster calo[NCALO_TMUX], l1tpf_int::CaloCluster emcalo[NEMCALO_TMUX], l1tpf_int::PropagatedTrack track[NTRACK_TMUX], l1tpf_int::Muon mu[NMU_TMUX], z0_t & hwZPV) {
+			if (!nextRegion()) return false;
+		    	const Region &r = event_.regions[iregion_];
+
+                        for (int io = 0; io < r.track.size(); io++) {
+                            track[io] = r.track[io];
+                        }
+                        for (int io = 0; io < r.calo.size(); io++) {
+                             calo[io] = r.calo[io];
+                        }
+                        for (int io = 0; io < r.emcalo.size(); io++) {
+                             emcalo[io] = r.emcalo[io];
+                        }
+                        for (int io = 0; io < r.muon.size(); io++) {
+                             mu[io] = r.muon[io];
+                        }
 
 #ifdef __GXX_EXPERIMENTAL_CXX0X__
 			hwZPV = event_.z0 * l1tpf_int::InputTrack::Z0_SCALE;
