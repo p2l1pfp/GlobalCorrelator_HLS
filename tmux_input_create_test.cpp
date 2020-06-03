@@ -1,7 +1,7 @@
 #include "tmux_create_test.h"
 
-int mp7DataLength = 2*(NTRACK+NCALO+NEMCALO+NMU);
-int objDataLength[4] = {2*NTRACK, 2*(NEMCALO+NTRACK), 2*(NEMCALO+NCALO+NTRACK), 2*(NEMCALO+NCALO+NTRACK+NMU)};
+//int mp7DataLength = 2*(NTRACK+NCALO+NEMCALO+NMU);
+int objDataLength[4] = {(NWORDS_TRACK*NTRACK), ((NWORDS_EMCALO*NEMCALO)+(NWORDS_TRACK*NTRACK)), ((NWORDS_EMCALO*NEMCALO)+(NWORDS_CALO*NCALO)+(NWORDS_TRACK*NTRACK)), ((NWORDS_EMCALO*NEMCALO)+(NWORDS_CALO*NCALO)+(NWORDS_TRACK*NTRACK)+(NWORDS_MU*NMU))};
 int link_max[4] = {NLINKS_PER_TRACK, NLINKS_PER_TRACK+NLINKS_PER_EMCALO, NLINKS_PER_TRACK+NLINKS_PER_CALO+NLINKS_PER_EMCALO, NLINKS_PER_TRACK+NLINKS_PER_CALO+NLINKS_PER_EMCALO+NLINKS_PER_MU};
 int link_min[4] = {0, NLINKS_PER_TRACK, NLINKS_PER_TRACK+NLINKS_PER_EMCALO, NLINKS_PER_TRACK+NLINKS_PER_EMCALO+NLINKS_PER_CALO};
 unsigned int theEtaRegion = 0;
@@ -27,9 +27,10 @@ int main() {
     //DiscretePFInputs inputs("dummy.dump");
     
     // input TP objects
-    HadCaloObj calo[NCALO_TMUX]; EmCaloObj emcalo[NEMCALO_TMUX]; TkObj track[NTRACK_TMUX]; z0_t hwZPV;
-    HadCaloObj calo_subem[NCALO_TMUX], calo_subem_ref[NCALO_TMUX]; 
-    MuObj mu[NMU_TMUX];
+    //HadCaloObj calo_temp[TMUX_OUT][NCALO]; EmCaloObj emcalo_temp[TMUX_OUT][NEMCALO]; TkObj track_temp[TMUX_OUT][NTRACK]; 
+    //MuObj mu_temp[TMUX_OUT][NMU];
+    l1tpf_int::CaloCluster calo[NCALO_TMUX]; l1tpf_int::CaloCluster emcalo[NEMCALO_TMUX]; l1tpf_int::PropagatedTrack track[NTRACK_TMUX]; l1tpf_int::Muon mu[NMU_TMUX];
+    z0_t hwZPV;
 
     //printf("NTRACK = %i, NEMCALO = %i, NCALO = %i, NMU = %i, MP7_NCHANN = %i \n", NTRACK, NEMCALO, NCALO, NMU, MP7_NCHANN);
 
@@ -54,7 +55,7 @@ int main() {
         
 
         // initialize TP objects
-        for (int i = 0; i < NTRACK_TMUX; ++i) {
+        /*for (int i = 0; i < NTRACK_TMUX; ++i) {
             track[i].hwPt = 0; track[i].hwPtErr = 0; track[i].hwEta = 0; track[i].hwPhi = 0; track[i].hwZ0 = 0; 
         }
         for (int i = 0; i < NCALO_TMUX; ++i) {
@@ -65,13 +66,25 @@ int main() {
         }
         for (int i = 0; i < NMU_TMUX; ++i) {
             mu[i].hwPt = 0; mu[i].hwPtErr = 0; mu[i].hwEta = 0; mu[i].hwPhi = 0;
+        }*/
+        for (int i = 0; i < NTRACK_TMUX; ++i) {
+            track[i].hwPt = 0; track[i].hwEta = 0; track[i].hwPhi = 0; track[i].hwCaloPtErr = 0; track[i].hwZ0 = 0; track[i].hwStubs = 0; track[i].hwChi2 = 0;
         }
-
+        for (int i = 0; i < NCALO_TMUX; ++i) {
+            calo[i].hwPt = 0; calo[i].hwEta = 0; calo[i].hwPhi = 0; calo[i].isEM = 0; calo[i].hwEmPt = 0;
+        }
+        for (int i = 0; i < NEMCALO_TMUX; ++i) {
+            emcalo[i].hwPt = 0; emcalo[i].hwEta = 0; emcalo[i].hwPhi = 0; emcalo[i].hwPtErr = 0;
+        }
+        for (int i = 0; i < NMU_TMUX; ++i) {
+            mu[i].hwPt = 0; mu[i].hwEta = 0; mu[i].hwPhi = 0;
+        }
 
         // insert some test data on the fly
         if(1){
             // get the inputs from the input object
-            if (!inputs.nextRegion_tmux(calo, emcalo, track, mu, hwZPV)) break;
+            //if (!inputs.nextRegion_tmux(calo, emcalo, track, mu, hwZPV)) break;
+            if (!inputs.nextRegion_tmux_raw(calo, emcalo, track, mu, hwZPV)) break;
         } else if(0) {
             // quickly set some fake data
             track[0].hwPt  = 1 + test * 16; // one of each object per event
@@ -101,7 +114,7 @@ int main() {
 
         unsigned int ie = theEtaRegion;
         unsigned int ip = thePhiRegion;
-        HadCaloObj calo_temp[TMUX_OUT][NCALO]; EmCaloObj emcalo_temp[TMUX_OUT][NEMCALO]; TkObj track_temp[TMUX_OUT][NTRACK]; MuObj mu_temp[TMUX_OUT][NMU];
+        /*HadCaloObj calo_temp[TMUX_OUT][NCALO]; EmCaloObj emcalo_temp[TMUX_OUT][NEMCALO]; TkObj track_temp[TMUX_OUT][NTRACK]; MuObj mu_temp[TMUX_OUT][NMU];
         for (int ir = 0; ir < TMUX_OUT; ir++) {
             // initialize temp objects
             for (int i = 0; i < NTRACK; ++i) {
@@ -115,6 +128,22 @@ int main() {
             }
             for (int i = 0; i < NMU; ++i) {
                 mu_temp[ir][i].hwPt = 0; mu_temp[ir][i].hwPtErr = 0; mu_temp[ir][i].hwEta = 0; mu_temp[ir][i].hwPhi = 0;
+            }
+        }*/
+        l1tpf_int::CaloCluster calo_temp[TMUX_OUT][NCALO]; l1tpf_int::CaloCluster emcalo_temp[TMUX_OUT][NEMCALO]; l1tpf_int::PropagatedTrack track_temp[TMUX_OUT][NTRACK]; l1tpf_int::Muon mu_temp[TMUX_OUT][NMU];
+        for (int ir = 0; ir < TMUX_OUT; ir++) {
+            // initialize temp objects
+            for (int i = 0; i < NTRACK; ++i) {
+                track_temp[ir][i].hwPt = 0; track_temp[ir][i].hwEta = 0; track_temp[ir][i].hwPhi = 0; track_temp[ir][i].hwCaloPtErr = 0; track_temp[ir][i].hwZ0 = 0; track_temp[ir][i].hwStubs = 0; track_temp[ir][i].hwChi2 = 0;
+            }
+            for (int i = 0; i < NCALO; ++i) {
+                calo_temp[ir][i].hwPt = 0; calo_temp[ir][i].hwEta = 0; calo_temp[ir][i].hwPhi = 0; calo_temp[ir][i].isEM = 0; calo_temp[ir][i].hwEmPt = 0;
+            }
+            for (int i = 0; i < NEMCALO; ++i) {
+                emcalo_temp[ir][i].hwPt = 0; emcalo_temp[ir][i].hwEta = 0; emcalo_temp[ir][i].hwPhi = 0; emcalo_temp[ir][i].hwPtErr = 0;
+            }
+            for (int i = 0; i < NMU; ++i) {
+                mu_temp[ir][i].hwPt = 0; mu_temp[ir][i].hwEta = 0; mu_temp[ir][i].hwPhi = 0;
             }
         }
         // fill temp containers
@@ -207,10 +236,13 @@ int main() {
         for (int ir = 0; ir < TMUX_OUT; ir++) {
 
             MP7DataWord data_in[MP7_NCHANN];
-            mp7wrapped_pack_in_reorder(emcalo_temp[ir], calo_temp[ir], track_temp[ir], mu_temp[ir], data_in);
-            //for (unsigned int in = 0; in < MP7_NCHANN; in++){
-            //    printf("data_in[%i] = %i \n", in, (int) data_in[in]);
-            //}
+            mp7wrapped_pack_in_full(emcalo_temp[ir], calo_temp[ir], track_temp[ir], mu_temp[ir], data_in);
+            /*for (unsigned int in = 0; in < MP7_NCHANN; in++){
+                std::stringstream sstr_data;
+                sstr_data << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[in]);
+                std::string datastr = sstr_data.str();
+                std::cout<<"data_in["<<in<<"] = "<<datastr<<std::endl;
+            }*/
 
             offset = NCLK_PER_BX*TMUX_OUT*test; // 8 * 18 * nevt
             //std::cout<<offset<<std::endl;
@@ -248,32 +280,15 @@ int main() {
                 
                 std::stringstream stream1;
                 int index = add_off[link_type]; // 0 for small region 0, else (ir/18*10)*(8*18) mod 8*18 or whatever
-                if (index==0) { // if first entry (clk of TMIN*CLKpBX) of any of any link
-                    stream1 << "0x";
-                    stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]); 
-                    // zero first 8b for beginning of frame!
-                    stream1 << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(hwZPV.range(9,0))) << 14) << "00"; 
-                    datawords[link_off+link_ctr][offset] = stream1.str();
-                    id++;
-                    index++;
-                }
-                else {
-                    // this seems like it does nothing since the same thing is written to the same data word as above...
-                    stream1 << datawords[link_off+link_ctr][offset].substr(0,10);
-                    stream1 << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(hwZPV.range(9,0))) << 14) << "00";
-                    datawords[link_off+link_ctr][offset] = stream1.str();
-                }
-
                 //std::cout<<"index="<<index<<" id"<<id<<std::endl;
 
                 // put the data on the link number = link_ctr;
                 while (index < NCLK_PER_BX*TMUX_IN) { // 8*36
                     stream1.str("");
                     stream1 << "0x";
-                    if (index%NFRAMES_APX_GEN0==0) {
-                        // 1 frame = 3 x 64b words. First 8b of a frame is reserved for header. 
-                        // Zero the first 32b for simplicity.
-                        stream1 << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in[id]) << "00000000";
+                    if ((index+1)%(NCLK_PER_BX*TMUX_OUT)==0) {
+                        // 1 frame = 8 x TMUX x 64b words. Last 64b word of a frame is reserved. 
+                        stream1 << "0000000000000000";
                         id+=1;
                     }
                     else if (id == objDataLength[link_type]-1) { // here theres only a half-word (32b) to write? (or trailer bits?)
@@ -286,6 +301,7 @@ int main() {
                         id+=2;
                     }
                     datawords[link_off+link_ctr][offset+index] = stream1.str();
+                    //std::cout<<"["<<link_off+link_ctr<<"]["<<offset+index<<"] = "<<datawords[link_off+link_ctr][offset+index]<<std::endl;
                     index++;
                     if (id >= objDataLength[link_type]) {
                         break;
@@ -294,22 +310,27 @@ int main() {
                 if (id >= objDataLength[link_type]) link_ctr = link_max[link_type]-1;
             }
             
-            //std::cout<<"-----------"<<std::endl;
+            std::stringstream stream2;
+            stream2.str("");
+            stream2 << "0x00000000" << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(hwZPV.range(9,0))) << 14) << "00"; 
+            datawords[link_off+NLINKS_PER_REG][offset] = stream2.str();
+            
+            //std::cout<<"-----  ["<<link_off+NLINKS_PER_REG<<"]["<<offset<<"]  ------"<<std::endl;
         }
-        link_off += NLINKS_PER_REG;
+        link_off += NLINKS_PER_REG+1;
         // 2 schemes should be equivalent in 18 / 6 setup
         // in this scheme, the first link is maximally saturated
-        if (0 && link_off>= NLINKS_PER_REG*TMUX_IN/TMUX_OUT) link_off = 0;
+        if (0 && link_off>= (NLINKS_PER_REG+1)*TMUX_IN/TMUX_OUT) link_off = 0;
         // in this scheme, inputs are spread across all links
-        if (1 && link_off+NLINKS_PER_REG > NLINKS_APX_GEN0) link_off = 0;
+        if (1 && link_off+(NLINKS_PER_REG+1) > NLINKS_APX_GEN0) link_off = 0;
     
     }
     //std::cout<<std::endl;
     for (int ib = 0; ib < listLength; ib++){
         // std::cout << ib << " ";
         std::cout << "0x" << std::setfill('0') << std::setw(4) << std::hex << ib << "   " <<std::dec;
-        for (int ia = 0; ia < NLINKS_APX_GEN0; ia++){
-        //for (int ia = NLINKS_APX_GEN0-1; ia >=0; ia--){
+        //for (int ia = 0; ia < NLINKS_APX_GEN0; ia++){
+        for (int ia = NLINKS_APX_GEN0-1; ia >=0; ia--){
             //datawords[ia][ib] = "0x0000000000000000";
             std::cout << datawords[ia][ib] << "    ";
         }
