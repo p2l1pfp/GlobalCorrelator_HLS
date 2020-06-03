@@ -76,6 +76,7 @@ inline void mp7_pack_full_had(l1tpf_int::CaloCluster hadcalo_in[N], MP7DataWord 
 }
 
 //from https://gitlab.cern.ch/GTT/common/-/blob/master/DataFormats/interface/Track.h
+//https://twiki.cern.ch/twiki/bin/viewauth/CMS/HybridDataFormat#Fitted_Tracks_written_by_KalmanF
 enum TrackBitWidths { 
 //MSB
     kValid              = 1,                                    // Valid bit
@@ -207,6 +208,18 @@ void mp7wrapped_pack_in_full(l1tpf_int::CaloCluster emcalo[NEMCALO], l1tpf_int::
     mp7_pack_full_em<NEMCALO,EMOFFS>(emcalo, data);
     mp7_pack_full_had<NCALO,HADOFFS>(hadcalo, data);
     mp7_pack_full<NMU,MUOFFS>(mu, data);
+}
+
+void mp7wrapped_pack_in_reorder(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj track[NTRACK], MuObj mu[NMU], MP7DataWord data[MP7_NCHANN]) {
+    // pack inputs
+    assert(2*NEMCALO + 2*NTRACK + 2*NCALO + 2*NMU <= MP7_NCHANN);
+    #define EMOFFS 2*NTRACK
+    #define HADOFFS 2*NEMCALO+EMOFFS
+    #define MUOFFS 2*NCALO+HADOFFS
+    mp7_pack<NTRACK,0>(track, data);
+    mp7_pack<NEMCALO,EMOFFS>(emcalo, data);
+    mp7_pack<NCALO,HADOFFS>(hadcalo, data);
+    mp7_pack<NMU,MUOFFS>(mu, data);
 }
 
 template<typename T, int NIn, int NOut>
