@@ -23,16 +23,15 @@ The board used is set with `-DBOARD_(board)`, which drives the code used to seri
 
 * PFAlgo3 (i.e. using emcalo, hadcalo, tracks, muons) is implemented and tested but only in the Barrel region. &Delta;R cuts are synchronized with CMSSW, but other parameters have not been checked recently.
 * PFAlgo2HGC (i.e. using calo, tracks, muons) is implemented and tested but only in the HGCal region. &Delta;R cuts are synchronized with CMSSW, but other parameters have not been checked recently.
-* Linearized puppi inside the tracker coverage is implemented and tested only in the Barrel (the HGCal has parameters binned in eta, for which the firmware implementation is easy but still missing). Parameters are also synchronized with CMSSW
-* In the forward region outside tracker coverage, linearized puppi goes in one step from calo clusters to puppi candidates, and is implemented and tested for both HF and HGCalNoTK. Parameters are also synchronized with
-CMSSW.
+* Linearized puppi inside the tracker coverage is implemented and tested both in the Barrel and in the HGCal (where it has parameters split in 2 eta bins). Parameters are also synchronized with CMSSW
+* In the forward region outside tracker coverage, linearized puppi goes in one step from calo clusters to puppi candidates, and is implemented and tested for both HF and HGCalNoTK. Parameters are also synchronized with CMSSW.
 
 ## Pending items
 
 In random order:
 * Investigate whether we can define integer coordinates in a clever way to have 2&pi; be equal to a power of 2, so that the wrapping of &Delta;&phi; would happen automatically, and we could use global coordinates.
-* Implement Linearized Puppi with eta bins in the HGCal
 * Separate in the inputs the tracks regionized using calorimeter (eta, phi) - for PF - and the tracks regionized using vertex (eta, phi) - for Puppi.
 * Puppi implementation can probably be cleaned up using `ap_fixed` instead of bitshifts by hand
+* LinearPuppi firmware implementation with eta bins can probably be cleaned up
 * Introduce options to customize the pattern file layout depending on the board (now it can be done only by changing the options passed in the constructor in the testbench source)
 * Cleanup & resurrect the remaining elements of the TDR demonstrator (vertexing, regionizer, layer 2, ...)

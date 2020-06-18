@@ -2,6 +2,41 @@
 #include <cmath>
 #include <algorithm>
 
+linpuppi_config::linpuppi_config(unsigned int nTrack_, unsigned int nIn_, unsigned int nOut_,
+                    unsigned int dR2Min_, unsigned int dR2Max_, unsigned int ptMax_, unsigned int dzCut_,
+                    int etaCut, bool invertEta,
+                    float ptSlopeNe_0, float ptSlopeNe_1, float ptSlopePh_0, float ptSlopePh_1, float ptZeroNe_0, float ptZeroNe_1, float ptZeroPh_0, float ptZeroPh_1, 
+                    float alphaSlope_0, float alphaSlope_1, float alphaZero_0, float alphaZero_1, float alphaCrop_0, float alphaCrop_1, 
+                    float priorNe_0, float priorNe_1, float priorPh_0, float priorPh_1, 
+                    unsigned int ptCut_0, unsigned int ptCut_1) :
+                nTrack(nTrack_), nIn(nIn_), nOut(nOut_),
+                dR2Min(dR2Min_), dR2Max(dR2Max_), ptMax(ptMax_), dzCut(dzCut_),
+                absEtaBins(1, etaCut), invertEtaBins(invertEta),
+                ptSlopeNe(2), ptSlopePh(2), ptZeroNe(2), ptZeroPh(2), alphaSlope(2), alphaZero(2), alphaCrop(2), priorNe(2), priorPh(2), 
+                ptCut(2) 
+{
+    ptSlopeNe[0] = ptSlopeNe_0; 
+    ptSlopeNe[1] = ptSlopeNe_1;
+    ptSlopePh[0] = ptSlopePh_0; 
+    ptSlopePh[1] = ptSlopePh_1;
+    ptZeroNe[0] = ptZeroNe_0; 
+    ptZeroNe[1] = ptZeroNe_1;
+    ptZeroPh[0] = ptZeroPh_0; 
+    ptZeroPh[1] = ptZeroPh_1;
+    alphaSlope[0] = alphaSlope_0; 
+    alphaSlope[1] = alphaSlope_1;
+    alphaZero[0] = alphaZero_0;
+    alphaZero[1] = alphaZero_1;
+    alphaCrop[0] = alphaCrop_0; 
+    alphaCrop[1] = alphaCrop_1;
+    priorNe[0] = priorNe_0; 
+    priorNe[1] = priorNe_1;
+    priorPh[0] = priorPh_0; 
+    priorPh[1] = priorPh_1;
+    ptCut[0] = ptCut_0; 
+    ptCut[1] = ptCut_1;
+}
+
 
 template<typename T>
 void puppisort_and_crop_ref(unsigned int nIn, unsigned int nOut, const T in[/*nIn*/], T out[/*nOut*/]) {
@@ -42,8 +77,11 @@ void linpuppi_chs_ref(const linpuppi_config &cfg, z0_t pvZ0, const PFChargedObj 
 }
 
 unsigned int linpuppi_ieta_ref(const linpuppi_config &cfg, etaphi_t eta) {
-    assert(cfg.absEtaBins.empty());
-    if (cfg.absEtaBins.empty()) return 0;
+    int n = cfg.absEtaBins.size();
+    for (int i = 0; i < n; ++i) {
+        if (int(eta) <= cfg.absEtaBins[i]) return (cfg.invertEtaBins ? n-i : i);
+    }
+    return cfg.invertEtaBins ? 0 : n;
 }
 
 pt_t linpuppi_ref_sum2puppiPt(const linpuppi_config &cfg, uint64_t sum, pt_t pt, unsigned int ieta, bool isEM, int icand, bool debug) {
