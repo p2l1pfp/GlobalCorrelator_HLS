@@ -111,7 +111,7 @@ int main() {
     #endif
 #endif
 
-        linpuppi_chs_ref(pucfg, hwZPV, pfch, outallch_ref);
+        linpuppi_chs_ref(pucfg, hwZPV, pfch, outallch_ref, verbose);
         linpuppi_ref(pucfg, track, hwZPV, pfallne, outallne_ref_nocut, outallne_ref, outselne_ref, verbose);
         linpuppi_flt(pucfg, track, hwZPV, pfallne, outallne_flt_nocut, outallne_flt, outselne_flt, verbose);
 

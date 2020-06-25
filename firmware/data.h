@@ -1,12 +1,7 @@
 #ifndef FIRMWARE_DATA_H
 #define FIRMWARE_DATA_H
 
-#ifndef CMSSW_GIT_HASH
-  #include <ap_int.h>
-#else
-  // until ap_int is in a CMSSW release we can use
-  #include "ap_int_fake.h"
-#endif
+#include <ap_int.h>
 
 typedef ap_int<16> pt_t;
 typedef ap_int<10>  etaphi_t;

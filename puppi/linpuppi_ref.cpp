@@ -42,12 +42,12 @@ template<typename T>
 void puppisort_and_crop_ref(unsigned int nIn, unsigned int nOut, const T in[/*nIn*/], T out[/*nOut*/]) {
     std::vector<T> tmp(nOut);
 
-    for (int iout = 0; iout < nOut; ++iout) {
+    for (unsigned int iout = 0; iout < nOut; ++iout) {
         clear(tmp[iout]);
     }
 
-    for (int it = 0; it < nIn; ++it) {
-        for (int iout = nOut-1; iout >= 0; --iout) {
+    for (unsigned int it = 0; it < nIn; ++it) {
+        for (int iout = int(nOut)-1; iout >= 0; --iout) {
             if (tmp[iout].hwPtPuppi <= in[it].hwPtPuppi) {
                 if (iout == 0 || tmp[iout-1].hwPtPuppi > in[it].hwPtPuppi) {
                     tmp[iout] = in[it];
@@ -58,20 +58,24 @@ void puppisort_and_crop_ref(unsigned int nIn, unsigned int nOut, const T in[/*nI
         }
     }
 
-    for (int iout = 0; iout < nOut; ++iout) {
+    for (unsigned int iout = 0; iout < nOut; ++iout) {
         out[iout] = tmp[iout];
     }
 
 }
 
 
-void linpuppi_chs_ref(const linpuppi_config &cfg, z0_t pvZ0, const PFChargedObj pfch[/*cfg.nTrack*/], PFChargedObj outallch[/*cfg.nTrack*/]) {
+void linpuppi_chs_ref(const linpuppi_config &cfg, z0_t pvZ0, const PFChargedObj pfch[/*cfg.nTrack*/], PFChargedObj outallch[/*cfg.nTrack*/], bool debug) {
     for (unsigned int i = 0; i < cfg.nTrack; ++i) {
         int z0diff = pfch[i].hwZ0 - pvZ0;
         if (std::abs(z0diff) <= cfg.dzCut || pfch[i].hwId == PID_Muon) {
             outallch[i] = pfch[i];
+            if (debug && pfch[i].hwPt > 0) printf("ref candidate %02u pt %7.2f pid %1d   vz %+6d  dz %+6d (cut %5d) -> pass\n", i, 
+                                    int(pfch[i].hwPt)*LINPUPPI_ptLSB, int(pfch[i].hwId), int(pfch[i].hwZ0), z0diff, cfg.dzCut);
         } else {
             clear(outallch[i]);
+            if (debug && pfch[i].hwPt > 0) printf("ref candidate %02u pt %7.2f pid %1d   vz %+6d  dz %+6d (cut %5d) -> fail\n", i, 
+                                    int(pfch[i].hwPt)*LINPUPPI_ptLSB, int(pfch[i].hwId), int(pfch[i].hwZ0), z0diff, cfg.dzCut);
         }
     }
 }
@@ -164,11 +168,11 @@ pt_t linpuppi_ref_sum2puppiPt(const linpuppi_config &cfg, uint64_t sum, pt_t pt,
 
 
 void fwdlinpuppi_ref(const linpuppi_config &cfg, const HadCaloObj caloin[/*cfg.nIn*/], PFNeutralObj outallne_nocut[/*cfg.nIn*/], PFNeutralObj outallne[/*cfg.nIn*/], PFNeutralObj outselne[/*cfg.nOut*/], bool debug) {
-    const int DR2MAX = LINPUPPI_DR2MAX; 
-    const int DR2MIN = LINPUPPI_DR2MIN; 
-    const int PTMAX2 = (LINPUPPI_ptMax*LINPUPPI_ptMax);
+    const int DR2MAX = cfg.dR2Max; 
+    const int DR2MIN = cfg.dR2Min; 
+    const int PTMAX2 = (cfg.ptMax*cfg.ptMax);
 
-    for (int i = 0; i < cfg.nIn; ++i) {
+    for (unsigned int i = 0; i < cfg.nIn; ++i) {
         outallne_nocut[i].hwPt      = caloin[i].hwPt;
         outallne_nocut[i].hwEta     = caloin[i].hwEta;
         outallne_nocut[i].hwPhi     = caloin[i].hwPhi;
@@ -179,10 +183,10 @@ void fwdlinpuppi_ref(const linpuppi_config &cfg, const HadCaloObj caloin[/*cfg.n
 
     const int sum_bitShift = LINPUPPI_sum_bitShift;
 
-    for (int in = 0; in < cfg.nIn; ++in) {
+    for (unsigned int in = 0; in < cfg.nIn; ++in) {
         if (caloin[in].hwPt == 0) continue;
         uint64_t sum = 0; // 2 ^ sum_bitShift times (int pt^2)/(int dr2)
-        for (int it = 0; it < cfg.nIn; ++it) {
+        for (unsigned int it = 0; it < cfg.nIn; ++it) {
             if (it == in || caloin[it].hwPt == 0) continue;
             int dr2 = dr2_int(caloin[it].hwEta, caloin[it].hwPhi, caloin[in].hwEta, caloin[in].hwPhi); // if dr is inside puppi cone
             if (dr2 <= DR2MAX) {
@@ -212,19 +216,19 @@ void fwdlinpuppi_ref(const linpuppi_config &cfg, const HadCaloObj caloin[/*cfg.n
 }
 
 void linpuppi_ref(const linpuppi_config &cfg, const TkObj track[/*cfg.nTrack*/], z0_t pvZ0, const PFNeutralObj pfallne[/*cfg.nIn*/], PFNeutralObj outallne_nocut[/*cfg.nIn*/], PFNeutralObj outallne[/*cfg.nIn*/], PFNeutralObj outselne[/*cfg.nOut*/], bool debug) {
-    const int DR2MAX = LINPUPPI_DR2MAX; 
-    const int DR2MIN = LINPUPPI_DR2MIN; 
-    const int PTMAX2 = (LINPUPPI_ptMax*LINPUPPI_ptMax);
+    const int DR2MAX = cfg.dR2Max; 
+    const int DR2MIN = cfg.dR2Min; 
+    const int PTMAX2 = (cfg.ptMax*cfg.ptMax);
 
     const int sum_bitShift = LINPUPPI_sum_bitShift;
 
-    for (int in = 0; in < cfg.nIn; ++in) {
+    for (unsigned int in = 0; in < cfg.nIn; ++in) {
         outallne_nocut[in] = pfallne[in]; clear(outallne[in]);
         if (pfallne[in].hwPt == 0) continue;
         uint64_t sum = 0; // 2 ^ sum_bitShift times (int pt^2)/(int dr2)
-        for (int it = 0; it < cfg.nTrack; ++it) {
+        for (unsigned int it = 0; it < cfg.nTrack; ++it) {
             if (it == in || track[it].hwPt == 0) continue;
-            if (std::abs<int>(track[it].hwZ0 - pvZ0) > cfg.dzCut) continue;
+            if (std::abs(int(track[it].hwZ0 - pvZ0)) > cfg.dzCut) continue;
             int dr2 = dr2_int(pfallne[in].hwEta, pfallne[in].hwPhi, track[it].hwEta, track[it].hwPhi); // if dr is inside puppi cone
             if (dr2 <= DR2MAX) {
                 ap_uint<9> dr2short = (dr2 >= DR2MIN ? dr2 : DR2MIN) >> 5; // reduce precision to make divide LUT cheaper
@@ -281,9 +285,9 @@ float linpuppi_flt_sum2puppiPt(const linpuppi_config &cfg, float sum, float pt, 
 void fwdlinpuppi_flt(const linpuppi_config &cfg, const HadCaloObj caloin[/*cfg.nIn*/], PFNeutralObj outallne_nocut[/*cfg.nIn*/], PFNeutralObj outallne[/*cfg.nIn*/], PFNeutralObj outselne[/*cfg.nOut*/], bool debug) {
     const int DR2MAX = cfg.dR2Max; 
     const int DR2MIN = cfg.dR2Min; 
-    const float f_ptMax = LINPUPPI_ptMax * LINPUPPI_ptLSB;
+    const float f_ptMax = cfg.ptMax * LINPUPPI_ptLSB;
 
-    for (int i = 0; i < cfg.nIn; ++i) {
+    for (unsigned int i = 0; i < cfg.nIn; ++i) {
         outallne_nocut[i].hwPt      = caloin[i].hwPt;
         outallne_nocut[i].hwEta     = caloin[i].hwEta;
         outallne_nocut[i].hwPhi     = caloin[i].hwPhi;
@@ -292,10 +296,10 @@ void fwdlinpuppi_flt(const linpuppi_config &cfg, const HadCaloObj caloin[/*cfg.n
         clear(outallne[i]);
     }
 
-    for (int in = 0; in < cfg.nIn; ++in) {
+    for (unsigned int in = 0; in < cfg.nIn; ++in) {
         if (caloin[in].hwPt == 0) continue;
         float sum = 0;
-        for (int it = 0; it < cfg.nIn; ++it) {
+        for (unsigned int it = 0; it < cfg.nIn; ++it) {
             if (it == in || caloin[it].hwPt == 0) continue;
             int dr2 = dr2_int(caloin[it].hwEta, caloin[it].hwPhi, caloin[in].hwEta, caloin[in].hwPhi); // if dr is inside puppi cone
             if (dr2 <= DR2MAX) {
@@ -317,15 +321,15 @@ void fwdlinpuppi_flt(const linpuppi_config &cfg, const HadCaloObj caloin[/*cfg.n
 void linpuppi_flt(const linpuppi_config &cfg, const TkObj track[/*cfg.nTrack*/], z0_t pvZ0, const PFNeutralObj pfallne[/*cfg.nIn*/], PFNeutralObj outallne_nocut[/*cfg.nIn*/], PFNeutralObj outallne[/*cfg.nIn*/], PFNeutralObj outselne[/*cfg.nOut*/], bool debug) {
     const int DR2MAX = cfg.dR2Max; 
     const int DR2MIN = cfg.dR2Min; 
-    const float f_ptMax = LINPUPPI_ptMax * LINPUPPI_ptLSB;
+    const float f_ptMax = cfg.ptMax * LINPUPPI_ptLSB;
 
-    for (int in = 0; in < cfg.nIn; ++in) {
+    for (unsigned int in = 0; in < cfg.nIn; ++in) {
         outallne_nocut[in] = pfallne[in]; clear(outallne[in]);
         if (pfallne[in].hwPt == 0) continue;
         float sum = 0;
-        for (int it = 0; it < cfg.nTrack; ++it) {
+        for (unsigned int it = 0; it < cfg.nTrack; ++it) {
             if (it == in || track[it].hwPt == 0) continue;
-            if (std::abs<int>(track[it].hwZ0 - pvZ0) > cfg.dzCut) continue;
+            if (std::abs(int(track[it].hwZ0 - pvZ0)) > cfg.dzCut) continue;
             int dr2 = dr2_int(pfallne[in].hwEta, pfallne[in].hwPhi, track[it].hwEta, track[it].hwPhi); // if dr is inside puppi cone
             if (dr2 <= DR2MAX) {
                 sum += std::pow(std::min<float>(track[it].hwPt*LINPUPPI_ptLSB,f_ptMax),2) / (std::max<int>(dr2,DR2MIN) * LINPUPPI_DR2LSB);

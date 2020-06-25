@@ -2,7 +2,11 @@
 #define FIRMWARE_LINPUPPI_H
 
 #include <cmath>
+#ifdef CMSSW_GIT_HASH
+#include "data.h"
+#else
 #include "../../firmware/data.h"
+#endif
 
 #if defined(PACKING_DATA_SIZE) && defined(PACKING_NCHANN)
 #include "../../firmware/l1pf_encoding.h"
