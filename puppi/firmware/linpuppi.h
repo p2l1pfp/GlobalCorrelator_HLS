@@ -2,7 +2,11 @@
 #define FIRMWARE_LINPUPPI_H
 
 #include <cmath>
+#ifdef CMSSW_GIT_HASH
+#include "data.h"
+#else
 #include "../../firmware/data.h"
+#endif
 
 #if defined(PACKING_DATA_SIZE) && defined(PACKING_NCHANN)
 #include "../../firmware/l1pf_encoding.h"
@@ -76,8 +80,39 @@ void linpuppi_set_debug(bool debug);
 //=================================================
 #elif defined(REG_HGCal) 
 
-#error "Not implemented"
+#define LINPUPPI_etaBins 2
+#define LINPUPPI_etaCut  0 // assuming the region spans [1.5,2.5] (or 1.25,2.75 with the overlaps), 
+                           // the cut is exactly at the region center (2.0), so it's at 0 in integer coordinates
+#define LINPUPPI_invertEta 0 // 0 if we're building the FW for the positive eta endcap.
+
+#define LINPUPPI_DR2MAX  4727 // 0.3 cone
+#define LINPUPPI_DR2MIN    84 // 0.04 cone
 #define LINPUPPI_dzCut     40
+#define LINPUPPI_ptMax    200 // 50.0/LINPUPPI_ptLSB 
+
+#define LINPUPPI_ptSlopeNe  0.3 
+#define LINPUPPI_ptSlopePh  0.4 
+#define LINPUPPI_ptZeroNe   5.0 
+#define LINPUPPI_ptZeroPh   3.0 
+#define LINPUPPI_alphaSlope 1.5 
+#define LINPUPPI_alphaZero  6.0 
+#define LINPUPPI_alphaCrop  3.0 
+#define LINPUPPI_priorNe    5.0 
+#define LINPUPPI_priorPh    1.5 
+
+#define LINPUPPI_ptSlopeNe_1  0.3 
+#define LINPUPPI_ptSlopePh_1  0.4 
+#define LINPUPPI_ptZeroNe_1   7.0 
+#define LINPUPPI_ptZeroPh_1   4.0 
+#define LINPUPPI_alphaSlope_1 1.5 
+#define LINPUPPI_alphaZero_1  6.0 
+#define LINPUPPI_alphaCrop_1  3.0 
+#define LINPUPPI_priorNe_1    5.0 
+#define LINPUPPI_priorPh_1    1.5 
+
+
+#define LINPUPPI_ptCut        4 // 1.0/LINPUPPI_ptLSB
+#define LINPUPPI_ptCut_1      8 // 2.0/LINPUPPI_ptLSB
 
 //=================================================
 #elif defined(REG_HGCalNoTK)

@@ -33,6 +33,14 @@ int main() {
     pfalgo_config pfcfg(NTRACK,NCALO,NMU, NSELCALO,
                         PFALGO_DR2MAX_TK_MU, PFALGO_DR2MAX_TK_CALO,
                         PFALGO_TK_MAXINVPT_LOOSE, PFALGO_TK_MAXINVPT_TIGHT);
+    linpuppi_config pucfg(NTRACK, NALLNEUTRALS, NNEUTRALS,
+                          LINPUPPI_DR2MIN, LINPUPPI_DR2MAX, LINPUPPI_ptMax, LINPUPPI_dzCut,
+                          LINPUPPI_etaCut, LINPUPPI_invertEta,
+                          LINPUPPI_ptSlopeNe, LINPUPPI_ptSlopeNe_1, LINPUPPI_ptSlopePh, LINPUPPI_ptSlopePh_1, 
+                          LINPUPPI_ptZeroNe, LINPUPPI_ptZeroNe_1, LINPUPPI_ptZeroPh, LINPUPPI_ptZeroPh_1, 
+                          LINPUPPI_alphaSlope, LINPUPPI_alphaSlope_1, LINPUPPI_alphaZero, LINPUPPI_alphaZero_1, LINPUPPI_alphaCrop, LINPUPPI_alphaCrop_1, 
+                          LINPUPPI_priorNe, LINPUPPI_priorNe_1, LINPUPPI_priorPh, LINPUPPI_priorPh_1,
+                          LINPUPPI_ptCut, LINPUPPI_ptCut_1);
 #endif
     
     // input TP objects and PV
@@ -74,7 +82,7 @@ int main() {
         pfalgo3_ref(pfcfg, emcalo, hadcalo, track, mu, pfch, pfpho, pfne, pfmu);
         pfalgo3_merge_neutrals_ref(pfcfg, pfpho, pfne, pfallne);
 #elif defined(REG_HGCal)
-        pfalgo2hgc(pfcfg, hadcalo, track, mu, pfch, pfallne, pfmu); 
+        pfalgo2hgc_ref(pfcfg, hadcalo, track, mu, pfch, pfallne, pfmu); 
 #endif
 
         bool verbose = 0;
@@ -103,7 +111,7 @@ int main() {
     #endif
 #endif
 
-        linpuppi_chs_ref(pucfg, hwZPV, pfch, outallch_ref);
+        linpuppi_chs_ref(pucfg, hwZPV, pfch, outallch_ref, verbose);
         linpuppi_ref(pucfg, track, hwZPV, pfallne, outallne_ref_nocut, outallne_ref, outselne_ref, verbose);
         linpuppi_flt(pucfg, track, hwZPV, pfallne, outallne_flt_nocut, outallne_flt, outselne_flt, verbose);
 

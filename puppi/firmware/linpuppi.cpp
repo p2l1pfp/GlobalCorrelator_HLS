@@ -37,40 +37,42 @@ int _lut_shift15_divide(ap_uint<17> num, ap_uint<9> den) { // returns (num * 2^1
 
 #define fwdlinpuppi_init_x2a_table_size 1024
 #define x2a_t ap_int<16>
-void fwdlinpuppi_init_x2a_short(x2a_t table[fwdlinpuppi_init_x2a_table_size]) {
-    for (int i = 0; i < fwdlinpuppi_init_x2a_table_size; ++i) {
-        // NOTE: HLS doesn't wants this constants to be inside of the loop in order to properly infer a ROM :-/
-        const int sum_bitShift = LINPUPPI_sum_bitShift;
-        const int alpha_bits = LINPUPPI_alpha_bits; // decimal bits of the alpha values
-        const int alphaSlope_bits = LINPUPPI_alphaSlope_bits; // decimal bits of the alphaSlope values
-        const int alphaSlope = LINPUPPI_alphaSlope * std::log(2) * (1 << alphaSlope_bits); // we put a log(2) here since we compute alpha as log2(sum) instead of ln(sum)
-        const int alphaZero = LINPUPPI_alphaZero / std::log(2) * (1 << alpha_bits);
-        const int C0 = - alphaSlope * alphaZero;
-        const int C1 =   alphaSlope * int((std::log2(LINPUPPI_pt2DR2_scale) - sum_bitShift)*(1 << alpha_bits) + 0.5); 
-        int val = C0 + (i >  0 ? alphaSlope * int(std::log2(float(i))*(1 << alpha_bits)) + C1 : 0);
-        if (!(val >= -(1<<(x2a_t::width-1)) && val < (1<<(x2a_t::width-1)))) {
-            printf("ERROR: overflow in x2a table[%d] with ap_int<%d> at index %d, val = %d, maxval = %d\n", fwdlinpuppi_init_x2a_table_size, x2a_t::width, i, val, 1<<(x2a_t::width-1));
-        }
-        assert(val >= -(1<<(x2a_t::width-1)) && val < (1<<(x2a_t::width-1)));
-        table[i] = val;
-    }
+
+// GP: I can't template it since slope and zero are #defined as floats, so I use a macro
+#define MAKE_X2A_LUT(FUNC_NAME, ALPHA_SLOPE, ALPHA_ZERO)                                                                    \
+void FUNC_NAME(x2a_t table[fwdlinpuppi_init_x2a_table_size]) {                                                              \
+    for (int i = 0; i < fwdlinpuppi_init_x2a_table_size; ++i) {                                                             \
+        /* NOTE: HLS doesn't wants this constants to be inside of the loop in order to properly infer a ROM :-(  */         \
+        const int sum_bitShift = LINPUPPI_sum_bitShift;                                                                     \
+        const int alpha_bits = LINPUPPI_alpha_bits; /* decimal bits of the alpha values */                                  \
+        const int alphaSlope_bits = LINPUPPI_alphaSlope_bits; /* decimal bits of the alphaSlope values */                   \
+        const int alphaSlope = ALPHA_SLOPE * std::log(2) * (1 << alphaSlope_bits);                                          \
+                         /* we put a log(2) here since we compute alpha as log2(sum) instead of ln(sum) */                  \
+        const int alphaZero = ALPHA_ZERO / std::log(2) * (1 << alpha_bits);                                                 \
+        const int C0 = - alphaSlope * alphaZero;                                                                            \
+        const int C1 =   alphaSlope * int((std::log2(LINPUPPI_pt2DR2_scale) - sum_bitShift)*(1 << alpha_bits) + 0.5);       \
+        int val = C0 + (i >  0 ? alphaSlope * int(std::log2(float(i))*(1 << alpha_bits)) + C1 : 0);                         \
+        if (!(val >= -(1<<(x2a_t::width-1)) && val < (1<<(x2a_t::width-1)))) {                                              \
+            printf("ERROR: overflow in x2a table[%d] with ap_int<%d> at index %d, val = %d, maxval = %d\n",                 \
+                    fwdlinpuppi_init_x2a_table_size, x2a_t::width, i, val, 1<<(x2a_t::width-1));                            \
+        }                                                                                                                   \
+        assert(val >= -(1<<(x2a_t::width-1)) && val < (1<<(x2a_t::width-1)));                                               \
+        table[i] = val;                                                                                                     \
+    }                                                                                                                       \
 }
 
-int fwdlinpuppi_calc_x2a(ap_uint<32> sum) {
-    static x2a_t table[fwdlinpuppi_init_x2a_table_size];
-#ifdef __SYNTHESIS__
-    fwdlinpuppi_init_x2a_short(table);
-#else // initialize the table only once, otherwise this is really slow
-    static bool is_init = false;
-    if (!is_init) { fwdlinpuppi_init_x2a_short(table); is_init = true; }
+
+MAKE_X2A_LUT(fwdlinpuppi_init_x2a_short, LINPUPPI_alphaSlope, LINPUPPI_alphaZero)  
+#if defined(LINPUPPI_etaBins) && LINPUPPI_etaBins == 2
+MAKE_X2A_LUT(fwdlinpuppi_init_x2a_short_1, LINPUPPI_alphaSlope_1, LINPUPPI_alphaZero_1)  
 #endif
 
+
+int fwdlinpuppi_calc_x2a(ap_uint<32> sum, int alphaSlope, int alphaCrop, const x2a_t & table) {
     const int log2lut_bits = 10;
     const int x2_bits = LINPUPPI_x2_bits;    // decimal bits the discriminator values
     const int alpha_bits = LINPUPPI_alpha_bits; // decimal bits of the alpha values
     const int alphaSlope_bits = LINPUPPI_alphaSlope_bits; // decimal bits of the alphaSlope values
-    const int alphaSlope = LINPUPPI_alphaSlope * std::log(2) * (1 << alphaSlope_bits); // we put a log(2) here since we compute alpha as log2(sum) instead of ln(sum)
-    const int alphaCrop = LINPUPPI_alphaCrop * (1 << x2_bits);
 
     assert(sum >= 0);    
     int sumterm = 0, logarg = sum;
@@ -101,6 +103,82 @@ int fwdlinpuppi_calc_x2a(ap_uint<32> sum) {
         return ret; 
     }
 }
+
+
+int fwdlinpuppi_calc_x2a_step2(ap_uint<32> sum, int alphaSlope, int alphaCrop, const x2a_t table[fwdlinpuppi_init_x2a_table_size]) {
+    #pragma HLS inline
+
+    const int log2lut_bits = 10;
+    const int x2_bits = LINPUPPI_x2_bits;    // decimal bits the discriminator values
+    const int alpha_bits = LINPUPPI_alpha_bits; // decimal bits of the alpha values
+    const int alphaSlope_bits = LINPUPPI_alphaSlope_bits; // decimal bits of the alphaSlope values
+
+    assert(sum >= 0);    
+    int sumterm = 0, logarg = sum;
+    for (int b = 31-log2lut_bits; b >=0; --b) {
+        if (sum[b+log2lut_bits]) {
+            logarg  = logarg >> (b + 1); 
+            sumterm = (b + 1) * alphaSlope * (1 << alpha_bits); 
+            break;
+        }
+    }
+
+#ifndef __SYNTHESIS__
+    if (logarg < 0 || logarg >= fwdlinpuppi_init_x2a_table_size) {
+        printf("hw  x2a(sum = %9d): sumterm = %9d, logarg = %9d, ERROR\n", int(sum), sumterm, logarg);
+    }
+#endif
+    assert(logarg >= 0 && logarg < fwdlinpuppi_init_x2a_table_size);
+    int ret = (table[logarg] + sumterm) >> (alphaSlope_bits + alpha_bits - x2_bits);
+#ifndef __SYNTHESIS__
+    //printf("hw  x2a(sum = %9d): logarg = %9d, sumterm = %9d, table[logarg] = %9d, ret pre-crop = %9d\n", 
+    //            int(sum), logarg, sumterm, int(table[logarg]), ret);
+#endif
+    if (ret < -alphaCrop) {
+        return -alphaCrop;
+    } else if (ret > alphaCrop) {
+        return +alphaCrop;
+    } else {
+        return ret; 
+    }
+}
+
+
+int fwdlinpuppi_calc_x2a(ap_uint<32> sum) {
+    static x2a_t table[fwdlinpuppi_init_x2a_table_size];
+#ifdef __SYNTHESIS__
+    fwdlinpuppi_init_x2a_short(table); 
+#else // initialize the table only once, otherwise this is really slow
+    static bool is_init = false;
+    if (!is_init) { fwdlinpuppi_init_x2a_short(table); is_init = true; }
+#endif
+
+    const int alphaSlope = LINPUPPI_alphaSlope * std::log(2) * (1 << LINPUPPI_alphaSlope_bits); // we put a log(2) here since we compute alpha as log2(sum) instead of ln(sum)
+    const int alphaCrop = LINPUPPI_alphaCrop * (1 << LINPUPPI_x2_bits);
+
+    return fwdlinpuppi_calc_x2a_step2(sum, alphaSlope, alphaCrop, table);
+}
+
+#if defined(LINPUPPI_etaBins) && LINPUPPI_etaBins == 2
+int fwdlinpuppi_calc_x2a(ap_uint<32> sum, bool ietaBin) {
+    static x2a_t table0[fwdlinpuppi_init_x2a_table_size], table1[fwdlinpuppi_init_x2a_table_size];
+#ifdef __SYNTHESIS__
+    fwdlinpuppi_init_x2a_short(table0); fwdlinpuppi_init_x2a_short_1(table1); 
+#else // initialize the table only once, otherwise this is really slow
+    static bool is_init = false;
+    if (!is_init) { fwdlinpuppi_init_x2a_short(table0); fwdlinpuppi_init_x2a_short_1(table1); is_init = true; }
+#endif
+
+    const int alphaSlope_0 = LINPUPPI_alphaSlope * std::log(2) * (1 << LINPUPPI_alphaSlope_bits); // we put a log(2) here since we compute alpha as log2(sum) instead of ln(sum)
+    const int alphaCrop_0 = LINPUPPI_alphaCrop * (1 << LINPUPPI_x2_bits);
+    const int alphaSlope_1 = LINPUPPI_alphaSlope_1 * std::log(2) * (1 << LINPUPPI_alphaSlope_bits); // we put a log(2) here since we compute alpha as log2(sum) instead of ln(sum)
+    const int alphaCrop_1 = LINPUPPI_alphaCrop_1 * (1 << LINPUPPI_x2_bits);
+    int alphaSlope = ietaBin ? alphaSlope_1 : alphaSlope_0;
+    int alphaCrop = ietaBin ? alphaCrop_1 : alphaCrop_0;
+
+    return fwdlinpuppi_calc_x2a_step2(sum, alphaSlope, alphaCrop, (ietaBin ? table1 : table0));
+}
+#endif
 
 #define fwdlinpuppi_x2w_table_size 1024
 void fwdlinpuppi_init_w(ap_uint<9> table[fwdlinpuppi_x2w_table_size]) {
@@ -371,6 +449,7 @@ void linpuppiSum2All(const PFNeutralObj caloin[NALLNEUTRALS], const ap_uint<32> 
     const int ptSlope_bits = LINPUPPI_ptSlope_bits;    // decimal bits of the ptSlope values 
     const int weight_bits = LINPUPPI_weight_bits;
 
+#ifndef LINPUPPI_etaBins
     const int ptSlopeNe = LINPUPPI_ptSlopeNe * (1 << ptSlope_bits);
     const int ptSlopePh = LINPUPPI_ptSlopePh * (1 << ptSlope_bits);
     const int ptZeroNe = LINPUPPI_ptZeroNe / LINPUPPI_ptLSB; // in pt scale
@@ -378,29 +457,71 @@ void linpuppiSum2All(const PFNeutralObj caloin[NALLNEUTRALS], const ap_uint<32> 
     const int priorNe = LINPUPPI_priorNe * (1 << x2_bits);
     const int priorPh = LINPUPPI_priorPh * (1 << x2_bits);
     const int ptCut = LINPUPPI_ptCut; 
+#elif LINPUPPI_etaBins == 2
+    const int ptSlopeNe_0 = LINPUPPI_ptSlopeNe * (1 << ptSlope_bits);
+    const int ptSlopePh_0 = LINPUPPI_ptSlopePh * (1 << ptSlope_bits);
+    const int ptZeroNe_0 = LINPUPPI_ptZeroNe / LINPUPPI_ptLSB; // in pt scale
+    const int ptZeroPh_0 = LINPUPPI_ptZeroPh / LINPUPPI_ptLSB; // in pt scale
+    const int priorNe_0 = LINPUPPI_priorNe * (1 << x2_bits);
+    const int priorPh_0 = LINPUPPI_priorPh * (1 << x2_bits);
+    const int ptCut_0 = LINPUPPI_ptCut; 
+    const int ptSlopeNe_1 = LINPUPPI_ptSlopeNe_1 * (1 << ptSlope_bits);
+    const int ptSlopePh_1 = LINPUPPI_ptSlopePh_1 * (1 << ptSlope_bits);
+    const int ptZeroNe_1 = LINPUPPI_ptZeroNe_1 / LINPUPPI_ptLSB; // in pt scale
+    const int ptZeroPh_1 = LINPUPPI_ptZeroPh_1 / LINPUPPI_ptLSB; // in pt scale
+    const int priorNe_1 = LINPUPPI_priorNe_1 * (1 << x2_bits);
+    const int priorPh_1 = LINPUPPI_priorPh_1 * (1 << x2_bits);
+    const int ptCut_1 = LINPUPPI_ptCut_1; 
+#endif
 
     ap_int<12>  x2a[NALLNEUTRALS], x2ptp[NALLNEUTRALS];
     #pragma HLS ARRAY_PARTITION variable=x2a complete    
     #pragma HLS ARRAY_PARTITION variable=x2ptp complete    
 
+#if defined(LINPUPPI_etaBins) && LINPUPPI_etaBins == 2
+    bool ietaBin[NALLNEUTRALS];
+    #pragma HLS ARRAY_PARTITION variable=ietaBin complete    
     for (int in = 0; in < NALLNEUTRALS; ++in) {
+        ietaBin[in] = (caloin[in].hwEta <= LINPUPPI_etaCut) ? LINPUPPI_invertEta : (1-LINPUPPI_invertEta);
+    }
+#endif
+
+    for (int in = 0; in < NALLNEUTRALS; ++in) {
+#ifndef LINPUPPI_etaBins
         x2a[in] = fwdlinpuppi_calc_x2a(sums[in]);
+#elif LINPUPPI_etaBins == 2
+        x2a[in] = fwdlinpuppi_calc_x2a(sums[in], ietaBin[in]);
+#endif
     }
 
     for (int in = 0; in < NALLNEUTRALS; ++in) {
         if (caloin[in].hwId == PID_Photon) {
+#ifndef LINPUPPI_etaBins
             int val = (ptSlopePh*caloin[in].hwPt - ptSlopePh*ptZeroPh) >> (ptSlope_bits + 2 - x2_bits);
             x2ptp[in] =  val < 2047 ? val - priorPh : 2047; // saturate
+#elif LINPUPPI_etaBins == 2
+            int val = ((ietaBin[in] ? ptSlopePh_1 : ptSlopePh_0)*caloin[in].hwPt - (ietaBin[in] ? ptSlopePh_1*ptZeroPh_1 : ptSlopePh_0*ptZeroPh_0)) >> (ptSlope_bits + 2 - x2_bits);
+            x2ptp[in] =  val < 2047 ? val - (ietaBin[in] ? priorPh_1 : priorPh_0) : 2047; // saturate
+#endif
         } else {
+#ifndef LINPUPPI_etaBins
             int val = (ptSlopeNe*caloin[in].hwPt - ptSlopeNe*ptZeroNe) >> (ptSlope_bits + 2 - x2_bits);
             x2ptp[in] =  val < 2047 ? val - priorNe : 2047; // saturate
+#elif LINPUPPI_etaBins == 2
+            int val = ((ietaBin[in] ? ptSlopeNe_1 : ptSlopeNe_0)*caloin[in].hwPt - (ietaBin[in] ? ptSlopeNe_1*ptZeroNe_1 : ptSlopeNe_0*ptZeroNe_0)) >> (ptSlope_bits + 2 - x2_bits);
+            x2ptp[in] =  val < 2047 ? val - (ietaBin[in] ? priorNe_1 : priorNe_0) : 2047; // saturate
+#endif
         }
     }
 
     for (int in = 0; in < NALLNEUTRALS; ++in) {
         int x2 = x2a[in]+x2ptp[in];
         pt_t puppiPt = fwdlinpuppi_calc_wpt(caloin[in].hwPt, x2);
+#ifndef LINPUPPI_etaBins
         if (puppiPt >= LINPUPPI_ptCut) {
+#elif LINPUPPI_etaBins == 2
+        if (puppiPt >= (ietaBin[in] ? LINPUPPI_ptCut_1 : LINPUPPI_ptCut)) {
+#endif
             out[in] = caloin[in];
             out[in].hwPtPuppi = puppiPt;
         } else {
@@ -408,6 +529,7 @@ void linpuppiSum2All(const PFNeutralObj caloin[NALLNEUTRALS], const ap_uint<32> 
         }
 #ifndef __SYNTHESIS__
         if (caloin[in].hwPt == 0) continue;
+#ifndef LINPUPPI_etaBins
         if (gdebug_) printf("hw  candidate %02d pt %7.2f  em %1d: alpha %+7.2f   x2a %+5d = %+7.3f  x2pt %+5d = %+7.3f   x2 %+5d = %+7.3f  -->                       puppi pt %7.2f\n",
                    in, caloin[in].hwPt*LINPUPPI_ptLSB, int(caloin[in].hwId == PID_Photon), 
                    sums[in] > 0 ? std::log2(float(sums[in]) * LINPUPPI_pt2DR2_scale / (1<<15))*std::log(2.) : 0., 
@@ -416,7 +538,17 @@ void linpuppiSum2All(const PFNeutralObj caloin[NALLNEUTRALS], const ap_uint<32> 
                    (int(x2ptp[in]) + (caloin[in].hwId == PID_Photon ? priorPh : priorNe) )/float(1<<x2_bits), 
                    x2, x2/float(1<<x2_bits), 
                    puppiPt*LINPUPPI_ptLSB);
-#endif
+#elif LINPUPPI_etaBins == 2
+        if (gdebug_) printf("hw  candidate %02d pt %7.2f  em %1d  ieta %1d: alpha %+7.2f   x2a %+5d = %+7.3f  x2pt %+5d = %+7.3f   x2 %+5d = %+7.3f  -->                       puppi pt %7.2f\n",
+                   in, caloin[in].hwPt*LINPUPPI_ptLSB, int(caloin[in].hwId == PID_Photon), int(ietaBin[in]),
+                   sums[in] > 0 ? std::log2(float(sums[in]) * LINPUPPI_pt2DR2_scale / (1<<15))*std::log(2.) : 0., 
+                   int(x2a[in]), x2a[in]/float(1<<x2_bits), 
+                   (int(x2ptp[in]) + (caloin[in].hwId == PID_Photon ? (ietaBin[in] ? priorPh_1 : priorPh_0) : (ietaBin[in] ? priorNe_1 : priorNe_0)) ), 
+                   (int(x2ptp[in]) + (caloin[in].hwId == PID_Photon ? (ietaBin[in] ? priorPh_1 : priorPh_0) : (ietaBin[in] ? priorNe_1 : priorNe_0)) )/float(1<<x2_bits), 
+                   x2, x2/float(1<<x2_bits), 
+                   puppiPt*LINPUPPI_ptLSB);
+#endif // etaBins
+#endif // synthesis
     }
 }
 

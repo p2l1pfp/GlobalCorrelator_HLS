@@ -69,6 +69,13 @@ namespace fw2dpf {
         pf.hwStatus = 0;
         out.push_back(pf);
     }
+    inline void convert_puppi(const PFNeutralObj & src, std::vector<l1tpf_impl::PFParticle> &out) {
+        convert(src, out);
+        out.back().hwPt = src.hwPtPuppi;
+        out.back().setPuppiW(out.back().hwPt/float(src.hwPt));
+    }
+
+
 
     // convert inputs from discrete to firmware
     inline void convert(const TkObj & in, l1tpf_impl::PropagatedTrack & out) {
@@ -114,6 +121,12 @@ namespace fw2dpf {
             if (in[i].hwPt > 0) convert(in[i], out);
         }
     } 
+    inline void convert_puppi(unsigned int NMAX, const PFNeutralObj in[], std::vector<l1tpf_impl::PFParticle> &out) {
+        for (unsigned int i = 0; i < NMAX; ++i) {
+            if (in[i].hwPtPuppi > 0) convert_puppi(in[i], out);
+        }
+    } 
+
     template<unsigned int NMAX>
     void convert(const PFChargedObj in[NMAX], std::vector<l1tpf_impl::PropagatedTrack> srctracks, std::vector<l1tpf_impl::PFParticle> &out) {
         for (unsigned int i = 0; i < NMAX; ++i) {
