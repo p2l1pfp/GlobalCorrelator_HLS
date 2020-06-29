@@ -62,8 +62,8 @@ void tk2calo_caloalgo_hgc(const HadCaloObj calo[NCALO], const pt_t sumtk[NCALO],
             }
         }
         pfout[icalo].hwPt  = calopt;
-        pfout[icalo].hwEta = calopt ? calo[icalo].hwEta : etaphi_t(0);
-        pfout[icalo].hwPhi = calopt ? calo[icalo].hwPhi : etaphi_t(0);
+        pfout[icalo].hwEta = calopt ? calo[icalo].hwEta : eta_t(0);
+        pfout[icalo].hwPhi = calopt ? calo[icalo].hwPhi : phi_t(0);
         pfout[icalo].hwId  = calopt ? (calo[icalo].hwIsEM ? PID_Photon : PID_Neutral) : 0;
     }
 }

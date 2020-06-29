@@ -1,37 +1,17 @@
 // vim: syntax=cpp
 
 template<int NB>
-ap_uint<NB> dr2_int_cap(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2, ap_uint<NB> max) {
-#if 0 // original version (breaks if deta or dphi wrap around because of integer overflow)
-    etaphi_t deta = (eta1-eta2);
-    etaphi_t dphi = (phi1-phi2);
+ap_uint<NB> dr2_int_cap(eta_t eta1, eta_t phi1, eta_t eta2, eta_t phi2, ap_uint<NB> max) {
+    ap_int<eta_t::width+1> deta = (eta1-eta2);
+    ap_int<phi_t::width+1> dphi = (phi1-phi2);
     int dr2 = deta*deta + dphi*dphi;
     return (dr2 < int(max) ? ap_uint<NB>(dr2) : max);
-#elif 0 // from Dylan with fix to the overflow?
-    //hardcode for etaphi size
-    int tmpe = eta1-eta2;
-    ap_uint<NB> deta = (tmpe > 0 ? tmpe : -tmpe);
-    int tmpp = phi1-phi2;
-    ap_uint<NB> dphi = (tmpp > 0 ? tmpp : -tmpp);
-    int dr2 = max;
-    if ((deta >> (NB/2))==0 && (dphi >> (NB/2))==0) {
-        ap_uint<NB> deta2 = deta*deta;
-        ap_uint<NB> dphi2 = dphi*dphi;
-        dr2 = deta2 + dphi2;
-    }
-    return (dr2 < int(max) ? ap_uint<NB>(dr2) : max);
-#elif 1 // original version + fix for the overflow
-    ap_int<etaphi_t::width+1> deta = (eta1-eta2);
-    ap_int<etaphi_t::width+1> dphi = (phi1-phi2);
-    int dr2 = deta*deta + dphi*dphi;
-    return (dr2 < int(max) ? ap_uint<NB>(dr2) : max);
-#endif
 }
 
 template<int NB, typename PTS_t>
-ap_uint<NB> dr2_dpt_int_cap(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2, pt_t pt1, pt_t pt2, PTS_t ptscale, ap_uint<NB> dr2max, ap_uint<NB> max) {
-    ap_int<etaphi_t::width+1> deta = (eta1-eta2);
-    ap_int<etaphi_t::width+1> dphi = (phi1-phi2);
+ap_uint<NB> dr2_dpt_int_cap(eta_t eta1, eta_t phi1, eta_t eta2, eta_t phi2, pt_t pt1, pt_t pt2, PTS_t ptscale, ap_uint<NB> dr2max, ap_uint<NB> max) {
+    ap_int<eta_t::width+1> deta = (eta1-eta2);
+    ap_int<phi_t::width+1> dphi = (phi1-phi2);
     int dr2 = deta*deta + dphi*dphi;
     pt_t dpt = pt1 - pt2;
     if (dpt < 0) dpt = 0;

@@ -100,8 +100,8 @@ void pfalgo3_em_ref(const pfalgo3_config &cfg, const EmCaloObj emcalo[/*cfg.nEMC
             if (g_pfalgo3_debug_ref_ && emcalo[ic].hwPt > 0) printf("FW  \t emcalo %3d pt %7d flagged as photon\n", ic, int(emcalo[ic].hwPt));
         }
         outpho[ic].hwPt  = photonPt;
-        outpho[ic].hwEta = photonPt ? emcalo[ic].hwEta : etaphi_t(0);
-        outpho[ic].hwPhi = photonPt ? emcalo[ic].hwPhi : etaphi_t(0);
+        outpho[ic].hwEta = photonPt ? emcalo[ic].hwEta : eta_t(0);
+        outpho[ic].hwPhi = photonPt ? emcalo[ic].hwPhi : phi_t(0);
         outpho[ic].hwId  = photonPt ? PID_Photon : particleid_t(0);
 
     }
