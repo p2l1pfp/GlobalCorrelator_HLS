@@ -7,6 +7,7 @@ set_top ${l1pfTopFunc}
 #set_top pfalgo3_full
 add_files firmware/simple_fullpfalgo.cpp -cflags "-DTESTMP7 -DHLS_pipeline_II=2"
 add_files puppi/firmware/simple_puppi.cpp -cflags "-DTESTMP7 -DHLS_pipeline_II=2"
+add_files converter/firmware/wrapper.cpp -cflags "-DTESTMP7 -DHLS_pipeline_II=2"
 add_files -tb tmux_input_create_test.cpp  -cflags "-DTESTMP7 -DHLS_pipeline_II=2 -DMP7_TOP_FUNC=${l1pfTopFunc} -DMP7_REF_FUNC=${l1pfRefFunc} -DMP7_VALIDATE=${l1pfValidate}"
 add_files -tb simple_fullpfalgo_ref.cpp -cflags "-DTESTMP7"
 add_files -tb utils/pattern_serializer.cpp -cflags "-DTESTMP7"

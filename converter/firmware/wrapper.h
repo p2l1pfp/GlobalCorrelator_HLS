@@ -18,15 +18,11 @@ typedef ap_uint<96> input_t;
 typedef ap_uint<64> output_t;
 void pf_input_track_conv_hw(input_t in, output_t& out);
 
-
 typedef ap_fixed<24,12, AP_RND_CONV, AP_SAT> bigfix_t; // helper type
 
-//#include "../../submodules/GlobalCorrelator_HLS/firmware/data.h"
 #define PF_PT_SCALE (4.0)
 #define PF_ETAPHI_SCALE (4*180./3.1415)
 #define PF_Z0_SCALE (20)
-
-
 
 
 void pack_L1T_track(ap_uint<kTrackWordSize> &tk,

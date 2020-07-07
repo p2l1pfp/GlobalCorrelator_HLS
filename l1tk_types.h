@@ -1,3 +1,5 @@
+#ifndef LONETRACK_TYPES_H
+#define LONETRACK_TYPES_H
 // From https://gitlab.cern.ch/GTT/common/-/blob/master/DataFormats/interface/Track.h
 // https://twiki.cern.ch/twiki/bin/viewauth/CMS/HybridDataFormat#Fitted_Tracks_written_by_KalmanF
 
@@ -64,3 +66,4 @@ namespace l1tk {
     const double kRmin = (2.*100.0*kSynchrotron); //2 is min pt
     const float rzphiChi2Bins[16] = {0, 0.25, 0.5, 1, 2, 3, 5, 7, 10, 20, 40, 100, 200, 500, 1000, 3000};
 }
+#endif
