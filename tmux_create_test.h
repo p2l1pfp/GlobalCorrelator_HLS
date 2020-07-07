@@ -201,9 +201,9 @@ inline void mp7_pack_full(l1tpf_int::Muon mu_in[N], MP7DataWord data[]) {
 void mp7wrapped_pack_in_full(l1tpf_int::CaloCluster emcalo[NEMCALO], l1tpf_int::CaloCluster hadcalo[NCALO], l1tpf_int::PropagatedTrack track[NTRACK], l1tpf_int::Muon mu[NMU], MP7DataWord data[MP7_NCHANN]) {
     // pack inputs
     assert(NWORDS_EMCALO*NEMCALO + NWORDS_TRACK*NTRACK + NWORDS_CALO*NCALO + NWORDS_MU*NMU <= MP7_NCHANN);
-    #define EMOFFS NWORDS_TRACK*NTRACK
-    #define HADOFFS NWORDS_EMCALO*NEMCALO+EMOFFS
-    #define MUOFFS NWORDS_CALO*NCALO+HADOFFS
+    constexpr unsigned int EMOFFS = NWORDS_TRACK*NTRACK;
+    constexpr unsigned int HADOFFS =  NWORDS_EMCALO*NEMCALO+EMOFFS;
+    constexpr unsigned int MUOFFS  = NWORDS_CALO*NCALO+HADOFFS;
 
     mp7_pack_full<NTRACK,0>(track, data);
     mp7_pack_full_em<NEMCALO,EMOFFS>(emcalo, data);
@@ -214,9 +214,10 @@ void mp7wrapped_pack_in_full(l1tpf_int::CaloCluster emcalo[NEMCALO], l1tpf_int::
 void mp7wrapped_pack_in_reorder(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj track[NTRACK], MuObj mu[NMU], MP7DataWord data[MP7_NCHANN]) {
     // pack inputs
     assert(2*NEMCALO + 2*NTRACK + 2*NCALO + 2*NMU <= MP7_NCHANN);
-    #define EMOFFS 2*NTRACK
-    #define HADOFFS 2*NEMCALO+EMOFFS
-    #define MUOFFS 2*NCALO+HADOFFS
+    constexpr unsigned int EMOFFS = 2*NTRACK;
+    constexpr unsigned int HADOFFS = 2*NEMCALO+EMOFFS;
+    constexpr unsigned int MUOFFS  = 2*NCALO+HADOFFS;
+
     mp7_pack<NTRACK,0>(track, data);
     mp7_pack<NEMCALO,EMOFFS>(emcalo, data);
     mp7_pack<NCALO,HADOFFS>(hadcalo, data);
