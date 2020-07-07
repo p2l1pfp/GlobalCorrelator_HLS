@@ -21,7 +21,7 @@ namespace l1tk {
         kZ0Size             = 12,                                   // Width of z-position
         kZ0MagSize          = 5,                                    // Width of z-position magnitude (signed)
         kEtaSize            = 16,                                   // Width of eta
-        kEtaMagSize         = 3,                                    // Width of eta magnitude (signed)
+        kEtaMagSize         = 3+1, // ch twiki seems wrong (sign)   // Width of eta magnitude (signed)
         kPhiSize            = 12,                                   // Width of phi
         kPhiMagSize         = 0,                                    // Width of phi magnitude (signed)
         kChargeSize         = 1,                                    // Charge of pT
@@ -29,7 +29,7 @@ namespace l1tk {
         kPtSize             = 14,                                   // Width of pT
         kPtMagSize          = 0,                                    // Width of pT magnitude (unsigned)
         //LSB
-        kTrackParamsSize    = kD0Size + kZ0Size + kEtaSize \
+        kTrackParamsSize    = kD0Size + kZ0Size + kEtaSize              \
         + kPhiSize + kChargeSize + kPtSize,     // Width of track parameters
 
         kTrackWordSize      = kValid \
@@ -56,6 +56,8 @@ namespace l1tk {
     typedef bool                                                        q_t;              // Charge of track PT
     typedef ap_ufixed<kPtSize, kPtMagSize, AP_RND_CONV, AP_SAT>         tkpt_t;           // Track PT
     typedef ap_fixed<kPtSize+kChargeSize,0, AP_RND_CONV, AP_SAT>        rinv_t;           // 1/RT
+    typedef ap_ufixed<kPtSize,0, AP_RND_CONV, AP_SAT>                   urinv_t;           // 1/RT unsigned
+    typedef ap_ufixed<kEtaSize-1, kEtaMagSize-1, AP_RND_CONV, AP_SAT>   utanlam_t;         // Track eta
 
     const double kSynchrotron = (1.0/(0.3*3.8));
     const double kRmax = (128.*100.0*kSynchrotron); //128 is max pt

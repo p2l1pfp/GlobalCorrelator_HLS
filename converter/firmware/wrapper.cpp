@@ -8,9 +8,6 @@ using std::cout;
 using std::endl;
 #endif
 
-// #include "../../submodules/GTT_MET_HLS/eta/src/eta_top.cc"
-// #include "../../submodules/GTT_MET_HLS/p_T/src/p_T_top.cc"
-
 void pf_input_track_conv_hw(input_t in, output_t& out){
     #pragma HLS pipeline II=1
 
@@ -42,17 +39,6 @@ void pf_input_track_conv_hw(input_t in, output_t& out){
 
     etaphi_t conv_eta;
     convert_eta(tanlam,conv_eta);
-
-    // in_pt_t conv_in_pt = rinv;
-    // out_pt_t conv_out_pt;
-    // p_T(conv_in_pt, &conv_out_pt);
-
-    // in_eta_t conv_in_eta = tanlam;
-    // out_eta_t conv_out_eta;
-    // bool parity=1;
-    // bool erase;
-    // eta(conv_in_eta, &conv_out_eta, parity, &erase);
-    // tanlam_t tan_lambda = (M_PI/2.)-(2.*atan(exp(-1.*track_in[i].floatEta())));
 
     // pack in PF format
     pt_t pf_pt = conv_pt;
