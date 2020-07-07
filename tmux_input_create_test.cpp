@@ -325,17 +325,19 @@ int main() {
         if (1 && link_off+(NLINKS_PER_REG+1) > NLINKS_APX_GEN0) link_off = 0;
     
     }
-    //std::cout<<std::endl;
+    std::ofstream outfile;
+    outfile.open("../../../../inputs.txt");
     for (int ib = 0; ib < listLength; ib++){
         // std::cout << ib << " ";
-        std::cout << "0x" << std::setfill('0') << std::setw(4) << std::hex << ib << "   " <<std::dec;
+        outfile << "0x" << std::setfill('0') << std::setw(4) << std::hex << ib << "   " <<std::dec;
         //for (int ia = 0; ia < NLINKS_APX_GEN0; ia++){
         for (int ia = NLINKS_APX_GEN0-1; ia >=0; ia--){
             //datawords[ia][ib] = "0x0000000000000000";
-            std::cout << datawords[ia][ib] << "    ";
+            outfile << datawords[ia][ib] << "    ";
         }
-        std::cout << std::endl;
+        outfile << std::endl;
     }
+    outfile.close();
 
     // std::cout<<"For all events: "<<std::endl;
     // std::cout<<"\ttrack  = "<<n_alltracks<<std::endl;

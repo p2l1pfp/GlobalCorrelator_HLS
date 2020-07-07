@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <fstream>
 #include <iomanip>
 #include "firmware/simple_fullpfalgo.h"
 #include "vertexing/firmware/simple_vtx.h"

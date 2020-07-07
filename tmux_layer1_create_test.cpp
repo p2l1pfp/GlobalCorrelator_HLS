@@ -300,19 +300,22 @@ int main() {
     
     }
 
+    std::ofstream outfile;
+    outfile.open("../../../../layer1.txt");
     int iclk = 0;
     for (int ia = 0; ia < NTEST; ia++){
         for (int io = 0; io < NREGIONS; io++){
-            std::cout << "0x" << std::setfill('0') << std::setw(4) << std::hex << iclk << "   " <<std::dec;
+            outfile << "0x" << std::setfill('0') << std::setw(4) << std::hex << iclk << "   " <<std::dec;
             //for (int ib = 0; ib < mp7DataLength+1; ib++){
             for (int ib = NLINKS_APX_GEN0-1; ib >= 0; ib--){
                 //std::cout << ia*NREGIONS+outputOrder[io] << "-" << ib << "    ";
-                std::cout << datawords[ia*NREGIONS+outputOrder[io]][ib] << "    ";
+                outfile << datawords[ia*NREGIONS+outputOrder[io]][ib] << "    ";
             }
-            std::cout << std::endl;
+            outfile << std::endl;
             iclk++;
         }
     }
+    outfile.close();
 
     return 0;
 }
