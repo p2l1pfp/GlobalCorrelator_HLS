@@ -84,6 +84,32 @@ inline void mp7_pack_full_had(l1tpf_int::CaloCluster hadcalo_in[N], MP7DataWord 
     }
 }
 
+void track_convert(l1tpf_int::PropagatedTrack track_in, MP7DataWord data[NWORDS_TRACK]) {
+
+    tanlam_t tan_lambda = (M_PI/2.)-(2.*atan(exp(-1.*track_in.floatEta())));
+    float phi_center = M_PI*(2.*float(int((track_in.floatPhi()+M_PI)*float(TT_NPHI_SECTORS)/(2.*M_PI)))+1.)/float(TT_NPHI_SECTORS);
+    tkphi_t rel_phi = (track_in.floatPhi()-phi_center)/1.026;
+    rinv_t r_inverse = (track_in.hwCharge ? 1. : -1.)*((0.01/kSynchrotron)*(1./track_in.floatPt())-(1./kRmax))/(((1./kRmin)-(1./kRmax))/(double(1<<14)-1.));
+    tkz0_t z0scaled = double(track_in.hwZ0)/(double(l1tpf_int::InputTrack::Z0_SCALE)*1.066666);
+    chi2rphi_t conv_chi2 = (1<<kChi2RZSize)-1;
+    for (int ic = (1<<kChi2RZSize)-2; ic >=0; ic++) {
+        if (rzphiChi2Bins[ic] <= track_in.hwChi2) {
+            conv_chi2 = ic;
+            break;
+        }
+    }
+    hit_t hit_pattern = track_in.hwStubs;
+    ap_uint<5> split0 = tan_lambda.range(4,0); // 32 - 15 - 12
+    ap_uint<11> split01 = tan_lambda.range(15,5); // 16 - 5
+    tkd0_t d0dummy = track_in.floatPhi()*0.09; //dummy data
+    ap_uint<9> split12 = d0dummy.range(8,0); // 32 - 11 - 12
+    ap_uint<4> split2 = d0dummy.range(12,8); // 13 - 9
+    data[2] = ( split0, ap_uint<kPhiSize>(rel_phi.range(kPhiSize-1,0)), ap_uint<kPtSize+1>(r_inverse.range(kPtSize,0)) );
+    data[1] = ( split12, ap_uint<kZ0Size>(z0scaled.range(kZ0Size-1,0)), split01 );
+    data[0] = ( valid_t(1), extraMVA_t(int(track_in.floatPhi())), trackMVA_t(2-int(track_in.floatPhi())), hit_t(track_in.hwStubs), bendChi2_t(3+int(track_in.floatPhi())), chi2rz_t(conv_chi2-int(track_in.floatPhi())), conv_chi2, split2 ); //dummy data here too
+
+}
+
 template<unsigned int N, unsigned int OFFS> 
 inline void mp7_pack_full(l1tpf_int::PropagatedTrack track_in[N], MP7DataWord data[]) {
     /*TkObj track[N];
@@ -100,27 +126,11 @@ inline void mp7_pack_full(l1tpf_int::PropagatedTrack track_in[N], MP7DataWord da
     }*/
     for (unsigned int i = 0; i < N; ++i) {
         if (track_in[i].hwPt != 0) {
-            tanlam_t tan_lambda = (M_PI/2.)-(2.*atan(exp(-1.*track_in[i].floatEta())));
-            float phi_center = M_PI*(2.*float(int(track_in[i].floatPhi()*float(TT_NPHI_SECTORS)/(2.*M_PI)))+1.)/float(TT_NPHI_SECTORS);
-            tkphi_t rel_phi = (track_in[i].floatPhi()-phi_center)/1.026;
-            rinv_t r_inverse = (track_in[i].hwCharge ? 1. : -1.)*((0.01/kSynchrotron)*(1./track_in[i].floatPt())-(1./kRmax))/(((1./kRmin)-(1./kRmax))/(double(1<<14)-1.));
-            tkz0_t z0scaled = double(track_in[i].hwZ0)/(double(l1tpf_int::InputTrack::Z0_SCALE)*1.066666);
-            chi2rphi_t conv_chi2 = (1<<kChi2RZSize)-1;
-            for (int ic = (1<<kChi2RZSize)-2; ic >=0; ic++) {
-                if (rzphiChi2Bins[ic] <= track_in[i].hwChi2) {
-                    conv_chi2 = ic;
-                    break;
-                }
-            }
-            hit_t hit_pattern = track_in[i].hwStubs;
-            ap_uint<5> split0 = tan_lambda.range(4,0); // 32 - 15 - 12
-            ap_uint<11> split01 = tan_lambda.range(15,5); // 16 - 5
-            tkd0_t d0dummy = float(i)*0.09; //dummy data
-            ap_uint<9> split12 = d0dummy.range(8,0); // 32 - 11 - 12
-            ap_uint<4> split2 = d0dummy.range(12,8); // 13 - 9
-            data[NWORDS_TRACK*i+2+OFFS] = ( split0, ap_uint<kPhiSize>(rel_phi.range(kPhiSize-1,0)), ap_uint<kPtSize+1>(r_inverse.range(kPtSize,0)) );
-            data[NWORDS_TRACK*i+1+OFFS] = ( split12, ap_uint<kZ0Size>(z0scaled.range(kZ0Size-1,0)), split01 );
-            data[NWORDS_TRACK*i+0+OFFS] = ( valid_t(1), extraMVA_t(i), trackMVA_t(2-i), hit_t(track_in[i].hwStubs), bendChi2_t(3+i), chi2rz_t(conv_chi2-i), conv_chi2, split2 ); //dummy data here too
+            MP7DataWord tmpdata[NWORDS_TRACK];
+            track_convert(track_in[i], tmpdata);
+            data[NWORDS_TRACK*i+2+OFFS] = tmpdata[2];
+            data[NWORDS_TRACK*i+1+OFFS] = tmpdata[1];
+            data[NWORDS_TRACK*i+0+OFFS] = tmpdata[0]; //dummy data here too
         } else {
             data[NWORDS_TRACK*i+2+OFFS] = 0;
             data[NWORDS_TRACK*i+1+OFFS] = 0;
@@ -153,6 +163,101 @@ inline void mp7_pack_full(l1tpf_int::Muon mu_in[N], MP7DataWord data[]) {
         data[NWORDS_MU*i+1+OFFS] = ( mu[i].hwPhi, mu[i].hwEta );
     }
 }
+
+void write_track_vector_to_link(std::vector<l1tpf_int::PropagatedTrack> in_vec, std::string datawords[], int offset) {
+    int index = 0;
+    std::stringstream ss;
+    bool held = false;
+    MP7DataWord heldword = 0;
+    for (auto itr = in_vec.begin(); itr != in_vec.end(); ++itr) {
+        MP7DataWord tmpdata[NWORDS_TRACK] = {0, 0, 0};
+        //for removing null tracks
+        if (int(itr->hwPt) != 0) track_convert(*itr,tmpdata);
+        ss.str("");
+        ss << "0x";
+        if (!held) {
+            ss << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (tmpdata[1]);
+            ss << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (tmpdata[0]);
+            datawords[offset+index] = ss.str();
+            index++;
+            heldword = tmpdata[2];
+            held = true;
+        } else {
+            ss << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (tmpdata[0]);
+            ss << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (heldword);
+            datawords[offset+index] = ss.str();
+            index++;
+            ss.str("");
+            ss << "0x";
+            ss << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (tmpdata[2]);
+            ss << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (tmpdata[1]);
+            datawords[offset+index] = ss.str();
+            index++;
+            held = false;
+        }
+    }
+    if (held) {
+        ss.str("");
+        ss << "0x00000000" << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (heldword);
+        datawords[offset+index] = ss.str();
+        index++;
+    }
+}
+
+void write_emcalo_vector_to_link(std::vector<l1tpf_int::CaloCluster> in_vec, std::string datawords[], int offset) {
+    int index = 0;
+    std::stringstream ss;
+    for (auto itr = in_vec.begin(); itr != in_vec.end(); ++itr) {
+        MP7DataWord tmpdata[NWORDS_EMCALO];
+        EmCaloObj emcalo;
+        dpf2fw::convert(*itr, emcalo);
+        tmpdata[0] = ( emcalo.hwPtErr, emcalo.hwPt );
+        tmpdata[1] = ( emcalo.hwPhi,   emcalo.hwEta );
+        ss.str("");
+        ss << "0x";
+        ss << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (tmpdata[1]);
+        ss << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (tmpdata[0]);
+        datawords[offset+index] = ss.str();
+        index++;
+    }
+}
+
+void write_calo_vector_to_link(std::vector<l1tpf_int::CaloCluster> in_vec, std::string datawords[], int offset) {
+    int index = 0;
+    std::stringstream ss;
+    for (auto itr = in_vec.begin(); itr != in_vec.end(); ++itr) {
+        MP7DataWord tmpdata[NWORDS_CALO];
+        HadCaloObj hadcalo;
+        dpf2fw::convert(*itr, hadcalo);
+        tmpdata[0] = ( hadcalo.hwEmPt, hadcalo.hwPt );
+        tmpdata[1] = ( hadcalo.hwIsEM, hadcalo.hwPhi, hadcalo.hwEta );
+        ss.str("");
+        ss << "0x";
+        ss << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (tmpdata[1]);
+        ss << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (tmpdata[0]);
+        datawords[offset+index] = ss.str();
+        index++;
+    }
+}
+
+void write_mu_vector_to_link(std::vector<l1tpf_int::Muon> in_vec, std::string datawords[], int offset) {
+    int index = 0;
+    std::stringstream ss;
+    for (auto itr = in_vec.begin(); itr != in_vec.end(); ++itr) {
+        MP7DataWord tmpdata[NWORDS_MU];
+        MuObj mu;
+        dpf2fw::convert(*itr, mu);
+        tmpdata[0] = ( mu.hwPtErr, mu.hwPt );
+        tmpdata[1] = ( mu.hwPhi, mu.hwEta );
+        ss.str("");
+        ss << "0x";
+        ss << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (tmpdata[1]);
+        ss << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (tmpdata[0]);
+        datawords[offset+index] = ss.str();
+        index++;
+    }
+}
+
 
 void mp7wrapped_pack_in_full(l1tpf_int::CaloCluster emcalo[NEMCALO], l1tpf_int::CaloCluster hadcalo[NCALO], l1tpf_int::PropagatedTrack track[NTRACK], l1tpf_int::Muon mu[NMU], MP7DataWord data[MP7_NCHANN]) {
     // pack inputs
