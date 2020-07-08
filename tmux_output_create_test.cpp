@@ -276,17 +276,20 @@ int main() {
     }
 
 
+    std::ofstream outfile;
+    outfile.open("../../../../output.txt");
     int iclk = 0;
     for (int ia = 0; ia < NTEST; ia++){
         for (int io = 0; io < TMUX_IN; io++){
-            std::cout << "0x" << std::setfill('0') << std::setw(4) << std::hex << iclk << "   " <<std::dec;
+            outfile << "0x" << std::setfill('0') << std::setw(4) << std::hex << iclk << "   " <<std::dec;
             for (int ib = 0; ib < mp7DataLength+1; ib++){
-                std::cout << datawords[ia*TMUX_IN+outputOrder[io]][ib] << "    ";
+                outfile << datawords[ia*TMUX_IN+outputOrder[io]][ib] << "    ";
             }
-            std::cout << std::endl;
+            outfile << std::endl;
             iclk++;
         }
     }
+    outfile.close();
 
     return 0;
 }
