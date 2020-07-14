@@ -353,7 +353,23 @@ void pfalgo3(const EmCaloObj emcalo[NEMCALO], const HadCaloObj hadcalo[NCALO], c
 void packed_pfalgo3(const ap_uint<PACKING_DATA_SIZE> input[PACKING_NCHANN], ap_uint<PACKING_DATA_SIZE> output[PACKING_NCHANN]) {
     #pragma HLS ARRAY_PARTITION variable=input complete
     #pragma HLS ARRAY_PARTITION variable=output complete
+#ifdef HLS_pipeline_II
+ #if HLS_pipeline_II == 1
+    #pragma HLS pipeline II=1
+ #elif HLS_pipeline_II == 2
     #pragma HLS pipeline II=2
+ #elif HLS_pipeline_II == 3
+    #pragma HLS pipeline II=3
+ #elif HLS_pipeline_II == 4
+    #pragma HLS pipeline II=4
+ #elif HLS_pipeline_II == 6
+    #pragma HLS pipeline II=6
+ #endif
+#else
+    #pragma HLS pipeline II=2
+#endif
+
+    // ---------------------------------------------------------------
 
     EmCaloObj emcalo[NEMCALO]; HadCaloObj hadcalo[NCALO]; TkObj track[NTRACK]; MuObj mu[NMU]; 
     PFChargedObj outch[NTRACK]; PFNeutralObj outpho[NPHOTON], outne[NSELCALO]; PFChargedObj outmu[NMU];

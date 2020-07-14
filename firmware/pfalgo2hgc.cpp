@@ -78,7 +78,23 @@ void pfalgo2hgc(const HadCaloObj calo[NCALO], const TkObj track[NTRACK], const M
     #pragma HLS ARRAY_PARTITION variable=outne complete
     #pragma HLS ARRAY_PARTITION variable=outmu complete
 
+#ifdef HLS_pipeline_II
+ #if HLS_pipeline_II == 1
+    #pragma HLS pipeline II=1
+ #elif HLS_pipeline_II == 2
     #pragma HLS pipeline II=2
+ #elif HLS_pipeline_II == 3
+    #pragma HLS pipeline II=3
+ #elif HLS_pipeline_II == 4
+    #pragma HLS pipeline II=4
+ #elif HLS_pipeline_II == 6
+    #pragma HLS pipeline II=6
+ #endif
+#else
+    #pragma HLS pipeline II=2
+#endif
+
+    // ---------------------------------------------------------------
 
     // ---------------------------------------------------------------
     // TK-MU Linking
@@ -130,7 +146,23 @@ void pfalgo2hgc(const HadCaloObj calo[NCALO], const TkObj track[NTRACK], const M
 void packed_pfalgo2hgc(const ap_uint<PACKING_DATA_SIZE> input[PACKING_NCHANN], ap_uint<PACKING_DATA_SIZE> output[PACKING_NCHANN]) {
     #pragma HLS ARRAY_PARTITION variable=input complete
     #pragma HLS ARRAY_PARTITION variable=output complete
+#ifdef HLS_pipeline_II
+ #if HLS_pipeline_II == 1
+    #pragma HLS pipeline II=1
+ #elif HLS_pipeline_II == 2
     #pragma HLS pipeline II=2
+ #elif HLS_pipeline_II == 3
+    #pragma HLS pipeline II=3
+ #elif HLS_pipeline_II == 4
+    #pragma HLS pipeline II=4
+ #elif HLS_pipeline_II == 6
+    #pragma HLS pipeline II=6
+ #endif
+#else
+    #pragma HLS pipeline II=2
+#endif
+
+    // ---------------------------------------------------------------
 
     HadCaloObj calo[NCALO]; TkObj track[NTRACK]; MuObj mu[NMU]; 
     PFChargedObj outch[NTRACK]; PFNeutralObj outne[NSELCALO]; PFChargedObj outmu[NMU];

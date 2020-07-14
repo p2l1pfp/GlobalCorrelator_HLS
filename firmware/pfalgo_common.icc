@@ -4,7 +4,9 @@ template<int NB>
 ap_uint<NB> dr2_int_cap(eta_t eta1, eta_t phi1, eta_t eta2, eta_t phi2, ap_uint<NB> max) {
     ap_int<eta_t::width+1> deta = (eta1-eta2);
     ap_int<phi_t::width+1> dphi = (phi1-phi2);
+    //ap_int<phi_t::width> dphi = (phi1-phi2); // intentional wrap-around
     int dr2 = deta*deta + dphi*dphi;
+
     return (dr2 < int(max) ? ap_uint<NB>(dr2) : max);
 }
 
@@ -12,6 +14,7 @@ template<int NB, typename PTS_t>
 ap_uint<NB> dr2_dpt_int_cap(eta_t eta1, eta_t phi1, eta_t eta2, eta_t phi2, pt_t pt1, pt_t pt2, PTS_t ptscale, ap_uint<NB> dr2max, ap_uint<NB> max) {
     ap_int<eta_t::width+1> deta = (eta1-eta2);
     ap_int<phi_t::width+1> dphi = (phi1-phi2);
+    //ap_int<phi_t::width> dphi = (phi1-phi2); // intentional wrap-around
     int dr2 = deta*deta + dphi*dphi;
     pt_t dpt = pt1 - pt2;
     if (dpt < 0) dpt = 0;
