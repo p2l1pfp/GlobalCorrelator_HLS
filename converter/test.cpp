@@ -43,7 +43,7 @@ int main(){
         tanlam = 7 * float(itest)/ntest * (itest%2 ? 1:-1); // pt = 7*(0.1,-0.2,0.3,... )
 
         pack_L1T_track(in_tk, rinv, tkphi, tanlam, tkz0, tkd0, chi2rphi, chi2rz, bendChi2, hit, trackMVA, extraMVA, valid);
-        pf_input_track_conv_hw(in_tk, out_tk);
+        pf_input_track_conv_hw(in_tk, out_tk, 0);
         unpack_pf_track(out_tk, pf_pt, pf_pterr, pf_eta, pf_phi, pf_z0, pf_TightQuality);
 
         // std::cout << "pT: TB (" << rinv.to_double() << ") versus HW (" << pf_pt.to_double << ")" << std::endl;

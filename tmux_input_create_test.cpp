@@ -243,6 +243,7 @@ int main() {
         //std::cout<<offset<<std::endl;
 
         unsigned int link_type = 0; //0=track, 1=emcalo, 2=calo, 3=mu
+        unsigned int obj_link_no;
 
         for (int link_ctr = 0; link_ctr < NLINKS_PER_REG; link_ctr++) {
 
@@ -250,15 +251,16 @@ int main() {
             else if (link_ctr < link_max[1]) link_type = 1;
             else if (link_ctr < link_max[2]) link_type = 2;
             else if (link_ctr < link_max[3]) link_type = 3;
+            obj_link_no = link_ctr-link_min[link_type];
 
             if (link_type == 0) {
-                write_track_vector_to_link(track_temp[link_ctr-link_min[link_type]], datawords[link_off+link_ctr], offset);
+                write_track_vector_to_link(track_temp[obj_link_no], datawords[link_off+link_ctr], offset, obj_link_no); 
             } else if (link_type == 1) {
-                write_emcalo_vector_to_link(emcalo_temp[link_ctr-link_min[link_type]], datawords[link_off+link_ctr], offset);
+                write_emcalo_vector_to_link(emcalo_temp[obj_link_no], datawords[link_off+link_ctr], offset); 
             } else if (link_type == 2) {
-                write_calo_vector_to_link(calo_temp[link_ctr-link_min[link_type]], datawords[link_off+link_ctr], offset);
+                write_calo_vector_to_link(calo_temp[obj_link_no], datawords[link_off+link_ctr], offset);
             } else if (link_type == 3) {
-                write_mu_vector_to_link(mu_temp[link_ctr-link_min[link_type]], datawords[link_off+link_ctr], offset);
+                write_mu_vector_to_link(mu_temp[obj_link_no], datawords[link_off+link_ctr], offset);
             }
         }
         
