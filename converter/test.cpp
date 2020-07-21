@@ -1,6 +1,6 @@
 #include "ap_int.h"
 #include "ap_fixed.h"
-#include "firmware/wrapper.h"
+#include "firmware/tk_input_converter.h"
 
 using std::cout;
 using std::endl;

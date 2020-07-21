@@ -78,8 +78,6 @@ void unpack_pf_track(ap_uint<64> tk,
 
 template<class in_t, class out_t> void bit_copy(in_t in, out_t &out, int offset=0);
 
-template<class pt_inv_T, class pt_T> void init_pt_inv_table(pt_T table_out[(1<<PT_INV_TAB_SIZE)]);
-template<class pt_inv_T, class pt_T> void convert_pt(pt_inv_T inv, pt_T &pt);
 
 template<class eta_T> void init_eta_table(eta_T table_out[(1<<ETA_TAB_SIZE)]);
 template<class tanlam_T, class eta_T> void convert_eta(tanlam_T tanlam, eta_T &eta);
@@ -87,12 +85,17 @@ template<class tanlam_T, class eta_T> void convert_eta(tanlam_T tanlam, eta_T &e
 template<class phi_T> void init_dphi_table(phi_T table_out[(1<DPHI_TAB_SIZE)]);
 template<class pt_inv_T, class phi_T> void convert_dphi(pt_inv_T inv, phi_T &dphi);
 
+
+template<class pt_T> 
+void init_pt_inv_table(pt_T table_out[(1<<PT_INV_TAB_SIZE)]);
+
+template<class pt_inv_T, class pt_T> 
+void convert_pt(pt_inv_T inv, pt_T &pt);
+
 //void track_propagate(pt_t pt, etaphi_t eta, etaphi_t phi, z0_t z0,etaphi_t &eta_calo, etaphi_t &phi_calo);
-void reso_calo(pt_t pt, etaphi_t eta_calo, pt_t& err);
 
-void propagate_tanlam(tkz0_t z0, tanlam_t tanlam, tanlam_t &tanlam_at_det);
-
-inline float tanlam_to_eta(float tanlam){return -log(tan((M_PI/2 - atan(tanlam))/2));}
+/* void propagate_tanlam(tkz0_t z0, tanlam_t tanlam, tanlam_t &tanlam_at_det); */
+/* inline float tanlam_to_eta(float tanlam){return -log(tan((M_PI/2 - atan(tanlam))/2));} */
 
 
 #endif
