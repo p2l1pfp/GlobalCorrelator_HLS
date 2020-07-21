@@ -14,7 +14,7 @@ using std::cout;
 using std::endl;
 #endif
 
-void pf_input_track_conv_hw(input_t in, output_t& out, numlink_t nlink){
+void pf_input_track_conv_hw(l1tk_word_t in, pf_tk_word_t& out, numlink_t nlink){
     #pragma HLS pipeline II=1
 
     // unpack L1Track format

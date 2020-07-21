@@ -15,9 +15,9 @@ using namespace l1tk;
 #define ETA_TAB_SIZE 8
 #define DPHI_TAB_SIZE 8
 
-typedef ap_uint<96> input_t;
-typedef ap_uint<64> output_t;
-void pf_input_track_conv_hw(input_t in, output_t& out, numlink_t nlink);
+typedef ap_uint<96> l1tk_word_t;
+typedef ap_uint<64> pf_tk_word_t;
+void pf_input_track_conv_hw(l1tk_word_t in, pf_tk_word_t& out, numlink_t nlink);
 
 typedef ap_fixed<24,12, AP_RND_CONV, AP_SAT> bigfix_t; // helper type
 
@@ -78,24 +78,20 @@ void unpack_pf_track(ap_uint<64> tk,
 
 template<class in_t, class out_t> void bit_copy(in_t in, out_t &out, int offset=0);
 
+// hw functions
+void reso_calo(pt_t pt, etaphi_t eta_calo, pt_t& err);
+void propagate_tanlam(tkz0_t z0, tanlam_t tanlam, tanlam_t &tanlam_at_det);
+template<class phi_T> void init_dphi_table(phi_T table_out[(1<<DPHI_TAB_SIZE)]);
+template<class pt_inv_T, class phi_T> void convert_dphi(pt_inv_T inv, phi_T &dphi);
+template<class pt_T> void init_pt_inv_table(pt_T table_out[(1<<PT_INV_TAB_SIZE)]);
+template<class pt_inv_T, class pt_T> void convert_pt(pt_inv_T inv, pt_T &pt);
+template<class eta_T> void init_eta_table(eta_T table_out[(1<<ETA_TAB_SIZE)]);
+template<class tanlam_T, class eta_T> void convert_eta(tanlam_T tanlam, eta_T &eta);
 
-/* template<class eta_T> void init_eta_table(eta_T table_out[(1<<ETA_TAB_SIZE)]); */
-/* template<class tanlam_T, class eta_T> void convert_eta(tanlam_T tanlam, eta_T &eta); */
-
-/* template<class phi_T> void init_dphi_table(phi_T table_out[(1<DPHI_TAB_SIZE)]); */
-/* template<class pt_inv_T, class phi_T> void convert_dphi(pt_inv_T inv, phi_T &dphi); */
-
-
-/* template<class pt_T>  */
-/* void init_pt_inv_table(pt_T table_out[(1<<PT_INV_TAB_SIZE)]); */
-
-/* template<class pt_inv_T, class pt_T>  */
-/* void convert_pt(pt_inv_T inv, pt_T &pt); */
-
-//void track_propagate(pt_t pt, etaphi_t eta, etaphi_t phi, z0_t z0,etaphi_t &eta_calo, etaphi_t &phi_calo);
-
-/* void propagate_tanlam(tkz0_t z0, tanlam_t tanlam, tanlam_t &tanlam_at_det); */
-/* inline float tanlam_to_eta(float tanlam){return -log(tan((M_PI/2 - atan(tanlam))/2));} */
-
+// reference functions
+inline float tanlam_to_eta_ref(float tanlam){return -log(tan((M_PI/2 - atan(tanlam))/2));}
+float propagate_tanlam_ref(float z0, float tanlam);
+float convert_dphi_ref(float pt);
+float reso_calo_ref(float pt, float eta_calo);
 
 #endif
