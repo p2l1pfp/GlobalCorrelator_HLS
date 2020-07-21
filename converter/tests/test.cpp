@@ -1,17 +1,11 @@
 #include "test.h"
-/*
- #include "ap_int.h"
-#include "ap_fixed.h"
-#include "firmware/tk_input_converter.h"
-#include <stdlib.h>
-#include <fstream>
-#include <string>
-*/
 
 int main(){
     srand(42); // random seed
+    //test_tanlambda_to_eta();
+    test_resolution();
+
     //test_input_converter();
-    test_tanlambda_to_eta();
     return 0;
 }
 
