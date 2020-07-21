@@ -18,6 +18,8 @@ add_files -tb tests/test_tk_resolution.cpp
 add_files -tb tests/test_prop_tanlambda.cpp
 add_files -tb tests/test_prop_phi.cpp
 add_files -tb tests/test_pt_inversion.cpp
+add_files -tb tests/test_pack_l1tk.cpp
+add_files -tb tests/test_pack_pf.cpp
 
 # reset the solution
 open_solution -reset "solution"

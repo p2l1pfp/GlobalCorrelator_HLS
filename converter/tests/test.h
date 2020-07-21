@@ -13,8 +13,8 @@ using std::endl;
 
 //test functions
 void test_input_converter();
-void test_tk_pack();
-void test_pf_pack();
+void test_pack_l1tk();
+void test_pack_pf();
 void test_tanlambda_to_eta();
 void test_pt_inversion();
 void test_prop_phi();
