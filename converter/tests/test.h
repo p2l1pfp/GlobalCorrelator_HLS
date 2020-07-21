@@ -18,7 +18,7 @@ void test_pf_pack();
 void test_tanlambda_to_eta();
 void test_pt_inversion();
 void test_prop_phi();
-void test_prop_tanlamnda();
+void test_prop_tanlambda();
 void test_resolution();
 
 //helpers

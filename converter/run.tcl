@@ -15,6 +15,9 @@ add_files -tb reference/tk_input_converter_ref.cpp
 add_files -tb tests/test.cpp
 add_files -tb tests/test_tanlambda_to_eta.cpp
 add_files -tb tests/test_tk_resolution.cpp
+add_files -tb tests/test_prop_tanlambda.cpp
+add_files -tb tests/test_prop_phi.cpp
+add_files -tb tests/test_pt_inversion.cpp
 
 # reset the solution
 open_solution -reset "solution"

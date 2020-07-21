@@ -1,10 +1,17 @@
 #include "test.h"
 
 int main(){
-    srand(42); // random seed
-    //test_tanlambda_to_eta();
-    test_resolution();
+    // set random seed
+    srand(42); 
 
+    // run piecewise tests
+    // test_tanlambda_to_eta();
+    // test_resolution();
+    // test_prop_tanlambda();
+    // test_prop_phi();
+    test_pt_inversion();
+
+    // run full test
     //test_input_converter();
     return 0;
 }
