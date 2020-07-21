@@ -7,10 +7,7 @@ set topFunc ${mainAlgo}_hw
 # open the project, don't forget to reset
 open_project -reset "track-conv-test"
 set_top ${topFunc}
-#add_files firmware/tk_pt_inversion.cpp
 add_files firmware/tk_input_converter.cpp 
-add_files firmware/tk_prop_tanlambda.cpp
-add_files firmware/tk_resolution.cpp
 add_files -tb test.cpp
 
 # reset the solution
