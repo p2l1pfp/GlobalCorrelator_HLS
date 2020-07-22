@@ -30,3 +30,31 @@ float reso_calo_ref(float pt, float eta_calo){
         return pt * 0.465 + -0.077;
     }
 }
+
+void pf_input_track_conv_ref(float rinv           ,
+                             float tkphi          ,
+                             float tanlam         ,
+                             float tkz0           ,
+                             float tkd0           ,
+                             float chi2rphi       ,
+                             float chi2rz         ,
+                             float bendChi2       ,
+                             int hit              ,
+                             int trackMVA         ,
+                             int extraMVA         ,
+                             int valid            ,
+                             float& pf_pt         , 
+                             float& pf_pterr      , 
+                             float& pf_eta_at_calo, 
+                             float& pf_phi_at_calo, 
+                             float& pf_z0         , 
+                             bool& pf_TightQuality){
+    pf_pt = 1./rinv;
+    pf_phi_at_calo = tkphi + (rinv>0?1:-1)*convert_dphi_ref(pf_pt);
+    float tl_at_calo = propagate_tanlam_ref(tkz0, tanlam);
+    pf_eta_at_calo = tanlam_to_eta_ref( tl_at_calo );
+    pf_pterr = reso_calo_ref(pf_pt, pf_eta_at_calo);
+    pf_z0 = tkz0;
+    pf_TightQuality = 1;
+}
+

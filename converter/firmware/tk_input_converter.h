@@ -93,5 +93,23 @@ inline float tanlam_to_eta_ref(float tanlam){return -log(tan((M_PI/2 - atan(tanl
 float propagate_tanlam_ref(float z0, float tanlam);
 float convert_dphi_ref(float pt);
 float reso_calo_ref(float pt, float eta_calo);
+void pf_input_track_conv_ref(float rinv           ,
+                             float tkphi          ,
+                             float tanlam         ,
+                             float tkz0           ,
+                             float tkd0           ,
+                             float chi2rphi       ,
+                             float chi2rz         ,
+                             float bendChi2       ,
+                             int hit              ,
+                             int trackMVA         ,
+                             int extraMVA         ,
+                             int valid            ,
+                             float& pf_pt         , 
+                             float& pf_pterr      , 
+                             float& pf_eta_at_calo, 
+                             float& pf_phi_at_calo, 
+                             float& pf_z0         , 
+                             bool& pf_TightQuality);
 
 #endif

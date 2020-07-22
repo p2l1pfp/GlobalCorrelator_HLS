@@ -18,73 +18,155 @@ int main(){
     return 0;
 }
 
-
-l1tk_word_t get_random_l1track(unsigned int ntest){
+void get_random_l1track(unsigned int ntest,
+                        float &rinv       ,
+                        float &tkphi      ,
+                        float &tanlam     ,
+                        float &tkz0       ,
+                        float &tkd0       ,
+                        float &chi2rphi   ,
+                        float &chi2rz     ,
+                        float &bendChi2   ,
+                        int   &hit        ,
+                        int   &trackMVA   ,
+                        int   &extraMVA   ,
+                        int   &valid){
+    // (not very random so far...)
     static int itest=0;
-    // L1T tk parts for testing
-    rinv_t     rinv     = 0.5;
-    tkphi_t    tkphi    = 0.2;
-    tanlam_t   tanlam   = 1.;
-    tkz0_t     tkz0     = -2.25;
-    tkd0_t     tkd0     = 1.5;
-    chi2rphi_t chi2rphi = 1;
-    chi2rz_t   chi2rz   = 1;
-    bendChi2_t bendChi2 = 1;
-    hit_t      hit      = 0;
-    trackMVA_t trackMVA = 1;
-    extraMVA_t extraMVA = 1;
-    valid_t    valid    = 1;
-
-    l1tk_word_t in_tk;
+    rinv     = 0.5;
+    tkphi    = 0.2;
+    tanlam   = 1.;
+    tkz0     = -2.25;
+    tkd0     = 1.5;
+    chi2rphi = 1;
+    chi2rz   = 1;
+    bendChi2 = 1;
+    hit      = 0;
+    trackMVA = 1;
+    extraMVA = 1;
+    valid    = 1;
     rinv = 1./(itest+2); // pt = 2,3,4,...
     tanlam = 7./(itest+1) * (itest%2 ? 1:-1); // 7, -3.5, 2.3, ...
-
-    pack_L1T_track(in_tk, rinv, tkphi, tanlam, tkz0, tkd0, 
-                   chi2rphi, chi2rz, bendChi2, hit, 
-                   trackMVA, extraMVA, valid);
     itest++;
-    return in_tk;
 }
 
 void test_input_converter(){
+    unsigned int ntrials = 100;
 
-    unsigned int ntest=5;
+    // reference values
+    float rinv           ;
+    float tkphi          ;
+    float tanlam         ;
+    float tkz0           ;
+    float tkd0           ;
+    float chi2rphi       ;
+    float chi2rz         ;
+    float bendChi2       ;
+    int   hit            ;
+    int   trackMVA       ;
+    int   extraMVA       ;
+    int   valid          ;
+    float pf_pt          ;
+    float pf_pterr       ;
+    float pf_eta         ;
+    float pf_phi         ;
+    float pf_z0          ; 
+    bool  pf_TightQuality;
+    // hw tks
+    rinv_t     hw_rinv           ;
+    tkphi_t    hw_tkphi          ;
+    tanlam_t   hw_tanlam         ;
+    tkz0_t     hw_tkz0           ;
+    tkd0_t     hw_tkd0           ;
+    chi2rphi_t hw_chi2rphi       ;
+    chi2rz_t   hw_chi2rz         ;
+    bendChi2_t hw_bendChi2       ;
+    hit_t      hw_hit            ;
+    trackMVA_t hw_trackMVA       ;
+    extraMVA_t hw_extraMVA       ;
+    valid_t    hw_valid          ;
+    pt_t       hw_pf_pt          ;
+    pt_t       hw_pf_pterr       ;
+    etaphi_t   hw_pf_eta         ;
+    etaphi_t   hw_pf_phi         ;
+    z0_t       hw_pf_z0          ;
+    bool       hw_pf_TightQuality;
 
-    // L1T tk parts for testing
-    // rinv_t     rinv     = 0.5;
-    // tkphi_t    tkphi    = 0.2;
-    // tanlam_t   tanlam   = 1.;
-    // tkz0_t     tkz0     = -2.25;
-    // tkd0_t     tkd0     = 1.5;
-    // chi2rphi_t chi2rphi = 1;
-    // chi2rz_t   chi2rz   = 1;
-    // bendChi2_t bendChi2 = 1;
-    // hit_t      hit      = 0;
-    // trackMVA_t trackMVA = 1;
-    // extraMVA_t extraMVA = 1;
-    // valid_t    valid    = 1;
+    std::ofstream outfile;
+    outfile.open("../../../../tests/results/test.txt");
+    outfile << "rinv tkphi tanlam tkz0 tkd0 chi2rphi chi2rz bendChi2 hit trackMVA extraMVA valid pf_pt pf_pterr pf_eta pf_phi pf_z0 pf_TightQuality hw_rinv hw_tkphi hw_tanlam hw_tkz0 hw_tkd0 hw_chi2rphi hw_chi2rz hw_bendChi2 hw_hit hw_trackMVA hw_extraMVA hw_valid hw_pf_pt hw_pf_pterr hw_pf_eta hw_pf_phi hw_pf_z0 hw_pf_TightQuality" << endl;
 
-    // PF tk parts for testing
-    pt_t pf_pt = 20;
-    pt_t pf_pterr = 22;
-    etaphi_t pf_eta = -12;
-    etaphi_t pf_phi = 14;
-    z0_t pf_z0 = -3;
-    bool pf_TightQuality = true;
+    for(unsigned int itrial = 0; itrial< ntrials; itrial++){
+        // get a random track
+        get_random_l1track(ntrials, rinv, tkphi, tanlam, 
+                           tkz0, tkd0, chi2rphi, chi2rz, bendChi2, 
+                           hit, trackMVA, extraMVA, valid);
+        // reference conversion
+        pf_input_track_conv_ref(rinv, tkphi, tanlam, tkz0, tkd0, 
+                                chi2rphi, chi2rz, bendChi2, hit, 
+                                trackMVA, extraMVA, valid, pf_pt, 
+                                pf_pterr, pf_eta, pf_phi, 
+                                pf_z0, pf_TightQuality);
 
-    for(unsigned long itest=0; itest<ntest; itest++){
-        l1tk_word_t in_tk = get_random_l1track(ntest);
+        // get hw inputs from random track and pack
+        hw_rinv     = rinv    ; 
+        hw_tkphi    = tkphi   ; 
+        hw_tanlam   = tanlam  ; 
+        hw_tkz0     = tkz0    ; 
+        hw_tkd0     = tkd0    ; 
+        hw_chi2rphi = chi2rphi; 
+        hw_chi2rz   = chi2rz  ; 
+        hw_bendChi2 = bendChi2; 
+        hw_hit      = hit     ; 
+        hw_trackMVA = trackMVA; 
+        hw_extraMVA = extraMVA; 
+        hw_valid    = valid   ; 
+    
+        l1tk_word_t in_tk(0);
         pf_tk_word_t out_tk(0);
+        pack_L1T_track(in_tk, hw_rinv, hw_tkphi, hw_tanlam, hw_tkz0, 
+                       hw_tkd0, hw_chi2rphi, hw_chi2rz, hw_bendChi2, 
+                       hw_hit, hw_trackMVA, hw_extraMVA, hw_valid);
+        pf_input_track_conv_hw(in_tk, out_tk, 0/*linkNo*/);
+        unpack_pf_track(out_tk, hw_pf_pt, hw_pf_pterr, hw_pf_eta, hw_pf_phi, 
+                        hw_pf_z0, hw_pf_TightQuality);
 
-        //pack_L1T_track(in_tk, rinv, tkphi, tanlam, tkz0, tkd0, chi2rphi, chi2rz, bendChi2, hit, trackMVA, extraMVA, valid);
-        pf_input_track_conv_hw(in_tk, out_tk, 0);
-        unpack_pf_track(out_tk, pf_pt, pf_pterr, pf_eta, pf_phi, pf_z0, pf_TightQuality);
-
-        // std::cout << "pT: TB (" << rinv.to_double() << ") versus HW (" << pf_pt.to_double << ")" << std::endl;
-        // std::cout << "pT: TB (" << 1./rinv.to_double() << ") versus HW (" << pf_pt.to_double()/PF_PT_SCALE << ")" << std::endl;
-        // std::cout << "eta: TB (" << tanlam.to_double() << ") versus HW (" << pf_eta.to_double() << ")" << std::endl;
-        // std::cout << "eta: TB (" << tanlam_to_eta(tanlam.to_double()) << ") versus HW (" << pf_eta.to_double()/PF_ETAPHI_SCALE << ")" << std::endl;
+        outfile << rinv               << " "
+                << tkphi              << " "
+                << tanlam             << " "
+                << tkz0               << " "
+                << tkd0               << " "
+                << chi2rphi           << " "
+                << chi2rz             << " "
+                << bendChi2           << " "
+                << hit                << " "
+                << trackMVA           << " "
+                << extraMVA           << " "
+                << valid              << " "
+                << pf_pt              << " "
+                << pf_pterr           << " "
+                << pf_eta             << " "
+                << pf_phi             << " "
+                << pf_z0              << " "
+                << pf_TightQuality    << " "
+                << hw_rinv            << " "
+                << hw_tkphi           << " "
+                << hw_tanlam          << " "
+                << hw_tkz0            << " "
+                << hw_tkd0            << " "
+                << hw_chi2rphi        << " "
+                << hw_chi2rz          << " "
+                << hw_bendChi2        << " "
+                << hw_hit             << " "
+                << hw_trackMVA        << " "
+                << hw_extraMVA        << " "
+                << hw_valid           << " "
+                << hw_pf_pt           << " "
+                << hw_pf_pterr        << " "
+                << hw_pf_eta          << " "
+                << hw_pf_phi          << " "
+                << hw_pf_z0           << " "
+                << hw_pf_TightQuality << "\n";
     }
-    //
+    outfile.close();
 }
-
