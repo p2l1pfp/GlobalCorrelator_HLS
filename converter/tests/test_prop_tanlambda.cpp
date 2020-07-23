@@ -2,7 +2,7 @@
 #include "test.h"
 
 void test_prop_tanlambda(){
-    unsigned int ntrials = 100;
+    unsigned int ntrials = 10000;
 
     float tl, tl_calo, z0;
     tanlam_t tl_hw, tl_calo_hw;
@@ -10,7 +10,7 @@ void test_prop_tanlambda(){
 
     std::ofstream outfile;
     outfile.open("../../../../tests/results/test_prop_tanlambda.txt");
-    outfile << "tl tl_calo z0 tl_hw tl_calo_hw z0_hw" << endl;
+    outfile << "# tl tl_calo z0 tl_hw tl_calo_hw z0_hw" << endl;
     for(unsigned int itrial = 0; itrial< ntrials; itrial++){
         tl = urand(-8,8);
         z0 = urand(-30,30);

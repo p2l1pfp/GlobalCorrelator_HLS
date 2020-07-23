@@ -10,7 +10,7 @@ void test_resolution(){
 
     std::ofstream outfile;
     outfile.open("../../../../tests/results/test_tk_resolution.txt");
-    outfile << "pt pt_err eta pt_hw pt_err_hw eta_hw" << endl;
+    outfile << "# pt pt_err eta pt_hw pt_err_hw eta_hw" << endl;
     for(unsigned int itrial = 0; itrial< ntrials; itrial++){
         eta = urand(-2.5,2.5);
         pt = 1./urand(0.01,0.5); // flat curv 2 to 100 GeV

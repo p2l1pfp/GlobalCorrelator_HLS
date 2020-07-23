@@ -39,26 +39,22 @@ void pf_input_track_conv_hw(l1tk_word_t in, pf_tk_word_t& out, numlink_t nlink){
         return;
     }
 
-    // track propagation to calo surface in eta
+    // first need to propagate track to calo surface
     tanlam_t tanlam_at_calo;
     propagate_tanlam(tkz0, tanlam, tanlam_at_calo);
-
-    // track propagation to calo surface in phi
-    rinv_t pt_inv = rinv;
+    // in phi
+    rinv_t u_rinv = rinv;
+    if (rinv<0) u_rinv = -rinv;
     etaphi_t dphi;
-    if (rinv<0) pt_inv = -rinv;
-    convert_dphi(pt_inv, dphi);
-
+    convert_dphi(u_rinv, dphi);
+    // TODO include phi wrap-around
     etaphi_t pf_phi_at_calo;
     if (rinv<0) pf_phi_at_calo = tkphi - dphi;
     else pf_phi_at_calo = tkphi + dphi;
 
-
-    // converters
+    // convert to pt, eta
     pt_t conv_pt;
-    //std::cout << "inverse pt " << rinv << std::endl;
-    convert_pt(pt_inv, conv_pt);
-    //std::cout << "        pt " << conv_pt << std::endl;
+    convert_pt(u_rinv, conv_pt);
 
     etaphi_t pf_eta_at_calo;
     convert_eta(tanlam_at_calo, pf_eta_at_calo);
@@ -81,6 +77,7 @@ void pf_input_track_conv_hw(l1tk_word_t in, pf_tk_word_t& out, numlink_t nlink){
 
     // z0_t pf_z0 = bigfix_t(tkz0)*bigfix_t(PF_Z0_SCALE); // scale=20
     // for now, copy z0 values without explicitly converting... must be replaced
+    
     z0_t pf_z0 = zdet_t(tkz0) * zdet_t(PF_Z0_SCALE);
 
     // pack in PF format
