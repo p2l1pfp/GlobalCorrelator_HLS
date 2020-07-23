@@ -9,8 +9,10 @@ void test_pt_inversion(){
     pt_t pt_hw;
 
     std::ofstream outfile;
-    outfile.open("../../../../tests/results/test_pt_inversion.txt");
-    outfile << "pt pt_inv pt_hw pt_inv_hw" << endl;
+    outfile.open("../../../../tests/results/test_pt_inversion.txt",
+                 std::ofstream::app); // append, for comparisons
+    if(outfile.tellp()==0) // write header if new file
+        outfile << "# pt pt_inv pt_hw pt_inv_hw pt_inv_hwf tab_size max_bits" << endl;
     for(unsigned int itrial = 0; itrial< ntrials; itrial++){
         pt = 1. / urand(0.01,0.5);
 
@@ -18,7 +20,10 @@ void test_pt_inversion(){
         convert_pt(pt_inv_hw, pt_hw);
         
         outfile << pt    << " " << 1./pt    << " "
-                << pt_hw << " " << float(pt_inv_hw)/(PF_PT_SCALE) << "\n";
+                << pt_hw << " " << pt_inv_hw << " "
+                << float(pt_inv_hw)/(PF_PT_SCALE) << " "
+                << PT_INV_TAB_SIZE << " "
+                << PT_INV_MAX_BITS << "\n";
     }
     outfile.close();
 }

@@ -21,7 +21,7 @@ namespace l1tk {
         kD0Size             = 13,                                   // Width of D0
         kD0MagSize          = 5,                                    // Width of D0 magnitude (signed)
         kZ0Size             = 12,                                   // Width of z-position
-        kZ0MagSize          = 5,                                    // Width of z-position magnitude (signed)
+        kZ0MagSize          = 5+1, // ch twiki seems wrong (sign)   // Width of z-position magnitude (signed)
         kEtaSize            = 16,                                   // Width of eta
         kEtaMagSize         = 3+1, // ch twiki seems wrong (sign)   // Width of eta magnitude (signed)
         kPhiSize            = 12,                                   // Width of phi
@@ -61,7 +61,7 @@ namespace l1tk {
     typedef ap_ufixed<kPtSize,0, AP_RND_CONV, AP_SAT>                   urinv_t;           // 1/RT unsigned
     typedef ap_ufixed<kEtaSize-1, kEtaMagSize-1, AP_RND_CONV, AP_SAT>   utanlam_t;         // Track eta
 
-    const double kSynchrotron = (1.0/(0.3*3.8));
+    const double kSynchrotron = (1.0/(0.3*3.8)); // in meter/GeV
     const double kRmax = (128.*100.0*kSynchrotron); //128 is max pt
     const double kRmin = (2.*100.0*kSynchrotron); //2 is min pt
     const float rzphiChi2Bins[16] = {0, 0.25, 0.5, 1, 2, 3, 5, 7, 10, 20, 40, 100, 200, 500, 1000, 3000};

@@ -5,16 +5,17 @@ int main(){
     srand(42); 
 
     // run piecewise tests
-    // test_tanlambda_to_eta();
-    // test_resolution();
-    // test_prop_tanlambda();
-    // test_prop_phi();
-    // test_pt_inversion();
-    // test_pack_l1tk();
+    test_tanlambda_to_eta();
+    test_resolution();
+    test_prop_tanlambda();
+    test_prop_phi();
+    test_pt_inversion();
+    // test_pack_l1tk(); // these print to cout, disable for now...
     // test_pack_pf();
 
     // run full test
     test_input_converter();
+    
     return 0;
 }
 
