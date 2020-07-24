@@ -1,4 +1,5 @@
 *.txt
 *~
+*pyc
 #l1pfpuppi-*/
 vivado_hls.log

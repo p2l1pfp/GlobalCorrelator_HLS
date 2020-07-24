@@ -23,7 +23,7 @@ for ts in tab_sizes:
     # diff
     book(h,"eta_diff",80,-1,1,";eta(HW)-eta(ref)", pf=pf)
     # profile
-    bookp(h,"p_eta_diff" ,60,-3,3,-1,1,";ETA(ref);ETA(HW)-ETA(ref)", pf=pf)
+    bookp(h,"p_eta_diff" ,60,-3,3,-1,1,";eta(ref);eta(HW)-eta(ref)", pf=pf)
 
     # fill
     draw(t,"eta","eta_ref", pf=pf, cut=cut)
@@ -32,9 +32,9 @@ for ts in tab_sizes:
     draw(t,"eta_hwf-eta:eta","p_eta_diff", pf=pf, cut=cut)
     
     # checks
-    bookp(h,"p_tanlambda_eta" ,80,-8,8,-3,3,";tan(lambda)(ref);ETA(ref)", pf=pf)
-    bookp(h,"p_tanlambda_eta_hw" ,80,-8,8,-3,3,";tan(lambda)(HW);ETA(HW)", pf=pf)
-    bookp(h,"p_tanlambda_eta_hw_int" ,80,-8,8,-550,550,";tan(lambda)(HW);ETA(HW int)", pf=pf)
+    bookp(h,"p_tanlambda_eta" ,80,-8,8,-3,3,";tan(lambda)(ref);eta(ref)", pf=pf)
+    bookp(h,"p_tanlambda_eta_hw" ,80,-8,8,-3,3,";tan(lambda)(HW);eta(HW)", pf=pf)
+    bookp(h,"p_tanlambda_eta_hw_int" ,80,-8,8,-550,550,";tan(lambda)(HW);eta(HW int)", pf=pf)
     draw(t,"eta:tanlambda","p_tanlambda_eta", pf=pf, cut=cut)
     draw(t,"eta_hwf:tanlambda_hw","p_tanlambda_eta_hw", pf=pf, cut=cut)
     draw(t,"eta_hw:tanlambda_hw","p_tanlambda_eta_hw_int", pf=pf, cut=cut)

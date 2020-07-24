@@ -24,7 +24,7 @@ for ts in tab_sizes:
     # diff
     book(h,"dphi_diff",80,-0.5,0.5,";dphi(HW)-dphi(ref)", pf=pf)
     # profile
-    bookp(h,"p_dphi_diff" ,55,0,0.55,-1,1,";1/pt;dphi(HW)-dphi(ref)", pf=pf)
+    bookp(h,"p_dphi_diff" ,55,0,0.55,-1,1,";1/pT [1/GeV];dphi(HW)-dphi(ref)", pf=pf)
 
     # fill
     draw(t,"pt_inv","pt_inv_ref", pf=pf, cut=cut)
