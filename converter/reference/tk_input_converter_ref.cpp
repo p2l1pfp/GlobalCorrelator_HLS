@@ -6,10 +6,17 @@
 float propagate_tanlam_ref(float z0, float tanlam){
     float tanlam_calo;
     float z_at_calo = z0 + DETR * tanlam;
-    if(z_at_calo < DETZ){
-        tanlam_calo = z0/DETR + tanlam;
-    } else {
+    if(z_at_calo < -DETZ){
+        // neg endcap
+        //tanlam_calo =0;
+        tanlam_calo = tanlam * DETZ/(DETZ+z0);
+    } else if(z_at_calo > DETZ){
+        // pos endcap
+        //tanlam_calo =0;
         tanlam_calo = tanlam * DETZ/(DETZ-z0);
+    } else {
+        // barrel
+        tanlam_calo = z0/DETR + tanlam;
     }
     return tanlam_calo;
 }

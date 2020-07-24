@@ -9,11 +9,21 @@
 void propagate_tanlam(tkz0_t z0, tanlam_t tanlam, tanlam_t &tanlam_at_det){
     // using a helper type to handle necessary range
     zdet_t z_at_det = z0 + zdet_t(tanlam) * DETR;
-    if(z_at_det < DETZ){
-        tanlam_at_det = tanlam + tanlam_help_t(z0) * tanlam_help_t(1/DETR);
-    } else {
+    // std::cout << z0 << "  " << z_at_det << " -- ";
+    if(z_at_det < -DETZ){
+        // neg endcap
+        tanlam_at_det=0; 
+        // tanlam_at_det = tanlam / (1 + tanlam_help_t(z0) * tanlam_help_t(1/DETZ));
         // use power expansion for now: 1/(1+z0/z_det) -> 1-z0/z_det
-        tanlam_at_det = tanlam * (1 - tanlam_help_t(z0) * tanlam_help_t(1/DETZ));
+        // tanlam_at_det = tanlam * (1 - tanlam_help_t(z0) * tanlam_help_t(1/DETZ));
+    } else if(z_at_det > DETZ){
+        // pos endcap
+        tanlam_at_det=0; 
+        // tanlam_at_det = tanlam / (1 - tanlam_help_t(z0) * tanlam_help_t(1/DETZ));
+        // use power expansion for now: 1/(1-z0/z_det) -> 1+z0/z_det
+        // tanlam_at_det = tanlam * (1 + tanlam_help_t(z0) * tanlam_help_t(1/DETZ));
+    } else {
+        tanlam_at_det = tanlam + tanlam_help_t(z0) * tanlam_help_t(1./DETR);
     }
 }
 

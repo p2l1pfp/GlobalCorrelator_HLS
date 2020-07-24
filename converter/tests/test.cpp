@@ -95,7 +95,7 @@ void test_input_converter(){
 
     std::ofstream outfile;
     outfile.open("../../../../tests/results/test.txt");
-    outfile << "rinv tkphi tanlam tkz0 tkd0 chi2rphi chi2rz bendChi2 hit trackMVA extraMVA valid pf_pt pf_pterr pf_eta pf_phi pf_z0 pf_TightQuality hw_rinv hw_tkphi hw_tanlam hw_tkz0 hw_tkd0 hw_chi2rphi hw_chi2rz hw_bendChi2 hw_hit hw_trackMVA hw_extraMVA hw_valid hw_pf_pt hw_pf_pterr hw_pf_eta hw_pf_phi hw_pf_z0 hw_pf_TightQuality" << endl;
+    outfile << "rinv tkphi tanlam tkz0 tkd0 chi2rphi chi2rz bendChi2 hit trackMVA extraMVA valid pf_pt pf_pterr pf_eta pf_phi pf_z0 pf_TightQuality hw_rinv hw_tkphi hw_tanlam hw_tkz0 hw_tkd0 hw_chi2rphi hw_chi2rz hw_bendChi2 hw_hit hw_trackMVA hw_extraMVA hw_valid hw_pf_pt hwf_pf_pt hw_pf_pterr hwf_pf_pterr hw_pf_eta hwf_pf_eta hwf_pf_phi hw_pf_phi hw_pf_z0 hwf_pf_z0 hw_pf_TightQuality" << endl;
 
     for(unsigned int itrial = 0; itrial< ntrials; itrial++){
         // get a random track
@@ -162,11 +162,11 @@ void test_input_converter(){
                 << hw_trackMVA        << " "
                 << hw_extraMVA        << " "
                 << hw_valid           << " "
-                << hw_pf_pt           << " "
-                << hw_pf_pterr        << " "
-                << hw_pf_eta          << " "
-                << hw_pf_phi          << " "
-                << hw_pf_z0           << " "
+                << hw_pf_pt           << " " << float(hw_pf_pt   )/PF_PT_SCALE     << " "
+                << hw_pf_pterr        << " " << float(hw_pf_pterr)/PF_PT_SCALE     << " "
+                << hw_pf_eta          << " " << float(hw_pf_eta  )/PF_ETAPHI_SCALE << " "
+                << hw_pf_phi          << " " << float(hw_pf_phi  )/PF_ETAPHI_SCALE << " "
+                << hw_pf_z0           << " " << float(hw_pf_z0   )/PF_Z0_SCALE     << " "
                 << hw_pf_TightQuality << "\n";
     }
     outfile.close();

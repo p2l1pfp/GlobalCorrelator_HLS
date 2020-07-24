@@ -1,12 +1,6 @@
 
 #include "tk_input_converter.h"
 
-/* template<class pt_T>  */
-/* void init_pt_inv_table(pt_T table_out[(1<<PT_INV_TAB_SIZE)]); */
-
-/* template<class pt_inv_T, class pt_T>  */
-/* void convert_pt(pt_inv_T inv, pt_T &pt); */
-
 
 template<class pt_T>
 void init_pt_inv_table(pt_T table_out[(1<<PT_INV_TAB_SIZE)]) {
@@ -14,7 +8,8 @@ void init_pt_inv_table(pt_T table_out[(1<<PT_INV_TAB_SIZE)]) {
     // resulting value pt_T is a uint from 0 to 2^16-1
     table_out[0] = (1<<PT_INV_MAX_BITS);
     for (unsigned int i = 1; i < (1<<PT_INV_TAB_SIZE); i++) {
-        float invpt = float(i)/(1<<PT_INV_TAB_SIZE) * 0.5; // in 1/GeV
+        // use midpoint averaging: i -> (2*i+1)/2.
+        float invpt = ((2*i+1)/2.)/(1<<PT_INV_TAB_SIZE) * 0.5; // in 1/GeV
         table_out[i] = PF_PT_SCALE / invpt;
     }
     return;
