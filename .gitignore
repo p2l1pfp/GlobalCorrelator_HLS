@@ -1,5 +1,8 @@
 *.txt
 *~
 *pyc
+*pdf
+*root
 #l1pfpuppi-*/
 vivado_hls.log
+.DS_Store
