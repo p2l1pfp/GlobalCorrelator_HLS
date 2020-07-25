@@ -7,6 +7,10 @@
 // https://github.com/cms-l1t-offline/cmssw/blob/phase2-l1t-integration-CMSSW_11_1_0_pre6/L1Trigger/Phase2L1ParticleFlow/src/L1TPFUtils.cc
 
 void propagate_tanlam(tkz0_t z0, tanlam_t tanlam, tanlam_t &tanlam_at_det){
+    // simplify for barrel
+    tanlam_at_det = tanlam + tanlam_help_t(z0) * tanlam_help_t(1./DETR);
+    return;
+
     // using a helper type to handle necessary range
     zdet_t z_at_det = z0 + zdet_t(tanlam) * DETR;
     // std::cout << z0 << "  " << z_at_det << " -- ";

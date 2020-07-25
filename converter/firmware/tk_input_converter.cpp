@@ -39,10 +39,11 @@ void pf_input_track_conv_hw(l1tk_word_t in, pf_tk_word_t& out, numlink_t nlink){
         return;
     }
 
-    // first need to propagate track to calo surface
+    // Propagate tan(lambda) to calo surface
     tanlam_t tanlam_at_calo;
     propagate_tanlam(tkz0, tanlam, tanlam_at_calo);
-    // in phi
+
+    // Propagate phi to calo surface
     rinv_t u_rinv = rinv;
     if (rinv<0) u_rinv = -rinv;
     etaphi_t dphi;
@@ -52,10 +53,12 @@ void pf_input_track_conv_hw(l1tk_word_t in, pf_tk_word_t& out, numlink_t nlink){
     if (rinv<0) pf_phi_at_calo = tkphi - dphi;
     else pf_phi_at_calo = tkphi + dphi;
 
-    // convert to pt, eta
+    // Convert 1/pt to pt
     pt_t conv_pt;
     convert_pt(u_rinv, conv_pt);
 
+    // Convert tan(lambda) to eta. 
+    // --> Requires tan(lambda) propagation first
     etaphi_t pf_eta_at_calo;
     convert_eta(tanlam_at_calo, pf_eta_at_calo);
 

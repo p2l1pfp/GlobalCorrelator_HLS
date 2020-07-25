@@ -7,7 +7,9 @@ void init_dphi_table(phi_T table_out[(1<<DPHI_TAB_SIZE)]) {
     // resulting value phi_T is a uint
     table_out[0] = 0;
     for (unsigned int i = 1; i < (1<<DPHI_TAB_SIZE); i++) {
-        float invpt = float(i)/(1<<DPHI_TAB_SIZE) * 0.5; // in 1/GeV
+        //float invpt = float(i)/(1<<DPHI_TAB_SIZE) * 0.5; // in 1/GeV
+        //float invpt = float((2*i+1)/2.)/(1<<DPHI_TAB_SIZE) * 0.5; // in 1/GeV
+        float invpt = float((2*i+4)/2.)/(1<<DPHI_TAB_SIZE) * 0.5; // in 1/GeV (works better somehow?)
         float rCurv = (1/invpt) * (129./2)/(0.735); // curv is pt * (looper radius / 2)/(looper pt)
         float x = (DETR)/(2*rCurv);
         float dPhi = atan(x / sqrt(1-x*x));
@@ -19,7 +21,7 @@ void init_dphi_table(phi_T table_out[(1<<DPHI_TAB_SIZE)]) {
 }
 
 template<class pt_inv_T, class phi_T> 
-void convert_dphi(pt_inv_T inv, phi_T &dphi){
+void convert_dphi_BRAM(pt_inv_T inv, phi_T &dphi){
 
     // Initialize the lookup tables
 #ifdef __HLS_SYN__
@@ -54,4 +56,32 @@ void convert_dphi(pt_inv_T inv, phi_T &dphi){
     }
 
     dphi = dphi_table[index];
+}
+
+template<class pt_inv_T, class phi_T> 
+void convert_dphi_DSP(pt_inv_T inv, phi_T &dphi){
+    // dPhi = r
+    // (DETR)/(2*rCurv);
+    //dphi = inv * DETR*(1/2.) * (0.735)/(129./2); // (735 MeV / 129/2 cm) pt -> radius conversion
+    /* dphi = bigfix_t(DETR*(1/2.) * (0.735)/(129./2)) * inv; // (735 MeV / 129/2 cm) pt -> radius conversion */
+    /* dphi = 0.4 * 0.5 * inv; //bigfix_t(DETR*(1/2.) * (0.735)/(129./2)) * inv; // (735 MeV / 129/2 cm) pt -> radius conversion */
+
+
+    // kSynchrotron = (1.0/(0.3*3.8)); // in meter/GeV
+    // rCurv = pt * kSynchrotron * 100 // in cm
+    // dPhi = DETR / (2*rCurv)
+    //      = DETR / (2 * pt * kSynchrotron * 100)
+    //      = 1/pt * (DETR / (2 * kSynchrotron * 100))
+    //dphi = inv * pt_inv_T(DETR / (2 * l1tk::kSynchrotron * 100.));
+    //dphi = bigfix_t(inv) * bigfix_t(DETR / (2. * (1.0/(0.3*3.8)) * 100.) * PF_ETAPHI_SCALE);
+    dphi = inv * bigfix_t(DETR / (2. * (1.0/(0.3*3.8)) * 100.) * PF_ETAPHI_SCALE);
+    //std::cout << inv << " " <<  bigfix_t(DETR / (2. * (1.0/(0.3*3.8)) * 100.)) << " " << bigfix_t(inv) * bigfix_t(DETR / (2. * (1.0/(0.3*3.8)) * 100.)) << " " << dphi << std::endl;
+    //std::cout << inv << " " <<  dphi << std::endl;
+    //         dphi = inv * (DETR / (2 * l1tk::kSynchrotron * 100.));
+}
+
+template<class pt_inv_T, class phi_T> 
+void convert_dphi(pt_inv_T inv, phi_T &dphi){
+    //convert_dphi_BRAM(inv, dphi);
+    convert_dphi_DSP(inv, dphi);
 }
