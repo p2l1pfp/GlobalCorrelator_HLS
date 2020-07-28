@@ -3,6 +3,7 @@
 
 void propagate_tanlam(tkz0_t z0, tanlam_t tanlam, tanlam_t &tanlam_at_det){
     // simplify for barrel
+    // interestingly, here hls uses combinational logic instead of DSP
     tanlam_at_det = tanlam + tanlam_help_t(z0) * tanlam_help_t(1./DETR);
     return;
 
