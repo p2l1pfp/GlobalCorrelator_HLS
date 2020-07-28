@@ -16,8 +16,8 @@ void test_resolution(){
         pt = 1./urand(0.01,0.5); // flat curv 2 to 100 GeV
         pt_err = reso_calo_ref(pt, eta);
 
-        pt_hw = pt * PF_PT_SCALE;
-        eta_hw = eta * PF_ETAPHI_SCALE;
+        pt_hw = float(pt * PF_PT_SCALE);
+        eta_hw = float(eta * PF_ETAPHI_SCALE);
         reso_calo(pt_hw, eta_hw, pt_err_hw);
         
         outfile << pt    << " " << pt_err    << " " << eta    << " "
