@@ -16,7 +16,12 @@ void reso_calo(pt_t pt, etaphi_t eta_calo, pt_t& err){
     // offset  = cms.vdouble( 0.007,  0.009,  0.011,  0.015,  0.025),
     // scale   = cms.vdouble( 0.275,  0.404,  0.512,  0.480,  1.132),
 
-    // TODO currently barrel only, and requires 3 MACs
+    // TODO currently only one region, but can expand accordingly as necessary (see below)
+    err = bigfix_t(pt) * bigfix_t(0.122) + bigfix_t(2.582 * PF_PT_SCALE);
+
+    return;
+    /*
+    // To accommodate multiple regions
     etaphi_t abs_eta = eta_calo;
     if(eta_calo<0) abs_eta = -eta_calo;
     if(abs_eta < etaphi_t(0.700 * PF_ETAPHI_SCALE)){
@@ -27,5 +32,6 @@ void reso_calo(pt_t pt, etaphi_t eta_calo, pt_t& err){
         err = bigfix_t(pt) * bigfix_t(0.465) + bigfix_t(-0.077 * PF_PT_SCALE);
     }
     if (err > pt) err = pt;
+    */
     
 }
