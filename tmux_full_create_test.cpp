@@ -8,8 +8,6 @@ int mp7DataLength = NTRACK+NCALO+NEMCALO+NMU;
 int objDataLength[4] = {(NWORDS_TRACK*NTRACK), ((NWORDS_EMCALO*NEMCALO)+(NWORDS_TRACK*NTRACK)), ((NWORDS_EMCALO*NEMCALO)+(NWORDS_CALO*NCALO)+(NWORDS_TRACK*NTRACK)), ((NWORDS_EMCALO*NEMCALO)+(NWORDS_CALO*NCALO)+(NWORDS_TRACK*NTRACK)+(NWORDS_MU*NMU))};
 int link_max[4] = {NLINKS_PER_TRACK, NLINKS_PER_TRACK+NLINKS_PER_EMCALO, NLINKS_PER_TRACK+NLINKS_PER_CALO+NLINKS_PER_EMCALO, NLINKS_PER_TRACK+NLINKS_PER_CALO+NLINKS_PER_EMCALO+NLINKS_PER_MU};
 int link_min[4] = {0, NLINKS_PER_TRACK, NLINKS_PER_TRACK+NLINKS_PER_EMCALO, NLINKS_PER_TRACK+NLINKS_PER_EMCALO+NLINKS_PER_CALO};
-unsigned int theEtaRegion = 0;
-unsigned int thePhiRegion = 0;
 
 //unsigned int outputOrder[TMUX_IN] = {0,2,4,6,8,10,12,14,16,15,17,1,3,5,7,9,11,13};//NPHI x NETA
 //unsigned int outputOrder[TMUX_IN] = {0,11,1,12,2,13,3,14,4,15,5,16,6,17,7,9,8,10};//NPHI x NETA
@@ -37,23 +35,16 @@ void pick_link(int &link, l1tpf_int::Muon in) {
 
 int main() {
 
-    bool doSimple = false;
-    bool debugWords = false;
-    int n_alltracks = 0;
-    int n_allcalos = 0;
-    int n_allemcalos = 0;
-    int n_allmus = 0;
-
-    if (theEtaRegion>=NETA_TMUX) theEtaRegion = NETA_TMUX-1;
-    if (thePhiRegion>=NPHI_TMUX) thePhiRegion = NPHI_TMUX-1;
-
     // input format: could be random or coming from simulation
     //RandomPFInputs inputs(37); // 37 is a good random number
     DiscretePFInputs inputs("barrel_sectors_1x1_TTbar_PU200.dump");
     //DiscretePFInputs inputs("dummy.dump");
     
-    // input TP objects
-    l1tpf_int::CaloCluster calo[NCALO_TMUX]; l1tpf_int::CaloCluster emcalo[NEMCALO_TMUX]; l1tpf_int::PropagatedTrack track[NTRACK_TMUX]; l1tpf_int::Muon mu[NMU_TMUX];
+    // input TP objects (structs for reading from dump files)
+    l1tpf_int::CaloCluster calo[NCALO_TMUX]; 
+    l1tpf_int::CaloCluster emcalo[NEMCALO_TMUX]; 
+    l1tpf_int::PropagatedTrack track[NTRACK_TMUX]; 
+    l1tpf_int::Muon mu[NMU_TMUX];
     z0_t hwZPV;
 
     // Data words for input to regionizer
@@ -88,7 +79,54 @@ int main() {
     }
 
     // -----------------------------------------
-    // run multiple tests
+    // Regionizer setup:
+    // Determine eta and phi region boundaries
+
+    // Phi region boundaries, including wraparound
+    std::vector<int> phi_bounds_lo{};
+    std::vector<int> phi_bounds_hi{};
+    const int phi_step = int(NPHI_INT)/int(NPHI_SMALL);
+    const int phi_rmdr = int(NPHI_INT)%int(NPHI_SMALL);
+    int p1,p2;
+    for (int ip = 0; ip < NPHI_SMALL; ++ip) {
+        p1 = (MAXPHI_INT-NPHI_INT) - PHI_BUFFER + phi_step*ip + std::min(ip,phi_rmdr);
+        p2 = (MAXPHI_INT-NPHI_INT) + PHI_BUFFER + phi_step*(ip+1) + std::min(ip+1,phi_rmdr);
+        phi_bounds_lo.push_back( p1 );
+        phi_bounds_hi.push_back( p2 );
+        // std::cout << "TEST " << phi_bounds_lo[ip] << "  to  " << phi_bounds_hi[ip] << std::endl;
+    }
+
+    // Eta region boundaries
+    //   Want eta regions to be +/- symmetric. this implementation and these assumptions 
+    //   only makes sense if ETA_TMUX==2 (all regions are doubled!)
+    assert(NETA_TMUX==2);
+    std::vector<int> pos_eta_bounds_lo{};
+    std::vector<int> pos_eta_bounds_hi{};
+    std::vector<int> eta_bounds_lo{};
+    std::vector<int> eta_bounds_hi{};
+    const int eta_step = int(MAXETA_INT-MINETA_INT)/int(NETA_SMALL);
+    const int eta_rmdr = int(MAXETA_INT-MINETA_INT)%int(NETA_SMALL);
+    for(int ie=0;ie<NETA_SMALL;++ie){
+        pos_eta_bounds_lo.push_back(MINETA_INT-ETA_BUFFER+ie*eta_step+std::min(ie,eta_rmdr));
+        pos_eta_bounds_hi.push_back(MINETA_INT+ETA_BUFFER+(ie+1)*eta_step+std::min(ie+1,eta_rmdr));
+    }
+    for(int ie=0;ie<NETA_SMALL;++ie){
+        eta_bounds_lo.push_back( -pos_eta_bounds_hi[NETA_SMALL-1-ie] );
+        eta_bounds_hi.push_back( -pos_eta_bounds_lo[NETA_SMALL-1-ie] );
+    }
+    for(int ie=0;ie<NETA_SMALL;++ie){
+        eta_bounds_lo.push_back( pos_eta_bounds_lo[ie] );
+        eta_bounds_hi.push_back( pos_eta_bounds_hi[ie] );
+    }
+    // todo - for barrel, manually implemening eta throwout
+    if (eta_bounds_lo.front() < -243) eta_bounds_lo.front() = -243;
+    if (eta_bounds_hi.back() > 243) eta_bounds_hi.back() = 243;
+    int etalo = eta_bounds_lo.front();
+    int etahi = eta_bounds_hi.back();
+
+
+    // -----------------------------------------
+    // run multiple tests (events)
 
     int link_off = 0;
     int input_offset = 0;
@@ -107,8 +145,21 @@ int main() {
         for (int i = 0; i < NMU_TMUX; ++i) {
             mu[i].hwPt = 0; mu[i].hwEta = 0; mu[i].hwPhi = 0;
         }
+
+        // insert some test data on the fly
+        if(1){
+            // get the TP inputs from the 'inputs' object
+            if (!inputs.nextRegion_tmux_raw(calo, emcalo, track, mu, hwZPV)) break;
+        } else if(0) {
+            // quickly set some fake data for testing
+            track[0].hwPt  = 1 + test * 16; // one of each object per event
+            calo[0].hwPt   = 2 + test * 16;
+            emcalo[0].hwPt = 3 + test * 16;
+            mu[0].hwPt     = 4 + test * 16;
+            hwZPV          = 7 + test * 16;
+        }
         
-        // initialize temp input TP objects, sorted across input links
+        // initialize TP object structures, distributed across input links
         std::vector<l1tpf_int::CaloCluster> calo_tp[NLINKS_PER_CALO]; 
         std::vector<l1tpf_int::CaloCluster> emcalo_tp[NLINKS_PER_EMCALO]; 
         std::vector<l1tpf_int::PropagatedTrack> track_tp[NLINKS_PER_TRACK]; 
@@ -128,83 +179,10 @@ int main() {
         TkObj track_cvt_dummy; track_cvt_dummy.hwPt = 0; track_cvt_dummy.hwPtErr = 0; track_cvt_dummy.hwEta = 0; track_cvt_dummy.hwPhi = 0; track_cvt_dummy.hwZ0 = 0; 
         MuObj mu_cvt_dummy; mu_cvt_dummy.hwPt = 0; mu_cvt_dummy.hwPtErr = 0; mu_cvt_dummy.hwEta = 0; mu_cvt_dummy.hwPhi = 0;
 
-        // initialize temp PF input objects, sorted into regions
-        HadCaloObj calo_pf_in[TMUX_IN][NCALO]; EmCaloObj emcalo_pf_in[TMUX_IN][NEMCALO]; TkObj track_pf_in[TMUX_IN][NTRACK]; MuObj mu_pf_in[TMUX_IN][NMU];
-        for (int ir = 0; ir < TMUX_IN; ir++) {
-            for (int i = 0; i < NTRACK; ++i) {
-                track_pf_in[ir][i].hwPt = 0; track_pf_in[ir][i].hwPtErr = 0; track_pf_in[ir][i].hwEta = 0; track_pf_in[ir][i].hwPhi = 0; track_pf_in[ir][i].hwZ0 = 0; 
-            }
-            for (int i = 0; i < NCALO; ++i) {
-                calo_pf_in[ir][i].hwPt = 0; calo_pf_in[ir][i].hwEmPt = 0; calo_pf_in[ir][i].hwEta = 0; calo_pf_in[ir][i].hwPhi = 0; calo_pf_in[ir][i].hwIsEM = 0; 
-            }
-            for (int i = 0; i < NEMCALO; ++i) {
-                emcalo_pf_in[ir][i].hwPt = 0; emcalo_pf_in[ir][i].hwPtErr = 0;  emcalo_pf_in[ir][i].hwEta = 0; emcalo_pf_in[ir][i].hwPhi = 0;
-            }
-            for (int i = 0; i < NMU; ++i) {
-                mu_pf_in[ir][i].hwPt = 0; mu_pf_in[ir][i].hwPtErr = 0; mu_pf_in[ir][i].hwEta = 0; mu_pf_in[ir][i].hwPhi = 0;
-            }
-        }
 
 
-        // insert some test data on the fly
-        if(1){
-            // get the inputs from the input object
-            //if (!inputs.nextRegion_tmux(calo, emcalo, track, mu, hwZPV)) break;
-            if (!inputs.nextRegion_tmux_raw(calo, emcalo, track, mu, hwZPV)) break;
-        } else if(0) {
-            // quickly set some fake data for testing
-            track[0].hwPt  = 1 + test * 16; // one of each object per event
-            calo[0].hwPt   = 2 + test * 16;
-            emcalo[0].hwPt = 3 + test * 16;
-            mu[0].hwPt     = 4 + test * 16;
-            hwZPV          = 7 + test * 16;
-        }
-
-        // Determine phi region boundaries (include wraparound)
-        std::vector<int> phi_bounds_lo{};
-        std::vector<int> phi_bounds_hi{};
-        const int phi_step = int(NPHI_INT)/int(NPHI_SMALL);
-        const int phi_rmdr = int(NPHI_INT)%int(NPHI_SMALL);
-        int p1,p2;
-        for (int ip = 0; ip < NPHI_SMALL; ++ip) {
-            p1 = (MAXPHI_INT-NPHI_INT) - PHI_BUFFER + phi_step*ip + std::min(ip,phi_rmdr);
-            p2 = (MAXPHI_INT-NPHI_INT) + PHI_BUFFER + phi_step*(ip+1) + std::min(ip+1,phi_rmdr);
-            phi_bounds_lo.push_back( p1 );
-            phi_bounds_hi.push_back( p2 );
-            // std::cout << "TEST " << phi_bounds_lo[ip] << "  to  " << phi_bounds_hi[ip] << std::endl;
-        }
-
-        // Determine eta region boundaries
-        //   Want eta regions to be +/- symmetric. this implementation and these assumptions 
-        //   only makes sense if ETA_TMUX==2 (all regions are doubled!)
-        assert(NETA_TMUX==2);
-        std::vector<int> pos_eta_bounds_lo{};
-        std::vector<int> pos_eta_bounds_hi{};
-        std::vector<int> eta_bounds_lo{};
-        std::vector<int> eta_bounds_hi{};
-        const int eta_step = int(MAXETA_INT-MINETA_INT)/int(NETA_SMALL);
-        const int eta_rmdr = int(MAXETA_INT-MINETA_INT)%int(NETA_SMALL);
-        for(int ie=0;ie<NETA_SMALL;++ie){
-            pos_eta_bounds_lo.push_back(MINETA_INT-ETA_BUFFER+ie*eta_step+std::min(ie,eta_rmdr));
-            pos_eta_bounds_hi.push_back(MINETA_INT+ETA_BUFFER+(ie+1)*eta_step+std::min(ie+1,eta_rmdr));
-        }
-        for(int ie=0;ie<NETA_SMALL;++ie){
-            eta_bounds_lo.push_back( -pos_eta_bounds_hi[NETA_SMALL-1-ie] );
-            eta_bounds_hi.push_back( -pos_eta_bounds_lo[NETA_SMALL-1-ie] );
-        }
-        for(int ie=0;ie<NETA_SMALL;++ie){
-            eta_bounds_lo.push_back( pos_eta_bounds_lo[ie] );
-            eta_bounds_hi.push_back( pos_eta_bounds_hi[ie] );
-        }
-        // todo - for barrel, manually implemening eta throwout
-        if (eta_bounds_lo.front() < -243) eta_bounds_lo.front() = -243;
-        if (eta_bounds_hi.back() > 243) eta_bounds_hi.back() = 243;
-        int etalo = eta_bounds_lo.front();
-        int etahi = eta_bounds_hi.back();
-
-        //
-        // Fill input objects (track_tp, track_pf_in from track)
-        //
+        // -----------------------------------------
+        // Fill input links, convert TP to PF objects
 
         // input link book-keeping
         int ilink = 0;
@@ -212,18 +190,6 @@ int main() {
         int ncalos = 0;
         int nemcalos = 0;
         int nmus = 0;
-
-        // regional sorting book-keeping
-        int i_temp[TMUX_IN] = {0};
-        int ireg = 0;
-        int ntracks_smallreg[TMUX_IN] = {0};
-        int ncalos_smallreg[TMUX_IN] = {0};
-        int nemcalos_smallreg[TMUX_IN] = {0};
-        int nmus_smallreg[TMUX_IN] = {0};
-        int ntracks_reg = 0;
-        int ncalos_reg = 0;
-        int nemcalos_reg = 0;
-        int nmus_reg = 0;
 
         ilink = NLINKS_PER_TRACK;
         for (int i = 0; i < NTRACK_TMUX; ++i) {
@@ -239,7 +205,6 @@ int main() {
             ntracks++;
         }
         ilink = NLINKS_PER_CALO;
-        std::fill(i_temp, i_temp+TMUX_IN, 0);
         for (int i = 0; i < NCALO_TMUX; ++i) {
             if (int(calo[i].hwEta) < etalo or int(calo[i].hwEta) > etahi) continue;
             if (int(calo[i].hwPt) == 0) continue;
@@ -252,7 +217,6 @@ int main() {
             ncalos++;
         }
         ilink = NLINKS_PER_EMCALO;
-        std::fill(i_temp, i_temp+TMUX_IN, 0);
         for (int i = 0; i < NEMCALO_TMUX; ++i) {
             if (int(emcalo[i].hwEta) < etalo or int(emcalo[i].hwEta) > etahi) continue;
             if (int(emcalo[i].hwPt) == 0) continue;
@@ -265,7 +229,6 @@ int main() {
             nemcalos++;
         }
         ilink = NLINKS_PER_MU;
-        std::fill(i_temp, i_temp+TMUX_IN, 0);
         for (int i = 0; i < NMU_TMUX; ++i) {
             if (int(mu[i].hwEta) < etalo or int(mu[i].hwEta) > etahi) continue;
             if (int(mu[i].hwPt) == 0) continue;
@@ -296,9 +259,8 @@ int main() {
             mu_cvt[il].resize(((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_MU, mu_cvt_dummy);
         }
 
-        //
+        // -----------------------------------------
         // Write input TP objects to the input links
-        //
         unsigned int link_type = 0; //0=track, 1=emcalo, 2=calo, 3=mu
         unsigned int obj_link_no;
         input_offset = NCLK_PER_BX*TMUX_OUT*test; // 8 * 18 * nevt
@@ -340,11 +302,39 @@ int main() {
         if (1 && link_off+(NLINKS_PER_REG+1) > NLINKS_APX_GEN0) link_off = 0;
 
 
-        // 
-        // Fill small regions
-        //
+        // -----------------------------------------
+        // Begin regionizer: distribute to small regions
 
-        // fill regions from beginning of links
+        // regional sorting book-keeping
+        int i_temp[TMUX_IN] = {0};
+        int ireg = 0;
+        int ntracks_smallreg[TMUX_IN] = {0};
+        int ncalos_smallreg[TMUX_IN] = {0};
+        int nemcalos_smallreg[TMUX_IN] = {0};
+        int nmus_smallreg[TMUX_IN] = {0};
+        int ntracks_reg = 0;
+        int ncalos_reg = 0;
+        int nemcalos_reg = 0;
+        int nmus_reg = 0;
+
+        // initialize converted (PF input) objects, sorted into regions
+        HadCaloObj calo_pf_in[TMUX_IN][NCALO]; EmCaloObj emcalo_pf_in[TMUX_IN][NEMCALO]; TkObj track_pf_in[TMUX_IN][NTRACK]; MuObj mu_pf_in[TMUX_IN][NMU];
+        for (int ir = 0; ir < TMUX_IN; ir++) {
+            for (int i = 0; i < NTRACK; ++i) {
+                track_pf_in[ir][i].hwPt = 0; track_pf_in[ir][i].hwPtErr = 0; track_pf_in[ir][i].hwEta = 0; track_pf_in[ir][i].hwPhi = 0; track_pf_in[ir][i].hwZ0 = 0; 
+            }
+            for (int i = 0; i < NCALO; ++i) {
+                calo_pf_in[ir][i].hwPt = 0; calo_pf_in[ir][i].hwEmPt = 0; calo_pf_in[ir][i].hwEta = 0; calo_pf_in[ir][i].hwPhi = 0; calo_pf_in[ir][i].hwIsEM = 0; 
+            }
+            for (int i = 0; i < NEMCALO; ++i) {
+                emcalo_pf_in[ir][i].hwPt = 0; emcalo_pf_in[ir][i].hwPtErr = 0;  emcalo_pf_in[ir][i].hwEta = 0; emcalo_pf_in[ir][i].hwPhi = 0;
+            }
+            for (int i = 0; i < NMU; ++i) {
+                mu_pf_in[ir][i].hwPt = 0; mu_pf_in[ir][i].hwPtErr = 0; mu_pf_in[ir][i].hwEta = 0; mu_pf_in[ir][i].hwPhi = 0;
+            }
+        }
+
+        // fill regions, starting from beginning of each link
         std::fill(i_temp, i_temp+TMUX_IN, 0);
         for (int ind = 0; ind < track_tp[0].size(); ind++) { // works since same size for all links
             for (int il = 0; il < NLINKS_PER_TRACK; il++) {
@@ -366,7 +356,7 @@ int main() {
             }
         }
         std::fill(i_temp, i_temp+TMUX_IN, 0);
-       for (int ind = 0; ind < calo_tp[0].size(); ind++) { // works since same size for all links
+        for (int ind = 0; ind < calo_tp[0].size(); ind++) { // works since same size for all links
             for (int il = 0; il < NLINKS_PER_CALO; il++) {
                 auto pf_calo = calo_cvt[il].at(ind);
                 // find region
@@ -427,9 +417,8 @@ int main() {
         }
 
 
-        //
+        // -----------------------------------------
         // Run PF+PUPPI in small regions
-        //
 
         for (int ir = 0; ir < TMUX_IN; ir++) {
             MP7DataWord data_in_reg[MP7_NCHANN];
@@ -469,9 +458,9 @@ int main() {
 
     }
 
-    //
-    // write emulation results
-    //
+    // -----------------------------------------
+    // write the emulation results
+
     std::ofstream outfile_inputs;
     outfile_inputs.open("../../../../inputs.txt");
     std::ofstream outfile_inputs_cvt;
@@ -521,7 +510,6 @@ int main() {
         }
     }
     outfile_layer1.close();
-
 
     return 0;
 }

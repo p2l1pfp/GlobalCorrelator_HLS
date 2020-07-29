@@ -52,39 +52,6 @@ using namespace l1tk;
 #define NWORDS_EMCALO 2
 #define NWORDS_MU 2
 
-/* Superceded now
-template<unsigned int N, unsigned int OFFS> 
-inline void mp7_pack_full_em(l1tpf_int::CaloCluster emcalo_in[N], MP7DataWord data[]) {
-    EmCaloObj emcalo[N];
-    std::vector<l1tpf_int::CaloCluster> emcalo_vec;
-    for (unsigned int i = 0; i < N; ++i) {
-        if (emcalo_in[i].hwPt != 0) emcalo_vec.push_back(emcalo_in[i]);
-        else break;
-    }
-    dpf2fw::convert<N>(emcalo_vec, emcalo);
-    for (unsigned int i = 0; i < N; ++i) {
-        data[NWORDS_EMCALO*i+0+OFFS] = ( emcalo[i].hwPtErr, emcalo[i].hwPt );
-        data[NWORDS_EMCALO*i+1+OFFS] = ( emcalo[i].hwPhi,   emcalo[i].hwEta );
-    }
-}
-*/
-
-/* Superceded now
-template<unsigned int N, unsigned int OFFS> 
-inline void mp7_pack_full_had(l1tpf_int::CaloCluster hadcalo_in[N], MP7DataWord data[]) {
-    HadCaloObj hadcalo[N];
-    std::vector<l1tpf_int::CaloCluster> hadcalo_vec;
-    for (unsigned int i = 0; i < N; ++i) {
-        if (hadcalo_in[i].hwPt != 0) hadcalo_vec.push_back(hadcalo_in[i]);
-        else break;
-    }
-    dpf2fw::convert<N>(hadcalo_vec, hadcalo);
-    for (unsigned int i = 0; i < N; ++i) {
-        data[NWORDS_CALO*i+0+OFFS] = ( hadcalo[i].hwEmPt, hadcalo[i].hwPt );
-        data[NWORDS_CALO*i+1+OFFS] = ( hadcalo[i].hwIsEM, hadcalo[i].hwPhi, hadcalo[i].hwEta );
-    }
-}
-*/
 
 // This fn essentially replaces placeholder dpf2fw::convert from DiscretePF2Firmware.h
 void track_convert(l1tpf_int::PropagatedTrack track_in, TkObj &track_pf, int linkNo) {
@@ -135,7 +102,7 @@ void track_convert(l1tpf_int::PropagatedTrack track_in, TkObj &track_pf, int lin
     track_pf.hwTightQuality = pf_z0;
 }
 
-void track_convert_word(l1tpf_int::PropagatedTrack track_in, MP7DataWord data[NWORDS_TRACK]) {
+void tp_track_to_words(l1tpf_int::PropagatedTrack track_in, MP7DataWord data[NWORDS_TRACK]) {
     // Temporarily must get components of L1Tk obj while waiting for the `official` word type
     tanlam_t tan_lambda = (M_PI/2.)-(2.*atan(exp(-1.*track_in.floatEta())));
     float phi_center = M_PI*(2.*float(int((track_in.floatPhi()+M_PI)*float(TT_NPHI_SECTORS)/(2.*M_PI)))+1.)/float(TT_NPHI_SECTORS);
@@ -166,60 +133,7 @@ void track_convert_word(l1tpf_int::PropagatedTrack track_in, MP7DataWord data[NW
     data[0] = in_packed(31, 0);
 }
 
-//void track_convert_word(l1tpf_int::PropagatedTrack track_in, TkObj &track_pf);
 
-/* Superceded now
-template<unsigned int N, unsigned int OFFS> 
-inline void mp7_pack_full(l1tpf_int::PropagatedTrack track_in[N], MP7DataWord data[]) {
-    // TkObj track[N];
-    // std::vector<l1tpf_int::PropagatedTrack> track_vec;
-    // for (unsigned int i = 0; i < N; ++i) {
-    //     if (track_in[i].hwPt != 0) track_vec.push_back(track_in[i]);
-    //     else break;
-    // }
-    // dpf2fw::convert<N>(track_vec, track);
-    // for (unsigned int i = 0; i < N; ++i) {
-    //     data[2*i+0+OFFS] = ( track[i].hwPtErr, track[i].hwPt );
-    //     data[2*i+1+OFFS] = ( track[i].hwZ0, track[i].hwPhi, track[i].hwEta );
-    //     data[2*i+1+OFFS][30] = track[i].hwTightQuality;
-    // }
-    for (unsigned int i = 0; i < N; ++i) {
-        if (track_in[i].hwPt != 0) {
-            MP7DataWord tmpdata[NWORDS_TRACK];
-            //track_convert(track_in[i], tmpdata);
-            data[NWORDS_TRACK*i+2+OFFS] = tmpdata[2];
-            data[NWORDS_TRACK*i+1+OFFS] = tmpdata[1];
-            data[NWORDS_TRACK*i+0+OFFS] = tmpdata[0]; //dummy data here too
-        } else {
-            data[NWORDS_TRACK*i+2+OFFS] = 0;
-            data[NWORDS_TRACK*i+1+OFFS] = 0;
-            data[NWORDS_TRACK*i+0+OFFS] = 0;
-        }
-    }
-}
-*/
-
-/* Superceded now
-template<unsigned int N, unsigned int OFFS> 
-inline void mp7_pack_full(l1tpf_int::Muon mu_in[N], MP7DataWord data[]) {
-    MuObj mu[N];
-    std::vector<l1tpf_int::Muon> mu_vec;
-    for (unsigned int i = 0; i < N; ++i) {
-        if (mu_in[i].hwPt != 0) mu_vec.push_back(mu_in[i]);
-        else break;
-    }
-    dpf2fw::convert<N>(mu_vec, mu);
-    for (unsigned int i = 0; i < N; ++i) {
-        data[NWORDS_MU*i+0+OFFS] = ( mu[i].hwPtErr, mu[i].hwPt );
-        data[NWORDS_MU*i+1+OFFS] = ( mu[i].hwPhi, mu[i].hwEta );
-    }
-}
-*/
-
-
-/* template<typename tk_T> */
-/* void write_track_vector_to_link(std::vector<tk_T> in_vec, std::string datawords[], int offset, bool inputIsConverted=false) { */
-/* void write_track_vector_to_link(std::vector<l1tpf_int::PropagatedTrack> in_vec, std::string datawords[], int offset, bool convertInputs=false, unsigned int link_no=0) { */
 void write_track_vector_to_link(std::vector<TkObj> in_vec, std::string datawords[], int offset) {
     int index = 0;
     std::stringstream ss;
@@ -272,7 +186,7 @@ void write_track_vector_to_link(std::vector<l1tpf_int::PropagatedTrack> in_vec, 
     for (auto itr = in_vec.begin(); itr != in_vec.end(); ++itr) {
         MP7DataWord tmpdata[NWORDS_TRACK] = {0, 0, 0};
         //for removing null tracks
-        if (int(itr->hwPt) != 0) track_convert_word(*itr,tmpdata);
+        if (int(itr->hwPt) != 0) tp_track_to_words(*itr,tmpdata);
         ss.str("");
         ss << "0x";
         if (!held) {
@@ -357,21 +271,6 @@ void write_mu_vector_to_link(std::vector<l1tpf_int::Muon> in_vec, std::string da
         index++;
     }
 }
-
-/* Superceded now
-void mp7wrapped_pack_in_full(l1tpf_int::CaloCluster emcalo[NEMCALO], l1tpf_int::CaloCluster hadcalo[NCALO], l1tpf_int::PropagatedTrack track[NTRACK], l1tpf_int::Muon mu[NMU], MP7DataWord data[MP7_NCHANN]) {
-    // pack inputs
-    assert(NWORDS_EMCALO*NEMCALO + NWORDS_TRACK*NTRACK + NWORDS_CALO*NCALO + NWORDS_MU*NMU <= MP7_NCHANN);
-    constexpr unsigned int EMOFFS = NWORDS_TRACK*NTRACK;
-    constexpr unsigned int HADOFFS =  NWORDS_EMCALO*NEMCALO+EMOFFS;
-    constexpr unsigned int MUOFFS  = NWORDS_CALO*NCALO+HADOFFS;
-
-    mp7_pack_full<NTRACK,0>(track, data);
-    mp7_pack_full_em<NEMCALO,EMOFFS>(emcalo, data);
-    mp7_pack_full_had<NCALO,HADOFFS>(hadcalo, data);
-    mp7_pack_full<NMU,MUOFFS>(mu, data);
-}
-*/
 
 void mp7wrapped_pack_in_reorder(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj track[NTRACK], MuObj mu[NMU], MP7DataWord data[MP7_NCHANN]) {
     // pack inputs
