@@ -87,7 +87,7 @@ inline void mp7_pack_full_had(l1tpf_int::CaloCluster hadcalo_in[N], MP7DataWord 
 */
 
 // This fn essentially replaces placeholder dpf2fw::convert from DiscretePF2Firmware.h
-void track_convert(l1tpf_int::PropagatedTrack track_in, TkObj &track_pf) {
+void track_convert(l1tpf_int::PropagatedTrack track_in, TkObj &track_pf, int linkNo) {
     // Temporarily must get components of L1Tk obj while waiting for the `official` word type
     tanlam_t tan_lambda = (M_PI/2.)-(2.*atan(exp(-1.*track_in.floatEta())));
     float phi_center = M_PI*(2.*float(int((track_in.floatPhi()+M_PI)*float(TT_NPHI_SECTORS)/(2.*M_PI)))+1.)/float(TT_NPHI_SECTORS);
@@ -116,7 +116,7 @@ void track_convert(l1tpf_int::PropagatedTrack track_in, TkObj &track_pf) {
     ap_uint<96> in_packed;
     ap_uint<64> pf_packed;
     pack_L1T_track(in_packed, r_inverse, rel_phi, tan_lambda, z0scaled, d0dummy, conv_chi2, chi2rz, bendChi2, hit_pattern, trackMVA, extraMVA, valid);
-    numlink_t nlink=0;
+    numlink_t nlink=linkNo;
     pf_input_track_conv_hw(in_packed, pf_packed, nlink);
     pt_t     pf_pt   ;
     pt_t     pf_pterr;
@@ -216,7 +216,55 @@ inline void mp7_pack_full(l1tpf_int::Muon mu_in[N], MP7DataWord data[]) {
 }
 */
 
-void write_track_vector_to_link(std::vector<l1tpf_int::PropagatedTrack> in_vec, std::string datawords[], int offset, bool convertInputs=false, unsigned int link_no=0) {
+
+/* template<typename tk_T> */
+/* void write_track_vector_to_link(std::vector<tk_T> in_vec, std::string datawords[], int offset, bool inputIsConverted=false) { */
+/* void write_track_vector_to_link(std::vector<l1tpf_int::PropagatedTrack> in_vec, std::string datawords[], int offset, bool convertInputs=false, unsigned int link_no=0) { */
+void write_track_vector_to_link(std::vector<TkObj> in_vec, std::string datawords[], int offset) {
+    int index = 0;
+    std::stringstream ss;
+    bool held = false;
+    MP7DataWord heldword = 0;
+    for (auto itr = in_vec.begin(); itr != in_vec.end(); ++itr) {
+        MP7DataWord tmpdata[NWORDS_TRACK] = {0, 0, 0};
+        //for removing null tracks
+        if (int(itr->hwPt) != 0){
+            tmpdata[0] = ( itr->hwPtErr, itr->hwPt );
+            tmpdata[1] = ( itr->hwZ0, itr->hwPhi, itr->hwEta );
+            tmpdata[1][30] = itr->hwTightQuality;
+            tmpdata[2] = 0;
+        }
+        ss.str("");
+        ss << "0x";
+        if (!held) {
+            ss << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (tmpdata[1]);
+            ss << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (tmpdata[0]);
+            datawords[offset+index] = ss.str();
+            index++;
+            heldword = tmpdata[2];
+            held = true;
+        } else {
+            ss << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (tmpdata[0]);
+            ss << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (heldword);
+            datawords[offset+index] = ss.str();
+            index++;
+            ss.str("");
+            ss << "0x";
+            ss << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (tmpdata[2]);
+            ss << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (tmpdata[1]);
+            datawords[offset+index] = ss.str();
+            index++;
+            held = false;
+        }
+    }
+    if (held) {
+        ss.str("");
+        ss << "0x00000000" << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (heldword);
+        datawords[offset+index] = ss.str();
+        index++;
+    }
+}
+void write_track_vector_to_link(std::vector<l1tpf_int::PropagatedTrack> in_vec, std::string datawords[], int offset) {
     int index = 0;
     std::stringstream ss;
     bool held = false;
@@ -225,17 +273,6 @@ void write_track_vector_to_link(std::vector<l1tpf_int::PropagatedTrack> in_vec, 
         MP7DataWord tmpdata[NWORDS_TRACK] = {0, 0, 0};
         //for removing null tracks
         if (int(itr->hwPt) != 0) track_convert_word(*itr,tmpdata);
-        if(convertInputs){
-            ap_uint<96> in = (tmpdata[2],
-                              tmpdata[1],
-                              tmpdata[0]);
-            ap_uint<64> out;
-            pf_input_track_conv_hw(in, out, link_no); // reqs linkNo to determine phi offset
-            if(in!=0) std::cout << "converted " << in.to_string(16) << " to " << out.to_string(16) << std::endl;
-            tmpdata[2] = 0;
-            tmpdata[1] = out(63,32);
-            tmpdata[0] = out(31, 0);
-        }
         ss.str("");
         ss << "0x";
         if (!held) {

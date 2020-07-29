@@ -118,6 +118,16 @@ int main() {
         l1tpf_int::CaloCluster emcalo_dummy; emcalo_dummy.hwPt = 0; emcalo_dummy.hwEta = 0; emcalo_dummy.hwPhi = 0; emcalo_dummy.hwPtErr = 0;
         l1tpf_int::Muon mu_dummy; mu_dummy.hwPt = 0; mu_dummy.hwEta = 0; mu_dummy.hwPhi = 0;
 
+        // analogous structures for converted input objects
+        std::vector<HadCaloObj> calo_cvt[NLINKS_PER_CALO]; 
+        std::vector<EmCaloObj> emcalo_cvt[NLINKS_PER_EMCALO]; 
+        std::vector<TkObj> track_cvt[NLINKS_PER_TRACK]; 
+        std::vector<MuObj> mu_cvt[NLINKS_PER_MU];
+        HadCaloObj calo_cvt_dummy; calo_cvt_dummy.hwPt = 0; calo_cvt_dummy.hwEmPt = 0; calo_cvt_dummy.hwEta = 0; calo_cvt_dummy.hwPhi = 0; calo_cvt_dummy.hwIsEM = 0; 
+        EmCaloObj emcalo_cvt_dummy; emcalo_cvt_dummy.hwPt = 0; emcalo_cvt_dummy.hwPtErr = 0;  emcalo_cvt_dummy.hwEta = 0; emcalo_cvt_dummy.hwPhi = 0;
+        TkObj track_cvt_dummy; track_cvt_dummy.hwPt = 0; track_cvt_dummy.hwPtErr = 0; track_cvt_dummy.hwEta = 0; track_cvt_dummy.hwPhi = 0; track_cvt_dummy.hwZ0 = 0; 
+        MuObj mu_cvt_dummy; mu_cvt_dummy.hwPt = 0; mu_cvt_dummy.hwPtErr = 0; mu_cvt_dummy.hwEta = 0; mu_cvt_dummy.hwPhi = 0;
+
         // initialize temp PF input objects, sorted into regions
         HadCaloObj calo_pf_in[TMUX_IN][NCALO]; EmCaloObj emcalo_pf_in[TMUX_IN][NEMCALO]; TkObj track_pf_in[TMUX_IN][NTRACK]; MuObj mu_pf_in[TMUX_IN][NMU];
         for (int ir = 0; ir < TMUX_IN; ir++) {
@@ -216,30 +226,17 @@ int main() {
         int nmus_reg = 0;
 
         ilink = NLINKS_PER_TRACK;
-        std::fill(i_temp, i_temp+TMUX_IN, 0);
         for (int i = 0; i < NTRACK_TMUX; ++i) {
             if (int(track[i].hwEta) < etalo or int(track[i].hwEta) > etahi) continue;
             if (int(track[i].hwPt) == 0) continue;
             // pick input link and record
             pick_link(ilink, track[i]);
             track_tp[ilink].push_back(track[i]);
+            // convert from L1Tk input format to PF format
+            TkObj pf_track; 
+            track_convert(track[i], pf_track, ilink);
+            track_cvt[ilink].push_back(pf_track);
             ntracks++;
-            // pick region and record
-            // for (int ies = 0; ies < NETA_SMALL; ies++) {
-            //     if (int(track[i].hwEta) >= eta_bounds_lo[ies] and int(track[i].hwEta) < eta_bounds_hi[ies]) {
-            //         for (int ips = 0; ips < NPHI_SMALL; ips++) {
-            //             if ( isInPhiRegion(track[i].hwPhi, phi_bounds_lo[ips], phi_bounds_hi[ips]) ) { 
-            //                 // checks "p1<=test<p2" accounting for phi wraparound
-            //                 if (i_temp[ies*NPHI_SMALL+ips]==NTRACK) continue;
-            //                 // std::cout<<"\tX -- ("<<ies<<","<<ips<<")"<<std::endl;
-            //                 track_pf_in[ies*NPHI_SMALL+ips][i_temp[ies*NPHI_SMALL+ips]] = track[i];
-            //                 i_temp[ies*NPHI_SMALL+ips] += 1;
-            //                 ntracks_smallreg[ies*NPHI_SMALL+ips]++;
-            //                 ntracks_reg++;
-            //             }
-            //         }
-            //     }
-            // }
         }
         ilink = NLINKS_PER_CALO;
         std::fill(i_temp, i_temp+TMUX_IN, 0);
@@ -248,20 +245,11 @@ int main() {
             if (int(calo[i].hwPt) == 0) continue;
             pick_link_had(ilink, calo[i]);
             calo_tp[ilink].push_back(calo[i]);
+            // trivial conversion for now
+            HadCaloObj pf_calo; 
+            dpf2fw::convert(calo[i], pf_calo);
+            calo_cvt[ilink].push_back(pf_calo);
             ncalos++;
-            // for (int ies = 0; ies < NETA_SMALL; ies++) {
-            //     if (int(calo[i].hwEta) >= eta_bounds_lo[ies] and int(calo[i].hwEta) < eta_bounds_hi[ies]) {
-            //         for (int ips = 0; ips < NPHI_SMALL; ips++) {
-            //             if ( isInPhiRegion(calo[i].hwPhi, phi_bounds_lo[ips], phi_bounds_hi[ips]) ) { 
-            //                 if (i_temp[ies*NPHI_SMALL+ips]==NCALO) continue;
-            //                 calo_pf_in[ies*NPHI_SMALL+ips][i_temp[ies*NPHI_SMALL+ips]] = calo[i];
-            //                 i_temp[ies*NPHI_SMALL+ips] += 1;
-            //                 ncalos_smallreg[ies*NPHI_SMALL+ips]++;
-            //                 ncalos_reg++;
-            //             }
-            //         }
-            //     }
-            // }
         }
         ilink = NLINKS_PER_EMCALO;
         std::fill(i_temp, i_temp+TMUX_IN, 0);
@@ -270,20 +258,11 @@ int main() {
             if (int(emcalo[i].hwPt) == 0) continue;
             pick_link_em(ilink, emcalo[i]);
             emcalo_tp[ilink].push_back(emcalo[i]);
+            // trivial conversion for now
+            EmCaloObj pf_emcalo; 
+            dpf2fw::convert(emcalo[i], pf_emcalo);
+            emcalo_cvt[ilink].push_back(pf_emcalo);
             nemcalos++;
-            // for (int ies = 0; ies < NETA_SMALL; ies++) {
-            //     if (int(emcalo[i].hwEta) >= eta_bounds_lo[ies] and int(emcalo[i].hwEta) < eta_bounds_hi[ies]) {
-            //         for (int ips = 0; ips < NPHI_SMALL; ips++) {
-            //             if ( isInPhiRegion(emcalo[i].hwPhi, phi_bounds_lo[ips], phi_bounds_hi[ips]) ) { 
-            //                 if (i_temp[ies*NPHI_SMALL+ips]==NEMCALO) continue;
-            //                 emcalo_pf_in[ies*NPHI_SMALL+ips][i_temp[ies*NPHI_SMALL+ips]] = emcalo[i];
-            //                 i_temp[ies*NPHI_SMALL+ips] += 1;
-            //                 nemcalos_smallreg[ies*NPHI_SMALL+ips]++;
-            //                 nemcalos_reg++;
-            //             }
-            //         }
-            //     }
-            // }
         }
         ilink = NLINKS_PER_MU;
         std::fill(i_temp, i_temp+TMUX_IN, 0);
@@ -292,34 +271,29 @@ int main() {
             if (int(mu[i].hwPt) == 0) continue;
             pick_link(ilink, mu[i]);
             mu_tp[ilink].push_back(mu[i]);
+            // trivial conversion for now
+            MuObj pf_mu; 
+            dpf2fw::convert(mu[i], pf_mu);
+            mu_cvt[ilink].push_back(pf_mu);
             nmus++;
-            // for (int ies = 0; ies < NETA_SMALL; ies++) {
-            //     if (int(mu[i].hwEta) >= eta_bounds_lo[ies] and int(mu[i].hwEta) < eta_bounds_hi[ies]) {
-            //         for (int ips = 0; ips < NPHI_SMALL; ips++) {
-            //             if ( isInPhiRegion(mu[i].hwPhi, phi_bounds_lo[ips], phi_bounds_hi[ips]) ) { 
-            //                 if (i_temp[ies*NPHI_SMALL+ips]==NMU) continue;
-            //                 mu_pf_in[ies*NPHI_SMALL+ips][i_temp[ies*NPHI_SMALL+ips]] = mu[i];
-            //                 i_temp[ies*NPHI_SMALL+ips] += 1;
-            //                 nmus_smallreg[ies*NPHI_SMALL+ips]++;
-            //                 nmus_reg++;
-            //             }
-            //         }
-            //     }
-            // }
         }
 
         // resize to ensure number of objects can be sent in one link group
         for (int il = 0; il < NLINKS_PER_TRACK; il++) {
-            track_tp[il].resize(((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_TRACK, track_dummy);
+            track_tp [il].resize(((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_TRACK, track_dummy);
+            track_cvt[il].resize(((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_TRACK, track_cvt_dummy);
         }
         for (int il = 0; il < NLINKS_PER_CALO; il++) {
-            calo_tp[il].resize(((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_CALO, calo_dummy);
+            calo_tp [il].resize(((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_CALO, calo_dummy);
+            calo_cvt[il].resize(((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_CALO, calo_cvt_dummy);
         }
         for (int il = 0; il < NLINKS_PER_EMCALO; il++) {
-            emcalo_tp[il].resize(((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_EMCALO, emcalo_dummy);
+            emcalo_tp [il].resize(((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_EMCALO, emcalo_dummy);
+            emcalo_cvt[il].resize(((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_EMCALO, emcalo_cvt_dummy);
         }
         for (int il = 0; il < NLINKS_PER_MU; il++) {
-            mu_tp[il].resize(((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_MU, mu_dummy);
+            mu_tp [il].resize(((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_MU, mu_dummy);
+            mu_cvt[il].resize(((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_MU, mu_cvt_dummy);
         }
 
         //
@@ -338,9 +312,10 @@ int main() {
 
             if (link_type == 0) {
                 write_track_vector_to_link(track_tp[obj_link_no], input_datawords[link_off+link_ctr], input_offset);
-                write_track_vector_to_link(track_tp[obj_link_no], input_datawords_cvt[link_off+link_ctr], input_offset, true, obj_link_no);
+                write_track_vector_to_link(track_cvt[obj_link_no], input_datawords_cvt[link_off+link_ctr], input_offset);
             } else if (link_type == 1) {
                 write_emcalo_vector_to_link(emcalo_tp[obj_link_no], input_datawords[link_off+link_ctr], input_offset); 
+                // for non-track, just write the same objects to the converted outputs
                 write_emcalo_vector_to_link(emcalo_tp[obj_link_no], input_datawords_cvt[link_off+link_ctr], input_offset); 
             } else if (link_type == 2) {
                 write_calo_vector_to_link(calo_tp[obj_link_no], input_datawords[link_off+link_ctr], input_offset);
@@ -355,6 +330,7 @@ int main() {
         stream2.str("");
         stream2 << "0x00000000" << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(hwZPV.range(9,0))) << 14) << "00"; 
         input_datawords[link_off+NLINKS_PER_REG][input_offset] = stream2.str();
+        input_datawords_cvt[link_off+NLINKS_PER_REG][input_offset] = stream2.str();
         
         link_off += NLINKS_PER_REG+1;
         // 2 schemes should be equivalent in 18 / 6 setup
@@ -369,21 +345,80 @@ int main() {
         //
 
         // fill regions from beginning of links
+        std::fill(i_temp, i_temp+TMUX_IN, 0);
         for (int ind = 0; ind < track_tp[0].size(); ind++) { // works since same size for all links
             for (int il = 0; il < NLINKS_PER_TRACK; il++) {
-                auto tp_track = track_tp[il].at(ind);
+                auto pf_track = track_cvt[il].at(ind);
                 // find region
                 for (int ies = 0; ies < NETA_SMALL; ies++) {
-                    if (int(tp_track.hwEta) >= eta_bounds_lo[ies] and int(tp_track.hwEta) < eta_bounds_hi[ies]) {
+                    if (int(pf_track.hwEta) >= eta_bounds_lo[ies] and int(pf_track.hwEta) < eta_bounds_hi[ies]) {
                         for (int ips = 0; ips < NPHI_SMALL; ips++) {
-                            if ( isInPhiRegion(tp_track.hwPhi, phi_bounds_lo[ips], phi_bounds_hi[ips]) ) { 
+                            if ( isInPhiRegion(pf_track.hwPhi, phi_bounds_lo[ips], phi_bounds_hi[ips]) ) { 
                                 if (i_temp[ies*NPHI_SMALL+ips]==NTRACK) continue;
-                                TkObj pf_track; // convert from L1Tk input format to PF format
-                                track_convert(tp_track, pf_track);
                                 track_pf_in[ies*NPHI_SMALL+ips][i_temp[ies*NPHI_SMALL+ips]] = pf_track;
                                 i_temp[ies*NPHI_SMALL+ips] += 1;
                                 ntracks_smallreg[ies*NPHI_SMALL+ips]++;
                                 ntracks_reg++;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        std::fill(i_temp, i_temp+TMUX_IN, 0);
+       for (int ind = 0; ind < calo_tp[0].size(); ind++) { // works since same size for all links
+            for (int il = 0; il < NLINKS_PER_CALO; il++) {
+                auto pf_calo = calo_cvt[il].at(ind);
+                // find region
+                for (int ies = 0; ies < NETA_SMALL; ies++) {
+                    if (int(pf_calo.hwEta) >= eta_bounds_lo[ies] and int(pf_calo.hwEta) < eta_bounds_hi[ies]) {
+                        for (int ips = 0; ips < NPHI_SMALL; ips++) {
+                            if ( isInPhiRegion(pf_calo.hwPhi, phi_bounds_lo[ips], phi_bounds_hi[ips]) ) { 
+                                if (i_temp[ies*NPHI_SMALL+ips]==NCALO) continue;
+                                calo_pf_in[ies*NPHI_SMALL+ips][i_temp[ies*NPHI_SMALL+ips]] = pf_calo;
+                                i_temp[ies*NPHI_SMALL+ips] += 1;
+                                ncalos_smallreg[ies*NPHI_SMALL+ips]++;
+                                ncalos_reg++;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        std::fill(i_temp, i_temp+TMUX_IN, 0);
+        for (int ind = 0; ind < emcalo_tp[0].size(); ind++) { // works since same size for all links
+            for (int il = 0; il < NLINKS_PER_EMCALO; il++) {
+                auto pf_emcalo = emcalo_cvt[il].at(ind);
+                // find region
+                for (int ies = 0; ies < NETA_SMALL; ies++) {
+                    if (int(pf_emcalo.hwEta) >= eta_bounds_lo[ies] and int(pf_emcalo.hwEta) < eta_bounds_hi[ies]) {
+                        for (int ips = 0; ips < NPHI_SMALL; ips++) {
+                            if ( isInPhiRegion(pf_emcalo.hwPhi, phi_bounds_lo[ips], phi_bounds_hi[ips]) ) { 
+                                if (i_temp[ies*NPHI_SMALL+ips]==NEMCALO) continue;
+                                emcalo_pf_in[ies*NPHI_SMALL+ips][i_temp[ies*NPHI_SMALL+ips]] = pf_emcalo;
+                                i_temp[ies*NPHI_SMALL+ips] += 1;
+                                nemcalos_smallreg[ies*NPHI_SMALL+ips]++;
+                                nemcalos_reg++;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        std::fill(i_temp, i_temp+TMUX_IN, 0);
+        for (int ind = 0; ind < mu_tp[0].size(); ind++) { // works since same size for all links
+            for (int il = 0; il < NLINKS_PER_MU; il++) {
+                auto pf_mu = mu_cvt[il].at(ind);
+                // find region
+                for (int ies = 0; ies < NETA_SMALL; ies++) {
+                    if (int(pf_mu.hwEta) >= eta_bounds_lo[ies] and int(pf_mu.hwEta) < eta_bounds_hi[ies]) {
+                        for (int ips = 0; ips < NPHI_SMALL; ips++) {
+                            if ( isInPhiRegion(pf_mu.hwPhi, phi_bounds_lo[ips], phi_bounds_hi[ips]) ) { 
+                                if (i_temp[ies*NPHI_SMALL+ips]==NMU) continue;
+                                mu_pf_in[ies*NPHI_SMALL+ips][i_temp[ies*NPHI_SMALL+ips]] = pf_mu;
+                                i_temp[ies*NPHI_SMALL+ips] += 1;
+                                nmus_smallreg[ies*NPHI_SMALL+ips]++;
+                                nmus_reg++;
                             }
                         }
                     }
@@ -429,7 +464,6 @@ int main() {
                 stream1 << std::uppercase << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_out[id*2+0]);
                 layer1_datawords[test*NREGIONS+ir][id] = stream1.str();
             }
-
         }
 
 
@@ -440,15 +474,21 @@ int main() {
     //
     std::ofstream outfile_inputs;
     outfile_inputs.open("../../../../inputs.txt");
+    std::ofstream outfile_inputs_cvt;
+    outfile_inputs_cvt.open("../../../../inputs_converted.txt");
     for (int ib = 0; ib < input_listLength; ib++){
         outfile_inputs << "0x" << std::setfill('0') << std::setw(4) << std::hex << ib << "   " <<std::dec;
+        outfile_inputs_cvt << "0x" << std::setfill('0') << std::setw(4) << std::hex << ib << "   " <<std::dec;
         //for (int ia = 0; ia < NLINKS_APX_GEN0; ia++){
         for (int ia = NLINKS_APX_GEN0-1; ia >=0; ia--){ // write backwards
             outfile_inputs << input_datawords[ia][ib] << "    ";
+            outfile_inputs_cvt << input_datawords_cvt[ia][ib] << "    ";
         }
         outfile_inputs << std::endl;
+        outfile_inputs_cvt << std::endl;
     }
     outfile_inputs.close();
+    outfile_inputs_cvt.close();
 
     std::ofstream outfile_outputs;
     outfile_outputs.open("../../../../output.txt");
