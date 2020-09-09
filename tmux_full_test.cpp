@@ -1,11 +1,22 @@
 #include "tmux_create_test.h"
 
+#define NETA_SMALL 2
+#define NPHI_SMALL 9
+
 //int mp7DataLength = 2*(NTRACK+NCALO+NEMCALO+NMU);
 int objDataLength[4] = {(NWORDS_TRACK*NTRACK), ((NWORDS_EMCALO*NEMCALO)+(NWORDS_TRACK*NTRACK)), ((NWORDS_EMCALO*NEMCALO)+(NWORDS_CALO*NCALO)+(NWORDS_TRACK*NTRACK)), ((NWORDS_EMCALO*NEMCALO)+(NWORDS_CALO*NCALO)+(NWORDS_TRACK*NTRACK)+(NWORDS_MU*NMU))};
 int link_max[4] = {NLINKS_PER_TRACK, NLINKS_PER_TRACK+NLINKS_PER_EMCALO, NLINKS_PER_TRACK+NLINKS_PER_CALO+NLINKS_PER_EMCALO, NLINKS_PER_TRACK+NLINKS_PER_CALO+NLINKS_PER_EMCALO+NLINKS_PER_MU};
 int link_min[4] = {0, NLINKS_PER_TRACK, NLINKS_PER_TRACK+NLINKS_PER_EMCALO, NLINKS_PER_TRACK+NLINKS_PER_EMCALO+NLINKS_PER_CALO};
 unsigned int theEtaRegion = 0;
 unsigned int thePhiRegion = 0;
+
+//unsigned int outputOrder[TMUX_IN] = {0,2,4,6,8,10,12,14,16,15,17,1,3,5,7,9,11,13};//NPHI x NETA
+//unsigned int outputOrder[TMUX_IN] = {0,11,1,12,2,13,3,14,4,15,5,16,6,17,7,9,8,10};//NPHI x NETA
+unsigned int outputOrder[TMUX_IN] = {0,2,1,3,11,4,12,5,13,6,14,7,15,8,16,9,17,10};//NPHI x NETA
+//  mapping from Ryan:
+//  eta, phi — 0,0 --- 1,8 
+//  0,0 - 0,2 - 0,1 - 0,3 - 1,2 - 0,4 - 1,3 - 0,5 - 1,4 - 0,6 - 1,5 - 0,7 - 1,6 - 0,8 - 1,7 - 1,0 - 1,8 - 1,1
+//  0     2     1     3     11    4     12    5     13    6     14    7     15    8     16    9     17    10
 
 void pick_link_em(int &link, l1tpf_int::CaloCluster in) {
     link++;
@@ -55,10 +66,10 @@ int main() {
     //   Though the math is identical if instead we leave the links 1/3 empty and use all 3 groups
     const int listLength = NCLK_PER_BX*((NTEST*TMUX_OUT)+(TMUX_IN-TMUX_OUT));
     //std::cout<<"listLength = "<<listLength<<std::endl;
-    std::string datawords [NLINKS_APX_GEN0][listLength];
+    std::string input_datawords [NLINKS_APX_GEN0][listLength];
     for (int ia = 0; ia < NLINKS_APX_GEN0; ia++){
         for (int ib = 0; ib < listLength; ib++){
-            datawords[ia][ib] = "0x0000000000000000";
+            input_datawords[ia][ib] = "0x0000000000000000";
         }
     }
 
@@ -254,20 +265,20 @@ int main() {
             obj_link_no = link_ctr-link_min[link_type];
 
             if (link_type == 0) {
-                write_track_vector_to_link(track_temp[obj_link_no], datawords[link_off+link_ctr], offset, obj_link_no); 
+                write_track_vector_to_link(track_temp[obj_link_no], input_datawords[link_off+link_ctr], offset, obj_link_no); 
             } else if (link_type == 1) {
-                write_emcalo_vector_to_link(emcalo_temp[obj_link_no], datawords[link_off+link_ctr], offset); 
+                write_emcalo_vector_to_link(emcalo_temp[obj_link_no], input_datawords[link_off+link_ctr], offset); 
             } else if (link_type == 2) {
-                write_calo_vector_to_link(calo_temp[obj_link_no], datawords[link_off+link_ctr], offset);
+                write_calo_vector_to_link(calo_temp[obj_link_no], input_datawords[link_off+link_ctr], offset);
             } else if (link_type == 3) {
-                write_mu_vector_to_link(mu_temp[obj_link_no], datawords[link_off+link_ctr], offset);
+                write_mu_vector_to_link(mu_temp[obj_link_no], input_datawords[link_off+link_ctr], offset);
             }
         }
         
         std::stringstream stream2;
         stream2.str("");
         stream2 << "0x00000000" << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(hwZPV.range(9,0))) << 14) << "00"; 
-        datawords[link_off+NLINKS_PER_REG][offset] = stream2.str();
+        input_datawords[link_off+NLINKS_PER_REG][offset] = stream2.str();
         
 
         link_off += NLINKS_PER_REG+1;
@@ -285,8 +296,8 @@ int main() {
         outfile << "0x" << std::setfill('0') << std::setw(4) << std::hex << ib << "   " <<std::dec;
         //for (int ia = 0; ia < NLINKS_APX_GEN0; ia++){
         for (int ia = NLINKS_APX_GEN0-1; ia >=0; ia--){
-            //datawords[ia][ib] = "0x0000000000000000";
-            outfile << datawords[ia][ib] << "    ";
+            //input_datawords[ia][ib] = "0x0000000000000000";
+            outfile << input_datawords[ia][ib] << "    ";
         }
         outfile << std::endl;
     }
