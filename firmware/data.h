@@ -8,6 +8,7 @@ typedef ap_int<10>  etaphi_t;
 typedef ap_int<5>  vtx_t;
 typedef ap_uint<3>  particleid_t;
 typedef ap_int<10> z0_t;  // 40cm / 0.1
+typedef ap_int<16> misc_t;
 	
 typedef ap_uint<14> tk2em_dr_t;
 typedef ap_uint<14> tk2calo_dr_t;
@@ -58,6 +59,7 @@ enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=
 // PUPPI & CHS
 #define NPVTRACK 15
 #define NNEUTRALS NPHOTON+NSELCALO
+#define NALL (NTRACK+NPHOTON+NSELCALO+NMU)
 
 struct CaloObj {
 	pt_t hwPt;
@@ -116,6 +118,13 @@ struct VtxObj {
 	vtx_t mult;
 	particleid_t hwId;
 };
+struct PFOutputObj {
+        pt_t hwPt;
+	etaphi_t hwEta, hwPhi; // relative to the region center, at calo
+	particleid_t hwId;
+	misc_t hwZ0Pup;
+};
+        
 
 //TMUX
 #define NETA_TMUX 2

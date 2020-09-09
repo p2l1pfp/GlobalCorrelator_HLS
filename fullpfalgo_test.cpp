@@ -12,6 +12,11 @@
 #define NLINKS_APX_GEN0 48
 #define NFRAMES_APX_GEN0 3
 
+bool compare_hwPt(PFOutputObj i1, PFOutputObj i2) 
+{ 
+    return (i1.hwPt > i2.hwPt); 
+} 
+
 int main() {
 
     // input format: could be random or coming from simulation
@@ -28,6 +33,7 @@ int main() {
     PFNeutralObj outpho[NPHOTON], outpho_ref[NPHOTON];
     PFNeutralObj outne[NSELCALO], outne_ref[NSELCALO];
     PFChargedObj outmupf[NMU], outmupf_ref[NMU];
+    PFOutputObj outpf[NALL], outpf_ref[NALL];
 #if defined(TESTMP7)
     //MP7PatternSerializer serInPatterns( "mp7_input_patterns.txt", HLS_pipeline_II,HLS_pipeline_II-1); // mux each event into HLS_pipeline_II frames
     //MP7PatternSerializer serOutPatterns("mp7_output_patterns.txt",HLS_pipeline_II,HLS_pipeline_II-1); // assume only one PF core running per chip,
@@ -81,7 +87,7 @@ int main() {
         //tk2calo_dr_t drvals_tk2calo[NTRACK][NSELCALO];
         //pfalgo3_full(emcalo, calo, track, mu, outch, outpho, outne, outmupf, drvals_tk2em, drvals_tk2calo);
         //mp7wrapped_unpack_out(data_out, outch, outpho, outne, outmupf);
-        mp7wrapped_unpack_out_necomb(data_out, outch, outpho, outne, outmupf);
+        mp7wrapped_unpack_out_comb(data_out, outpf);
 		// for (int ii = 0; ii < 72; ++ii){ std::cout << ii << ", " << data_in[ii] << std::endl; }
 
         //for (unsigned int di = 0; di < MP7_NCHANN; di++) {
@@ -158,54 +164,51 @@ int main() {
         // compute_puppi_weight_hw( 100, curweight );
         // std::cout << "curweight = " << curweight << std::endl;
 
+        for (unsigned int id = 0; id < NTRACK; id++) {
+            outpf_ref[id].hwPt = outch_ref[id].hwPt;
+            outpf_ref[id].hwEta = outch_ref[id].hwEta;
+            outpf_ref[id].hwPhi = outch_ref[id].hwPhi;
+            outpf_ref[id].hwId = outch_ref[id].hwId;
+            outpf_ref[id].hwZ0Pup = outch_ref[id].hwZ0;
+        }
+        for (unsigned int id = 0; id < NNEUTRALS; id++) {
+            outpf_ref[id+NTRACK].hwPt = outallne_ref[id].hwPtPuppi;
+            outpf_ref[id+NTRACK].hwEta = outallne_ref[id].hwEta;
+            outpf_ref[id+NTRACK].hwPhi = outallne_ref[id].hwPhi;
+            outpf_ref[id+NTRACK].hwId = outallne_ref[id].hwId;
+            outpf_ref[id+NTRACK].hwZ0Pup = outallne_ref[id].hwPt;
+        }
+        for (unsigned int id = 0; id < NMU; id++) {
+            outpf_ref[id+NTRACK+NNEUTRALS].hwPt = outmupf_ref[id].hwPt;
+            outpf_ref[id+NTRACK+NNEUTRALS].hwEta = outmupf_ref[id].hwEta;
+            outpf_ref[id+NTRACK+NNEUTRALS].hwPhi = outmupf_ref[id].hwPhi;
+            outpf_ref[id+NTRACK+NNEUTRALS].hwId = outmupf_ref[id].hwId;
+            outpf_ref[id+NTRACK+NNEUTRALS].hwZ0Pup = outmupf_ref[id].hwZ0;
+        }
+        std::sort(outpf_ref,outpf_ref+NALL,compare_hwPt);
+
         // -----------------------------------------
         // validation against the reference algorithm
-        int errors = 0; int ntot = 0, npho = 0, nch = 0, nneu = 0, nmu = 0;
+        int errors = 0; int ntot = 0;
 
-        // check charged hadrons
-        for (int i = 0; i < NTRACK; ++i) {
-            if (!pf_equals(outch_ref[i], outch[i], "PF Charged", i)) errors++;
-            if (outch_ref[i].hwPt > 0) { ntot++; nch++; }
+        // check pf
+        for (int i = 0; i < NALL; ++i) {
+            if (!pf_equals(outpf_ref[i], outpf[i], "PF", i)) errors++;
+            if (outpf_ref[i].hwPt > 0) { ntot++; }
         }
-        // check photon 
-        for (int i = 0; i < NPHOTON; ++i) {
-            if (!pf_equals(outpho_ref[i], outpho[i], "Photon", i)) errors++;
-            if (outpho_ref[i].hwPt > 0) { ntot++; npho++; }
-        }
-        for (int i = 0; i < NSELCALO; ++i) {
-            if (!pf_equals(outne_ref[i], outne[i], "PF Neutral", i)) errors++;
-            if (outne_ref[i].hwPt > 0) { ntot++; nneu++; }
-        }
-        for (int i = 0; i < NMU; ++i) {
-            if (!pf_equals(outmupf_ref[i], outmupf[i], "PF Muon", i)) errors++;
-            if (outmupf_ref[i].hwPt > 0) { ntot++; nmu++; }
-        }        
 
         if (errors != 0) {
             printf("Error in pf test %d (%d)\n", test, errors);
             printf("Inputs: \n"); debugHR.dump_inputs(emcalo, calo, track, mu);
-            printf("Reference output: \n"); debugHR.dump_outputs(outch_ref, outpho_ref, outne_ref, outmupf_ref);
-            printf("Current output: \n"); debugHR.dump_outputs(outch, outpho, outne, outmupf);
+            printf("Reference output: \n"); debugHR.dump_outputs(outpf_ref);
+            printf("Current output: \n"); debugHR.dump_outputs(outpf);
             //return 1;
         } else {
-            printf("Passed pf test %d (%d, %d, %d, %d)\n", test, ntot, nch, npho, nneu);
+            printf("Passed pf test %d (%d)\n", test, ntot);
         }
 
-        int puperrors = 0;
-        for (int i = 0; i < NPHOTON; ++i){
-            printf("hwpt = %i, hwptpuppi = %i, refptpuppi = %i, hw-ref_ptpuppi = %i \n", (int) outpho[i].hwPt, (int) outpho[i].hwPtPuppi, (int) outallne_ref[i].hwPtPuppi, int(outpho[i].hwPtPuppi-outallne_ref[i].hwPtPuppi));
-            if (outpho[i].hwPtPuppi-outallne_ref[i].hwPtPuppi != 0 && outpho[i].hwPt>0) puperrors++;
-        }
-        for (int i = 0; i < NSELCALO; ++i){
-            printf("hwpt = %i, hwptpuppi = %i, refptpuppi = %i, hw-ref_ptpuppi = %i \n", (int) outne[i].hwPt, (int) outne[i].hwPtPuppi, (int) outallne_ref[i+NPHOTON].hwPtPuppi, int(outne[i].hwPtPuppi-outallne_ref[i+NPHOTON].hwPtPuppi));
-            if (outne[i].hwPtPuppi-outallne_ref[i+NPHOTON].hwPtPuppi != 0 && outne[i].hwPt>0) puperrors++;
-        }
         std::cout << "end of test ---- " << test << std::endl;
 
-        if (puperrors>0) {
-            printf("Found %i errors in puppi test!\n", puperrors);
-            //return errors;
-        }
     }
     return 0;
 }
