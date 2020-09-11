@@ -33,7 +33,7 @@ namespace l1tpf_int {
 
 #ifdef FASTPUPPI_NTUPLERPRODUCER_DISCRETEPFINPUTS_MORE
       static constexpr float PT_SCALE = 4.0;     // quantize in units of 0.25 GeV (can be changed)
-      static constexpr float ETAPHI_FACTOR = 4;  // size of an ecal crystal in phi in integer units (our choice)
+      static constexpr float ETAPHI_FACTOR = 3;  // size of an ecal crystal in phi in integer units (our choice)
       static constexpr float ETAPHI_SCALE = ETAPHI_FACTOR*(180./M_PI);  // M_PI/180 is the size of an ECal crystal; we make a grid that is 4 times that size
       static constexpr int16_t PHI_WRAP = 360*ETAPHI_FACTOR;            // what is 3.14 in integer
 
