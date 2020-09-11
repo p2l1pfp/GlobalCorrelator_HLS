@@ -21,7 +21,7 @@ void mp7wrapped_pack_out_necomb(PFChargedObj outch[NTRACK], PFNeutralObj outne_a
 void mp7wrapped_unpack_out(MP7DataWord data[MP7_NCHANN], PFChargedObj outch[NTRACK], PFNeutralObj outpho[NPHOTON], PFNeutralObj outne[NSELCALO], PFChargedObj outmu[NMU]) ;
 void mp7wrapped_unpack_out_comb(MP7DataWord data[MP7_NCHANN], PFOutputObj outch[NALL]) ;
 void mp7wrapped_unpack_out_necomb(MP7DataWord data[MP7_NCHANN], PFChargedObj outch[NTRACK], PFNeutralObj outpho[NPHOTON], PFNeutralObj outne[NSELCALO], PFChargedObj outmu[NMU]) ;
-void mp7wrapped_pfalgo3_full(MP7DataWord input[MP7_NCHANN], MP7DataWord output[MP7_NCHANN], z0_t Z0) ;
+void mp7wrapped_pfalgo3_full(MP7DataWord input[MP7_NCHANN], MP7DataWord output[2*NOUT_SORT], z0_t Z0) ;
 
 #endif
 

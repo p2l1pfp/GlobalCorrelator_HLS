@@ -192,7 +192,7 @@ int main() {
         int errors = 0; int ntot = 0;
 
         // check pf
-        for (int i = 0; i < NALL; ++i) {
+        for (int i = 0; i < NOUT_SORT; ++i) {
             if (!pf_equals(outpf_ref[i], outpf[i], "PF", i)) errors++;
             if (outpf_ref[i].hwPt > 0) { ntot++; }
         }
