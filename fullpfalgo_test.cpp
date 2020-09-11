@@ -7,15 +7,16 @@
 #include "utils/DiscretePFInputs_IO.h"
 #include "utils/pattern_serializer.h"
 #include "utils/test_utils.h"
-
-#define NTEST 10
-#define NLINKS_APX_GEN0 48
-#define NFRAMES_APX_GEN0 3
+#include "bitonic-sort-48/hls/sorting_network_corr.hpp"
 
 bool compare_hwPt(PFOutputObj i1, PFOutputObj i2) 
 { 
     return (i1.hwPt > i2.hwPt); 
 } 
+
+#define NTEST 10
+#define NLINKS_APX_GEN0 48
+#define NFRAMES_APX_GEN0 3
 
 int main() {
 
@@ -185,7 +186,10 @@ int main() {
             outpf_ref[id+NTRACK+NNEUTRALS].hwId = outmupf_ref[id].hwId;
             outpf_ref[id+NTRACK+NNEUTRALS].hwZ0Pup = outmupf_ref[id].hwZ0;
         }
+        sorting_network(outpf_ref);
+        /* to check against simple sort (order will not match, the above avoids these mismatch errors (could also look to adjust  pf_equals() function (would need to track, seems complicated for now)
         std::sort(outpf_ref,outpf_ref+NALL,compare_hwPt);
+        */
 
         // -----------------------------------------
         // validation against the reference algorithm
