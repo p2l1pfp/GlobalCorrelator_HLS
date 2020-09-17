@@ -141,6 +141,7 @@ struct PFOutputObj {
 
 
 #define MP7_NCHANN 144
+#define NOUT_SORT 18
 #define CTP7_NCHANN_IN 67
 #define CTP7_NCHANN_OUT 48
 typedef ap_uint<32> MP7DataWord;
