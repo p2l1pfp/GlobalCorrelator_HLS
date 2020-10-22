@@ -132,6 +132,11 @@ void pfalgo2hgc_ref(const pfalgo_config &cfg, const HadCaloObj calo[/*cfg.nCALO*
         }
     }
 
-    ptsort_ref(cfg.nCALO, cfg.nSELCALO, outne_all, outne);
+
+    if (cfg.nCALO == cfg.nSELCALO) {
+        for (unsigned int ic = 0; ic < cfg.nCALO; ++ic) outne[ic] = outne_all[ic];
+    } else {
+        ptsort_ref(cfg.nCALO, cfg.nSELCALO, outne_all, outne);
+    }
 
 }

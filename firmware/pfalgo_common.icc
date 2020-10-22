@@ -128,6 +128,101 @@ void tk2calo_drdptvals(const HadCaloObj calo[NCALO], const TkObj track[NTRACK], 
     }
 }
 
+template<int DR2MAX>
+void tk2calo_drdptvals(const HadCaloObj calo[NCALO], const TkObj track, tk2calo_dq_t calo_track_drval[NCALO]) {
+    const tk2calo_dq_t eDR2MAX = DR2MAX;
+    const tk2calo_dq_t eDQMAX  = 5*DR2MAX; // at most we're 2 sigma away in pt, so that's a factor 4
+    // now, DR2MAX is 10 bits, so dptscale max is at most 10+8 bits = 18 bits // FIXME: GP: this is no longer correct
+    pt_t caloPtMin = track.hwPt - 2*(track.hwPtErr);
+    ap_int<18> dptscale  = calc_dptscale<DR2MAX>(track.hwPtErr);
+    if (caloPtMin < 0) caloPtMin = 0;
+    for (int icalo = 0; icalo < NCALO; ++icalo) {
+        if (calo[icalo].hwPt > caloPtMin) {
+            calo_track_drval[icalo] = dr2_dpt_int_cap(track.hwEta, track.hwPhi, calo[icalo].hwEta, calo[icalo].hwPhi, track.hwPt, calo[icalo].hwPt, dptscale, eDR2MAX, eDQMAX);
+        } else {
+            calo_track_drval[icalo] = eDQMAX;
+        }
+    }
+}
+
+#if 0 // version from Dylan
+template<int DR2MAX, int NCA, typename DR_T>
+void pick_closest(const DR_T calo_track_drval[NCA], ap_uint<NCA> &  calo_track_link_bit) {
+    const DR_T eDR2MAX = DR2MAX;
+    DR_T mydr = calo_track_drval[0];
+    int index = 0;
+    for (int icalo = 1; icalo < NCA; ++icalo) {
+        if (mydr > calo_track_drval[icalo]) {
+            mydr = calo_track_drval[icalo];
+            index = icalo;
+        }
+    }
+    calo_track_link_bit = 0;
+    calo_track_link_bit[index] = (mydr >= eDR2MAX) ? 0 : 1;
+}
+#else // tree-reduce version
+
+template<typename DR_T, typename INDEX_T> struct match { 
+    DR_T val; INDEX_T idx; 
+    match(DR_T dr, int i) : val(dr), idx(i) {}
+    match() {}
+
+    static match best(const match & m1, const match & m2) {
+        #pragma HLS inline
+        return (m1.val <= m2.val) ? m1 : m2;
+    }
+};
+
+template<typename MATCH_T, int N> struct picker_of_closest {
+    static MATCH_T pick(const MATCH_T in[N]) {
+        #pragma HLS inline
+        static constexpr int halfWidth = N / 2;
+        static constexpr int reducedSize = halfWidth + N % 2;
+        MATCH_T reduced[reducedSize];
+        #pragma HLS ARRAY_PARTITION variable=reduced complete
+        for (int i = 0; i < halfWidth; ++i) {
+            #pragma HLS unroll
+            reduced[i] = MATCH_T::best(in[2*i], in[2*i+1]);
+        }
+        if (halfWidth != reducedSize) {
+            reduced[reducedSize - 1] = in[N - 1];
+        }
+        return picker_of_closest<MATCH_T,reducedSize>::pick(reduced);
+    }
+};
+
+template<typename MATCH_T> 
+struct picker_of_closest<MATCH_T,2> {
+    static MATCH_T pick(const MATCH_T vals[2]) {
+        #pragma HLS inline
+        return MATCH_T::best(vals[0],vals[1]);
+    }
+};
+
+template<typename MATCH_T> 
+struct picker_of_closest<MATCH_T,1> {
+    static MATCH_T pick(const MATCH_T vals[1]) {
+        #pragma HLS inline
+        return vals[0];
+    }
+};
+
+template<int DR2MAX, int NCA, typename DR_T>
+ap_uint<NCA>  pick_closest(const DR_T calo_track_drval[NCA]) {
+    const DR_T eDR2MAX = DR2MAX;
+    typedef match<DR_T,ap_uint<ct_log2_ceil<NCA>::value>> match_t;
+    match_t candidates[NCA];
+    #pragma HLS ARRAY_PARTITION variable=candidates complete
+    for (int i = 0; i < NCA; ++i) {
+        candidates[i] = match_t(calo_track_drval[i], i);
+    }
+    match_t best = picker_of_closest<match_t, NCA>::pick(candidates);
+    ap_uint<NCA> calo_track_link_bit = 0;
+    calo_track_link_bit[best.idx] = (best.val >= eDR2MAX) ? 0 : 1;
+    return calo_track_link_bit;
+}
+
+
 template<int DR2MAX, int NTK, int NCA, typename DR_T>
 void pick_closest(const DR_T calo_track_drval[NTK][NCA], ap_uint<NCA> calo_track_link_bit[NTK]) {
     const DR_T eDR2MAX = DR2MAX;
@@ -142,7 +237,7 @@ void pick_closest(const DR_T calo_track_drval[NTK][NCA], ap_uint<NCA> calo_track
             }
             calo_track_link_bit[it][icalo] = link;
         }
-#else  // fix from Dylan (the nested loop above explodes for large numbers in some Vivado versions) 
+#elif 0  // fix from Dylan (the nested loop above explodes for large numbers in some Vivado versions) 
         DR_T mydr = calo_track_drval[it][0];
         int index = 0;
         for (int icalo = 1; icalo < NCA; ++icalo) {
@@ -153,9 +248,22 @@ void pick_closest(const DR_T calo_track_drval[NTK][NCA], ap_uint<NCA> calo_track
         }
         calo_track_link_bit[it] = 0;
         calo_track_link_bit[it][index] = (mydr >= eDR2MAX) ? 0 : 1;
+#else // tree-reduce version
+        typedef match<DR_T,ap_uint<ct_log2_ceil<NCA>::value>> match_t;
+        match_t candidates[NCA];
+        #pragma HLS ARRAY_PARTITION variable=candidates complete
+        for (int i = 0; i < NCA; ++i) {
+            candidates[i] = match_t(calo_track_drval[it][i], i);
+        }
+        match_t best = picker_of_closest<match_t, NCA>::pick(candidates);
+        calo_track_link_bit[it] = 0;
+        calo_track_link_bit[it][best.idx] = (best.val >= eDR2MAX) ? 0 : 1;
 #endif
     }
 }
+
+#endif
+
 
 void tk2calo_link_dronly(const HadCaloObj calo[NCALO], const TkObj track[NTRACK], ap_uint<NCALO> calo_track_link_bit[NTRACK]) {
     const int DR2MAX = PFALGO_DR2MAX_TK_CALO;
