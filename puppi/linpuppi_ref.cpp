@@ -80,7 +80,7 @@ void linpuppi_chs_ref(const linpuppi_config &cfg, z0_t pvZ0, const PFChargedObj 
     }
 }
 
-unsigned int linpuppi_ieta_ref(const linpuppi_config &cfg, etaphi_t eta) {
+unsigned int linpuppi_ieta_ref(const linpuppi_config &cfg, eta_t eta) {
     int n = cfg.absEtaBins.size();
     for (int i = 0; i < n; ++i) {
         if (int(eta) <= cfg.absEtaBins[i]) return (cfg.invertEtaBins ? n-i : i);

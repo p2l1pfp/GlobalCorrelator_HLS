@@ -12,7 +12,7 @@
 #include "../../firmware/l1pf_encoding.h"
 #endif
 
-int dr2_int(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2);
+int dr2_int(eta_t eta1, phi_t phi1, eta_t eta2, eta_t phi2);
 
 // charged
 void linpuppi_chs(z0_t pvZ0, const PFChargedObj pfch[NTRACK], PFChargedObj outallch[NTRACK]) ;

@@ -18,7 +18,7 @@ enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=
 
 // DEFINE MULTIPLICITIES
 #if defined(REG_HGCal)
-    #define NTRACK 25
+    #define NTRACK 30
     #define NCALO 20
     #define NMU 4
     #define NSELCALO 20
@@ -113,6 +113,11 @@ enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=
     #define PACKING_DATA_SIZE 64
     #define PACKING_NCHANN    96
 #endif
+
+
+template<int N> struct ct_log2_ceil { enum { value = ct_log2_ceil<(N/2)+(N%2)>::value + 1 }; };
+template<> struct ct_log2_ceil<2> { enum { value = 1 }; };
+template<> struct ct_log2_ceil<1> { enum { value = 0 }; };
 
 
 struct CaloObj {

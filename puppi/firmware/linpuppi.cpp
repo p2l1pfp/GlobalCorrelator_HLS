@@ -15,12 +15,12 @@ void fwdlinpuppiSum2Pt(const HadCaloObj caloin[NCALO], const ap_uint<32> sums[NC
 void fwdlinpuppiPt(const HadCaloObj caloin[NCALO], pt_t puppiPts[NCALO]);
 
 
-int dr2_int(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2) {
-    ap_int<etaphi_t::width+1> deta = (eta1-eta2);
-    ap_int<etaphi_t::width+1> dphi = (phi1-phi2);
+inline int dr2_int(eta_t eta1, phi_t phi1, eta_t eta2, phi_t phi2) {
+    ap_int<eta_t::width+1> deta = (eta1-eta2);
+    ap_int<phi_t::width+1> dphi = (phi1-phi2);
+    //ap_int<phi_t::width> dphi = (phi1-phi2); // intentional wrap-around
     return deta*deta + dphi*dphi;
 }
-
 
 void _lut_shift15_invert_init(ap_uint<16> _table[512]) { // returns 2^15 / x
     _table[0] = 32768; // this is 2^15
@@ -309,7 +309,21 @@ void fwdlinpuppiSum2Pt(const HadCaloObj caloin[NCALO], const ap_uint<32> sums[NC
 void fwdlinpuppiNoCrop(const HadCaloObj caloin[NCALO], PFNeutralObj pfallne[NCALO]) {
     #pragma HLS ARRAY_PARTITION variable=caloin complete
     #pragma HLS ARRAY_PARTITION variable=pfselne complete
+#ifdef HLS_pipeline_II
+ #if HLS_pipeline_II == 1
+    #pragma HLS pipeline II=1
+ #elif HLS_pipeline_II == 2
     #pragma HLS pipeline II=2
+ #elif HLS_pipeline_II == 3
+    #pragma HLS pipeline II=3
+ #elif HLS_pipeline_II == 4
+    #pragma HLS pipeline II=4
+ #elif HLS_pipeline_II == 6
+    #pragma HLS pipeline II=6
+ #endif
+#else
+    #pragma HLS pipeline II=2
+#endif
 
     pt_t puppiPts[NCALO];
     #pragma HLS ARRAY_PARTITION variable=puppiPts complete    
@@ -337,7 +351,21 @@ void fwdlinpuppiNoCrop(const HadCaloObj caloin[NCALO], PFNeutralObj pfallne[NCAL
 void fwdlinpuppi(const HadCaloObj caloin[NCALO], PFNeutralObj pfselne[NNEUTRALS]) {
     #pragma HLS ARRAY_PARTITION variable=caloin complete
     #pragma HLS ARRAY_PARTITION variable=pfselne complete
+#ifdef HLS_pipeline_II
+ #if HLS_pipeline_II == 1
+    #pragma HLS pipeline II=1
+ #elif HLS_pipeline_II == 2
     #pragma HLS pipeline II=2
+ #elif HLS_pipeline_II == 3
+    #pragma HLS pipeline II=3
+ #elif HLS_pipeline_II == 4
+    #pragma HLS pipeline II=4
+ #elif HLS_pipeline_II == 6
+    #pragma HLS pipeline II=6
+ #endif
+#else
+    #pragma HLS pipeline II=2
+#endif
 
     pt_t puppiPts[NCALO];
     #pragma HLS ARRAY_PARTITION variable=puppiPts complete    
@@ -388,7 +416,21 @@ inline bool linpuppi_fromPV(const T & obj, z0_t pvZ0) {
 void linpuppi_chs(z0_t pvZ0, const PFChargedObj pfch[NTRACK], PFChargedObj outallch[NTRACK]) {
     #pragma HLS ARRAY_PARTITION variable=pfch complete
     #pragma HLS ARRAY_PARTITION variable=outallch complete
+#ifdef HLS_pipeline_II
+ #if HLS_pipeline_II == 1
+    #pragma HLS pipeline II=1
+ #elif HLS_pipeline_II == 2
     #pragma HLS pipeline II=2
+ #elif HLS_pipeline_II == 3
+    #pragma HLS pipeline II=3
+ #elif HLS_pipeline_II == 4
+    #pragma HLS pipeline II=4
+ #elif HLS_pipeline_II == 6
+    #pragma HLS pipeline II=6
+ #endif
+#else
+    #pragma HLS pipeline II=2
+#endif
 
     for (unsigned int i = 0; i < NTRACK; ++i) {
         if (linpuppi_fromPV(pfch[i], pvZ0) || pfch[i].hwId == PID_Muon) {
@@ -557,7 +599,21 @@ void linpuppiNoCrop(const TkObj track[NTRACK], z0_t pvZ0, const PFNeutralObj pfa
     #pragma HLS ARRAY_PARTITION variable=track complete
     #pragma HLS ARRAY_PARTITION variable=pfallne complete
     #pragma HLS ARRAY_PARTITION variable=outallne complete
+#ifdef HLS_pipeline_II
+ #if HLS_pipeline_II == 1
+    #pragma HLS pipeline II=1
+ #elif HLS_pipeline_II == 2
     #pragma HLS pipeline II=2
+ #elif HLS_pipeline_II == 3
+    #pragma HLS pipeline II=3
+ #elif HLS_pipeline_II == 4
+    #pragma HLS pipeline II=4
+ #elif HLS_pipeline_II == 6
+    #pragma HLS pipeline II=6
+ #endif
+#else
+    #pragma HLS pipeline II=2
+#endif
 
     ap_uint<32> sums[NALLNEUTRALS];
     #pragma HLS ARRAY_PARTITION variable=sums complete
@@ -570,7 +626,21 @@ void linpuppi(const TkObj track[NTRACK], z0_t pvZ0, const PFNeutralObj pfallne[N
     #pragma HLS ARRAY_PARTITION variable=track complete
     #pragma HLS ARRAY_PARTITION variable=pfallne complete
     #pragma HLS ARRAY_PARTITION variable=outselne complete
+#ifdef HLS_pipeline_II
+ #if HLS_pipeline_II == 1
+    #pragma HLS pipeline II=1
+ #elif HLS_pipeline_II == 2
     #pragma HLS pipeline II=2
+ #elif HLS_pipeline_II == 3
+    #pragma HLS pipeline II=3
+ #elif HLS_pipeline_II == 4
+    #pragma HLS pipeline II=4
+ #elif HLS_pipeline_II == 6
+    #pragma HLS pipeline II=6
+ #endif
+#else
+    #pragma HLS pipeline II=2
+#endif
 
     PFNeutralObj allne[NALLNEUTRALS];
     #pragma HLS ARRAY_PARTITION variable=allne complete
@@ -605,7 +675,21 @@ void linpuppi(const TkObj track[NTRACK], z0_t pvZ0, const PFNeutralObj pfallne[N
 void packed_fwdlinpuppi(const ap_uint<PACKING_DATA_SIZE> input[PACKING_NCHANN], ap_uint<PACKING_DATA_SIZE> output[PACKING_NCHANN]) {
     #pragma HLS ARRAY_PARTITION variable=input complete
     #pragma HLS ARRAY_PARTITION variable=output complete
+#ifdef HLS_pipeline_II
+ #if HLS_pipeline_II == 1
+    #pragma HLS pipeline II=1
+ #elif HLS_pipeline_II == 2
     #pragma HLS pipeline II=2
+ #elif HLS_pipeline_II == 3
+    #pragma HLS pipeline II=3
+ #elif HLS_pipeline_II == 4
+    #pragma HLS pipeline II=4
+ #elif HLS_pipeline_II == 6
+    #pragma HLS pipeline II=6
+ #endif
+#else
+    #pragma HLS pipeline II=2
+#endif
 
     HadCaloObj caloin[NCALO]; PFNeutralObj pfselne[NNEUTRALS];
     #pragma HLS ARRAY_PARTITION variable=caloin complete
@@ -618,7 +702,21 @@ void packed_fwdlinpuppi(const ap_uint<PACKING_DATA_SIZE> input[PACKING_NCHANN], 
 void packed_fwdlinpuppiNoCrop(const ap_uint<PACKING_DATA_SIZE> input[PACKING_NCHANN], ap_uint<PACKING_DATA_SIZE> output[PACKING_NCHANN]) {
     #pragma HLS ARRAY_PARTITION variable=input complete
     #pragma HLS ARRAY_PARTITION variable=output complete
+#ifdef HLS_pipeline_II
+ #if HLS_pipeline_II == 1
+    #pragma HLS pipeline II=1
+ #elif HLS_pipeline_II == 2
     #pragma HLS pipeline II=2
+ #elif HLS_pipeline_II == 3
+    #pragma HLS pipeline II=3
+ #elif HLS_pipeline_II == 4
+    #pragma HLS pipeline II=4
+ #elif HLS_pipeline_II == 6
+    #pragma HLS pipeline II=6
+ #endif
+#else
+    #pragma HLS pipeline II=2
+#endif
 
     HadCaloObj caloin[NCALO]; PFNeutralObj pfallne[NCALO];
     #pragma HLS ARRAY_PARTITION variable=caloin complete
@@ -631,7 +729,21 @@ void packed_fwdlinpuppiNoCrop(const ap_uint<PACKING_DATA_SIZE> input[PACKING_NCH
 void packed_linpuppi_chs(const ap_uint<PACKING_DATA_SIZE> input[PACKING_NCHANN], ap_uint<PACKING_DATA_SIZE> output[PACKING_NCHANN]) {
     #pragma HLS ARRAY_PARTITION variable=input complete
     #pragma HLS ARRAY_PARTITION variable=output complete
+#ifdef HLS_pipeline_II
+ #if HLS_pipeline_II == 1
+    #pragma HLS pipeline II=1
+ #elif HLS_pipeline_II == 2
     #pragma HLS pipeline II=2
+ #elif HLS_pipeline_II == 3
+    #pragma HLS pipeline II=3
+ #elif HLS_pipeline_II == 4
+    #pragma HLS pipeline II=4
+ #elif HLS_pipeline_II == 6
+    #pragma HLS pipeline II=6
+ #endif
+#else
+    #pragma HLS pipeline II=2
+#endif
 
     z0_t pvZ0; PFChargedObj pfch[NTRACK], outallch[NTRACK];
     #pragma HLS ARRAY_PARTITION variable=pfch complete
@@ -644,7 +756,21 @@ void packed_linpuppi_chs(const ap_uint<PACKING_DATA_SIZE> input[PACKING_NCHANN],
 void packed_linpuppi(const ap_uint<PACKING_DATA_SIZE> input[PACKING_NCHANN], ap_uint<PACKING_DATA_SIZE> output[PACKING_NCHANN]) {
     #pragma HLS ARRAY_PARTITION variable=input complete
     #pragma HLS ARRAY_PARTITION variable=output complete
+#ifdef HLS_pipeline_II
+ #if HLS_pipeline_II == 1
+    #pragma HLS pipeline II=1
+ #elif HLS_pipeline_II == 2
     #pragma HLS pipeline II=2
+ #elif HLS_pipeline_II == 3
+    #pragma HLS pipeline II=3
+ #elif HLS_pipeline_II == 4
+    #pragma HLS pipeline II=4
+ #elif HLS_pipeline_II == 6
+    #pragma HLS pipeline II=6
+ #endif
+#else
+    #pragma HLS pipeline II=2
+#endif
 
     TkObj track[NTRACK]; z0_t pvZ0; PFNeutralObj pfallne[NALLNEUTRALS], outselne[NNEUTRALS];
     #pragma HLS ARRAY_PARTITION variable=track complete
@@ -658,7 +784,21 @@ void packed_linpuppi(const ap_uint<PACKING_DATA_SIZE> input[PACKING_NCHANN], ap_
 void packed_linpuppiNoCrop(const ap_uint<PACKING_DATA_SIZE> input[PACKING_NCHANN], ap_uint<PACKING_DATA_SIZE> output[PACKING_NCHANN]) {
     #pragma HLS ARRAY_PARTITION variable=input complete
     #pragma HLS ARRAY_PARTITION variable=output complete
+#ifdef HLS_pipeline_II
+ #if HLS_pipeline_II == 1
+    #pragma HLS pipeline II=1
+ #elif HLS_pipeline_II == 2
     #pragma HLS pipeline II=2
+ #elif HLS_pipeline_II == 3
+    #pragma HLS pipeline II=3
+ #elif HLS_pipeline_II == 4
+    #pragma HLS pipeline II=4
+ #elif HLS_pipeline_II == 6
+    #pragma HLS pipeline II=6
+ #endif
+#else
+    #pragma HLS pipeline II=2
+#endif
 
     TkObj track[NTRACK]; z0_t pvZ0; PFNeutralObj pfallne[NALLNEUTRALS], outallne[NALLNEUTRALS];
     #pragma HLS ARRAY_PARTITION variable=track complete
