@@ -62,7 +62,7 @@ class PatternSerializer {
         PatternSerializer(const std::string &fname, unsigned int nmux=1, unsigned int nzero=0, bool zero_valid=true, unsigned int nprefix=0, unsigned int npostfix=0, const std::string &boardName = "Board L1PF") ;
         ~PatternSerializer() ;
         
-        void operator()(const Word event[PACKING_NCHANN]) ;
+        void operator()(const Word event[PACKING_NCHANN], bool valid=true) ;
     
         template<typename T> void print(const T & event, bool valid = true, unsigned int ifirst = 0, unsigned int stride = 1);
         

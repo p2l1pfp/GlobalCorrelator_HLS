@@ -46,11 +46,11 @@ PatternSerializer::~PatternSerializer()
     }
 }
 
-void PatternSerializer::operator()(const ap_uint<PACKING_DATA_SIZE> event[PACKING_NCHANN]) 
+void PatternSerializer::operator()(const ap_uint<PACKING_DATA_SIZE> event[PACKING_NCHANN], bool valid) 
 {
     if (!file_) return;
     for (unsigned int j = 0; j < nmux_; ++j) {
-        print(event, true, j, nmux_);
+        print(event, valid, j, nmux_);
     }
     for (unsigned int j = 0; j < nzero_; ++j) {
       print(zeroframe_, zerovalid_);

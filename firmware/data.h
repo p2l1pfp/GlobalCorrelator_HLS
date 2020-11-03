@@ -142,15 +142,18 @@ inline void clear(EmCaloObj & c) {
     c.hwPt = 0; c.hwPtErr = 0; c.hwEta = 0; c.hwPhi = 0; 
 }
 
+
+
 struct TkObj {
 	pt_t hwPt, hwPtErr;
 	eta_t hwEta; // relative to the region center, at calo
 	phi_t hwPhi; // relative to the region center, at calo
+	bool hwCharge; // 1 = positive, 0 = negative
 	z0_t hwZ0;
 	bool hwTightQuality;
 };
 inline void clear(TkObj & c) {
-    c.hwPt = 0; c.hwPtErr = 0; c.hwEta = 0; c.hwPhi = 0; c.hwZ0 = 0; c.hwTightQuality = 0;
+    c.hwPt = 0; c.hwPtErr = 0; c.hwEta = 0; c.hwPhi = 0; c.hwZ0 = 0; c.hwCharge = 0; c.hwTightQuality = 0;
 }
 
 struct MuObj {
