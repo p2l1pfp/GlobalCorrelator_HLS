@@ -42,6 +42,11 @@ elif [[ "$1" == "vhdl-tk" ]]; then
 #elif [[ "$1" == "calo_vhdl_nomerge" ]]; then
 #    VHDLS="${FW}/regionizer_data.vhd ${FW}/calo_router.vhd ${FW}/rolling_fifo.vhd ${FW}/calo_phi_regionizer_nomerge.vhd calo_phi_regionizer_nomerge_vhdl_tb.vhd"
 #    HLSPROJ="project_nomergeMC_calo"
+elif [[ "$1" == "vhdl-calo" ]]; then
+    VHDLS="${FW}/regionizer_data.vhd ${FW}/calo_router.vhd ${FW}/rolling_fifo.vhd ${FW}/fifo_merge2_full.vhd ${FW}/fifo_merge2.vhd "
+    VHDLS="${VHDLS} ${FW}/calo_regionizer.vhd calo_regionizer_vhdl_tb.vhd"
+    HLSPROJ="project_csim"
+    DET="calo"
 #elif [[ "$1" == "calo_vhdl" ]]; then
 #    VHDLS="${FW}/regionizer_data.vhd ${FW}/calo_router.vhd ${FW}/rolling_fifo.vhd ${FW}/fifo_merge2.vhd ${FW}/fifo_merge2_full.vhd ${FW}/calo_phi_regionizer.vhd calo_phi_regionizer_vhdl_tb.vhd"
 #    HLSPROJ="project_MC_calo_input"

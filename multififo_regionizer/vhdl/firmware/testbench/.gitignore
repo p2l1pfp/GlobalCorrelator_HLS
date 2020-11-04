@@ -1,0 +1,11 @@
+project_*
+output*.txt
+input*.txt
+vivado_hls.log*
+webtalk*
+xelab.*
+xsim.*
+xvhdl.*
+debug_vhdl_tb.txt
+test.wcfg
+test.wdb

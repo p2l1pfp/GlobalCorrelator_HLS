@@ -53,7 +53,7 @@ architecture Behavioral of tk_regionizer is
 
     --type w64_vec     is array(natural range <>) of std_logic_vector(63 downto 0);
 
-    signal links_in :       particles(NTKSECTORS*NTKFIBERS-1 downto 0);
+    signal links_in :       particles(NTKSECTORS*NTKFIBERS-1 downto 0) := (others => null_particle);
     signal fifo_in :        particles(NALLFIFOS-1 downto 0);
     signal fifo_in_write :  std_logic_vector(NALLFIFOS-1 downto 0) := (others => '0');
     signal fifo_in_roll  :  std_logic_vector(NALLFIFOS-1 downto 0) := (others => '0');

@@ -14,6 +14,7 @@ package regionizer_data is
 
     function particle_to_w64(p : particle) return word64;
     function w64_to_particle(d : word64) return particle;
+    function null_particle return particle;
 
     type particles is array(natural range <>) of particle;
     type w64s      is array(natural range <>) of word64;
@@ -73,6 +74,15 @@ package body regionizer_data is
         return ret;
     end w64_to_particle;
 
+    function null_particle return particle is
+        variable ret : particle;
+    begin
+        ret.eta := to_signed(0, ret.eta'length);
+        ret.phi := to_signed(0, ret.phi'length);
+        ret.pt  := to_signed(0,  ret.pt'length);
+        ret.rest := (others => '0');
+        return ret;
+    end null_particle;
 end regionizer_data;
 
 
