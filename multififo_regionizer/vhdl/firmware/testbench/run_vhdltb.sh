@@ -67,14 +67,21 @@ elif [[ "$1" == "vhdl-mu" ]]; then
     VHDLS="${VHDLS} ${FW}/mu_regionizer.vhd mu_regionizer_vhdl_tb.vhd"
     HLSPROJ="project_csim"
     DET="mu"
-
+elif [[ "$1" == "vhdl-mux-all" ]]; then
+    VHDLS="${FW}/regionizer_data.vhd ${FW}/rolling_fifo.vhd ${FW}/fifo_merge2.vhd ${FW}/fifo_merge2_full.vhd ${FW}/fifo_merge3.vhd ${FW}/stream_sort.vhd ${FW}/region_mux.vhd"
+    VHDLS="${VHDLS} ${FW}/tk_router_element.vhd ${FW}/tk_router.vhd ${FW}/tk_regionizer.vhd "
+    VHDLS="${VHDLS} ${FW}/calo_router.vhd ${FW}/calo_regionizer.vhd "
+    VHDLS="${VHDLS} ${FW}/mu_router.vhd ${FW}/mu_regionizer.vhd "
+    VHDLS="${VHDLS} ${FW}/full_regionizer_mux.vhd full_regionizer_vhdl_mux_tb.vhd"
+    HLSPROJ="project_csim_mux"
+    DET="all"
 fi
 
 
 CSIM=$HLS/$HLSPROJ/solution/csim/build
-if test -f $CSIM/input-${DET}.txt; then
+if test -f $CSIM/input-${DET/all/tk}.txt; then
     echo " ## Getting C simulation inputs from $CSIM";
-    cp -v $CSIM/*-${DET}.txt .
+    cp -v $CSIM/*-${DET/all/*}.txt .
 else
     echo "Couldn't find C simulation inputs in $CSIM.";
     echo "Run vivado_hls in the parent directory before.";

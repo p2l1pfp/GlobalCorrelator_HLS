@@ -70,6 +70,9 @@ package regionizer_data is
     constant NMUSORTED : natural := 4;
     constant NMUSTREAM : natural := (NMUSORTED+PFII-1)/PFII;
 
+    constant TKDELAY : natural := 1;
+    constant MUDELAY : natural := 2;
+
 end package;
 
 package body regionizer_data is
