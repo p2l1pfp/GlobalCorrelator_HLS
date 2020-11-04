@@ -39,6 +39,15 @@ entity tk_regionizer is
             tracks_out_6_V : OUT STD_LOGIC_VECTOR (63 downto 0);
             tracks_out_7_V : OUT STD_LOGIC_VECTOR (63 downto 0);
             tracks_out_8_V : OUT STD_LOGIC_VECTOR (63 downto 0);
+            tracks_out_valid_0 : OUT STD_LOGIC;
+            tracks_out_valid_1 : OUT STD_LOGIC;
+            tracks_out_valid_2 : OUT STD_LOGIC;
+            tracks_out_valid_3 : OUT STD_LOGIC;
+            tracks_out_valid_4 : OUT STD_LOGIC;
+            tracks_out_valid_5 : OUT STD_LOGIC;
+            tracks_out_valid_6 : OUT STD_LOGIC;
+            tracks_out_valid_7 : OUT STD_LOGIC;
+            tracks_out_valid_8 : OUT STD_LOGIC;
             newevent_out : OUT STD_LOGIC
 
     );
@@ -74,10 +83,6 @@ architecture Behavioral of tk_regionizer is
     signal merged_out_valid :  std_logic_vector(NREGIONS-1 downto 0) := (others => '0');
     signal merged_out_roll:    std_logic_vector(NREGIONS-1 downto 0) := (others => '0');
     --signal merged_dbg :        w64_vec(NREGIONS-1 downto 0);
-
-    signal regions_out :      particles(NREGIONS-1 downto 0);
-    signal regions_out_valid: std_logic_vector(NREGIONS-1 downto 0) := (others => '0');
-    signal regions_out_roll:  std_logic_vector(NREGIONS-1 downto 0) := (others => '0');
 
 begin
 
@@ -164,35 +169,25 @@ begin
     links_in(16) <= w64_to_particle(tracks_in_8_0_V);
     links_in(17) <= w64_to_particle(tracks_in_8_1_V);
 
-    merged_to_regions : process(ap_clk)
-    begin
-        if rising_edge(ap_clk) then
-            for ireg in 0 to NREGIONS-1 loop
-                if merged_out_valid(ireg) = '1' then
-                    regions_out(ireg) <= merged_out(ireg);
-                    regions_out_valid(ireg) <= '1';
-                else
-                    regions_out(ireg).pt   <= (others => '0');
-                    regions_out(ireg).eta  <= (others => '0');
-                    regions_out(ireg).phi  <= (others => '0');
-                    regions_out(ireg).rest <= (others => '0');
-                    regions_out_valid(ireg) <= '1';
-                end if;
-                regions_out_roll(ireg) <= merged_out_roll(ireg);
-            end loop;
-        end if;
-    end process merged_to_regions;
+    tracks_out_0_V <= particle_to_w64(merged_out(0));
+    tracks_out_1_V <= particle_to_w64(merged_out(1));
+    tracks_out_2_V <= particle_to_w64(merged_out(2));
+    tracks_out_3_V <= particle_to_w64(merged_out(3));
+    tracks_out_4_V <= particle_to_w64(merged_out(4));
+    tracks_out_5_V <= particle_to_w64(merged_out(5));
+    tracks_out_6_V <= particle_to_w64(merged_out(6));
+    tracks_out_7_V <= particle_to_w64(merged_out(7));
+    tracks_out_8_V <= particle_to_w64(merged_out(8));
+    tracks_out_valid_0 <= merged_out_valid(0);
+    tracks_out_valid_1 <= merged_out_valid(1);
+    tracks_out_valid_2 <= merged_out_valid(2);
+    tracks_out_valid_3 <= merged_out_valid(3);
+    tracks_out_valid_4 <= merged_out_valid(4);
+    tracks_out_valid_5 <= merged_out_valid(5);
+    tracks_out_valid_6 <= merged_out_valid(6);
+    tracks_out_valid_7 <= merged_out_valid(7);
+    tracks_out_valid_8 <= merged_out_valid(8);
 
-    tracks_out_0_V <= particle_to_w64(regions_out(0));
-    tracks_out_1_V <= particle_to_w64(regions_out(1));
-    tracks_out_2_V <= particle_to_w64(regions_out(2));
-    tracks_out_3_V <= particle_to_w64(regions_out(3));
-    tracks_out_4_V <= particle_to_w64(regions_out(4));
-    tracks_out_5_V <= particle_to_w64(regions_out(5));
-    tracks_out_6_V <= particle_to_w64(regions_out(6));
-    tracks_out_7_V <= particle_to_w64(regions_out(7));
-    tracks_out_8_V <= particle_to_w64(regions_out(8));
-
-    newevent_out <= regions_out_roll(0);
+    newevent_out <= merged_out_roll(0);
 
 end Behavioral;

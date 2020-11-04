@@ -22,7 +22,8 @@ architecture Behavioral of testbench is
     signal newevent, newevent_out : std_logic;
 
     signal p_in:  w64s(NMUFIBERS-1 downto 0) := (others => (others => '0'));
-    signal p_out: w64s(NREGIONS-1         downto 0) := (others => (others => '0'));
+    signal p_out: w64s(NREGIONS-1 downto 0) := (others => (others => '0'));
+    signal v_out: std_logic_vector(NREGIONS-1 downto 0) := (others => '0');
 
     file Fi : text open read_mode is "input-mu.txt";
     file Fo : text open write_mode is "output-mu-vhdl_tb.txt";
@@ -50,6 +51,15 @@ begin
                  mu_out_6_V => p_out(6),
                  mu_out_7_V => p_out(7),
                  mu_out_8_V => p_out(8),
+                 mu_out_valid_0 => v_out(0),
+                 mu_out_valid_1 => v_out(1),
+                 mu_out_valid_2 => v_out(2),
+                 mu_out_valid_3 => v_out(3),
+                 mu_out_valid_4 => v_out(4),
+                 mu_out_valid_5 => v_out(5),
+                 mu_out_valid_6 => v_out(6),
+                 mu_out_valid_7 => v_out(7),
+                 mu_out_valid_8 => v_out(8),
                  newevent => newevent,
                  newevent_out => newevent_out
              );
@@ -96,7 +106,11 @@ begin
             write(Lo, newevent_out); 
             write(Lo, string'(" ")); 
             for i in 0 to NREGIONS-1 loop
-                part := w64_to_particle(p_out(i));
+                if v_out(i) = '1' then
+                    part := w64_to_particle(p_out(i));
+                else
+                    part := null_particle;
+                end if;
                 write(Lo, to_integer(part.pt),   field => 5); 
                 write(Lo, to_integer(part.eta),  field => 5); 
                 write(Lo, to_integer(part.phi),  field => 5); 

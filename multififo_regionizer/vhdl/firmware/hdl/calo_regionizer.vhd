@@ -33,6 +33,15 @@ entity calo_regionizer is
             calo_out_6_V : OUT STD_LOGIC_VECTOR (63 downto 0);
             calo_out_7_V : OUT STD_LOGIC_VECTOR (63 downto 0);
             calo_out_8_V : OUT STD_LOGIC_VECTOR (63 downto 0);
+            calo_out_valid_0 : OUT STD_LOGIC;
+            calo_out_valid_1 : OUT STD_LOGIC;
+            calo_out_valid_2 : OUT STD_LOGIC;
+            calo_out_valid_3 : OUT STD_LOGIC;
+            calo_out_valid_4 : OUT STD_LOGIC;
+            calo_out_valid_5 : OUT STD_LOGIC;
+            calo_out_valid_6 : OUT STD_LOGIC;
+            calo_out_valid_7 : OUT STD_LOGIC;
+            calo_out_valid_8 : OUT STD_LOGIC;
             newevent_out : OUT STD_LOGIC
 
     );
@@ -67,10 +76,6 @@ architecture Behavioral of calo_regionizer is
     signal merged_out :        particles(NREGIONS-1 downto 0);
     signal merged_out_valid :  std_logic_vector(NREGIONS-1 downto 0) := (others => '0');
     signal merged_out_roll:    std_logic_vector(NREGIONS-1 downto 0) := (others => '0');
-
-    signal regions_out :      particles(NREGIONS-1 downto 0);
-    signal regions_out_valid: std_logic_vector(NREGIONS-1 downto 0) := (others => '0');
-    signal regions_out_roll:  std_logic_vector(NREGIONS-1 downto 0) := (others => '0');
 
 begin
 
@@ -182,35 +187,25 @@ begin
     links_in(10) <= w64_to_particle(calo_in_2_2_V);
     links_in(11) <= w64_to_particle(calo_in_2_3_V);
 
-    merged_to_regions : process(ap_clk)
-    begin
-        if rising_edge(ap_clk) then
-            for ireg in 0 to NREGIONS-1 loop
-                if merged_out_valid(ireg) = '1' then
-                    regions_out(ireg) <= merged_out(ireg);
-                    regions_out_valid(ireg) <= '1';
-                else
-                    regions_out(ireg).pt   <= (others => '0');
-                    regions_out(ireg).eta  <= (others => '0');
-                    regions_out(ireg).phi  <= (others => '0');
-                    regions_out(ireg).rest <= (others => '0');
-                    regions_out_valid(ireg) <= '1';
-                end if;
-                regions_out_roll(ireg) <= merged_out_roll(ireg);
-            end loop;
-        end if;
-    end process merged_to_regions;
+    calo_out_0_V <= particle_to_w64(merged_out(0));
+    calo_out_1_V <= particle_to_w64(merged_out(1));
+    calo_out_2_V <= particle_to_w64(merged_out(2));
+    calo_out_3_V <= particle_to_w64(merged_out(3));
+    calo_out_4_V <= particle_to_w64(merged_out(4));
+    calo_out_5_V <= particle_to_w64(merged_out(5));
+    calo_out_6_V <= particle_to_w64(merged_out(6));
+    calo_out_7_V <= particle_to_w64(merged_out(7));
+    calo_out_8_V <= particle_to_w64(merged_out(8));
+    calo_out_valid_0 <= merged_out_valid(0);
+    calo_out_valid_1 <= merged_out_valid(1);
+    calo_out_valid_2 <= merged_out_valid(2);
+    calo_out_valid_3 <= merged_out_valid(3);
+    calo_out_valid_4 <= merged_out_valid(4);
+    calo_out_valid_5 <= merged_out_valid(5);
+    calo_out_valid_6 <= merged_out_valid(6);
+    calo_out_valid_7 <= merged_out_valid(7);
+    calo_out_valid_8 <= merged_out_valid(8);
 
-    calo_out_0_V <= particle_to_w64(regions_out(0));
-    calo_out_1_V <= particle_to_w64(regions_out(1));
-    calo_out_2_V <= particle_to_w64(regions_out(2));
-    calo_out_3_V <= particle_to_w64(regions_out(3));
-    calo_out_4_V <= particle_to_w64(regions_out(4));
-    calo_out_5_V <= particle_to_w64(regions_out(5));
-    calo_out_6_V <= particle_to_w64(regions_out(6));
-    calo_out_7_V <= particle_to_w64(regions_out(7));
-    calo_out_8_V <= particle_to_w64(regions_out(8));
-
-    newevent_out <= regions_out_roll(0);
+    newevent_out <= merged_out_roll(0);
 
 end Behavioral;
