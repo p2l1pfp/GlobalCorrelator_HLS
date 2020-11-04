@@ -1,7 +1,7 @@
 source configIP.tcl
 
-set cflags "-std=c++0x -DREG_${pfReg} -DBOARD_${pfBoard} -DROUTER_NOSTREAM -DNO_VALIDATE"
-open_project -reset "project_csim_mux"
+set cflags "-std=c++0x -DREG_${pfReg} -DBOARD_${pfBoard} -DROUTER_NOMUX"
+open_project -reset "project_csim"
 
 set_top ${hlsTopFunc}
 

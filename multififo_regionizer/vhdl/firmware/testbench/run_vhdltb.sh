@@ -33,6 +33,11 @@ elif [[ "$1" == "vhdl-tk" ]]; then
     VHDLS="${VHDLS} ${FW}/tk_regionizer.vhd tk_regionizer_vhdl_tb.vhd"
     HLSPROJ="project_csim"
     DET="tk"
+elif [[ "$1" == "vhdl-mux-tk" ]]; then
+    VHDLS="${FW}/regionizer_data.vhd ${FW}/tk_router_element.vhd ${FW}/tk_router.vhd ${FW}/rolling_fifo.vhd ${FW}/fifo_merge2_full.vhd ${FW}/fifo_merge3.vhd"
+    VHDLS="${VHDLS} ${FW}/tk_regionizer.vhd ${FW}/stream_sort.vhd ${FW}/region_mux.vhd ${FW}/tk_regionizer_mux.vhd tk_regionizer_vhdl_mux_tb.vhd"
+    HLSPROJ="project_csim_mux"
+    DET="tk"
 #elif [[ "$1" == "vhdl_sort" ]]; then
 #    VHDLS="${FW}/regionizer_data.vhd ${FW}/tk_router_element.vhd ${FW}/tk_router.vhd ${FW}/rolling_fifo.vhd ${FW}/fifo_merge2_full.vhd ${FW}/fifo_merge3.vhd ${FW}/stream_sort.vhd ${FW}/phi_regionizer_sort.vhd phi_regionizer_sorted_vhdl_tb.vhd"
 #    HLSPROJ="project_mux"

@@ -256,12 +256,23 @@ struct RegionMux {
     bool stream(bool newevt, T stream_out[NOUT]) {
         if (newevt) { iter = 0; ireg = 0; }
         if (ireg < NPFREGIONS) {
+#if defined(ROUTER_NOSTREAM)
+            assert(NOUT == NSORT);
             for (int i = 0; i < NOUT; ++i) {
-                stream_out[i] = buffer[ireg][PFLOWII*i];
+                stream_out[i] = buffer[ireg][i];
+            }
+#else
+            for (int i = 0; i < NOUT; ++i) {
+                if (PFLOWII*i < NSORT) {
+                    stream_out[i] = buffer[ireg][PFLOWII*i];
+                } else {
+                    clear(steam_out[i]);
+                }
             }
             for (int i = 1; i < NSORT; ++i) {
                 buffer[ireg][i-1] = buffer[ireg][i];
             }
+#endif
             if (++iter == PFLOWII) {
                 ireg++; iter = 0;
             }
@@ -278,7 +289,7 @@ struct RegionMux {
 struct RegionizerTK {
     RegionBufferTK buffers[NPFREGIONS];
     RegionBuilder<TkObj,NTKSORTED> builder[NTKSECTORS];
-    RegionMux<TkObj,NTKSORTED,NTKSTREAMS> bigmux;
+    RegionMux<TkObj,NTKSORTED,NTKOUT> bigmux;
     unsigned int nevt;
     RegionizerTK() { nevt = 0; }
     void flush() { 
@@ -310,7 +321,7 @@ struct RegionizerTK {
     bool run(bool newevt, const TkObj in[NTKSECTORS][NTKFIBERS], TkObj out[NTKSORTED]) {
         if (newevt) { flush(); nevt++; }
         read_in(in);
-#ifdef ROUTER_MUX
+#if defined(ROUTER_MUX) or defined(ROUTER_NOSTREAM)
         TkObj routed[NPFREGIONS];
         write_out(routed);
         for (int i = 0; i < NPFREGIONS; ++i) {
@@ -328,7 +339,7 @@ struct RegionizerTK {
 struct RegionizerCalo {
     RegionBufferCalo buffers[NPFREGIONS];
     RegionBuilder<HadCaloObj,NCALOSORTED> builder[NPFREGIONS];
-    RegionMux<HadCaloObj,NCALOSORTED,NCALOSTREAMS> bigmux;
+    RegionMux<HadCaloObj,NCALOSORTED,NCALOOUT> bigmux;
     unsigned int nevt;
     RegionizerCalo() { 
         for (int r = 0; r < NPFREGIONS; ++r) buffers[r] = RegionBufferCalo(r);
@@ -360,7 +371,7 @@ struct RegionizerCalo {
     bool run(bool newevt, const HadCaloObj in[NCALOSECTORS][NCALOFIBERS], HadCaloObj out[NCALOOUT]) {
         if (newevt) { flush(); nevt++; }
         read_in(in);
-#ifdef ROUTER_MUX
+#if defined(ROUTER_MUX) or defined(ROUTER_NOSTREAM)
         HadCaloObj routed[NPFREGIONS];
         write_out(routed);
         for (int i = 0; i < NPFREGIONS; ++i) {
@@ -377,7 +388,7 @@ struct RegionizerCalo {
 struct RegionizerMu {
     RegionBufferMu buffers[NPFREGIONS];
     RegionBuilder<MuObj,NMUSORTED> builder[NPFREGIONS];
-    RegionMux<MuObj,NMUSORTED,NMUSTREAMS> bigmux;
+    RegionMux<MuObj,NMUSORTED,NMUOUT> bigmux;
     unsigned int nevt;
     RegionizerMu(const glbeta_t etaCenter) { 
         for (int i = 0; i < NPFREGIONS; ++i) {
@@ -409,7 +420,7 @@ struct RegionizerMu {
     bool run(bool newevt, const GlbMuObj in[NMUFIBERS], MuObj out[NMUOUT]) {
         if (newevt) { flush(); nevt++; }
         read_in(in);
-#ifdef ROUTER_MUX
+#if defined(ROUTER_MUX) or defined(ROUTER_NOSTREAM)
         MuObj routed[NPFREGIONS];
         write_out(routed);
         for (int i = 0; i < NPFREGIONS; ++i) {

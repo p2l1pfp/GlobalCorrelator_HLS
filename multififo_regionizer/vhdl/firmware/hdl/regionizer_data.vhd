@@ -49,7 +49,7 @@ package regionizer_data is
     constant PHI_MPI : signed(11 downto 0) := to_signed(-PHI_SHIFT_INT*9/2, 12);  -- same but with negative sign
     constant PHI_2PI : signed(11 downto 0) := to_signed( PHI_SHIFT_INT*9,   12);  -- same but with negative sign
 
-    constant PFII : natural := 4;
+    constant PFII : natural := 6;
     constant NPFREGIONS : natural := 9;
 
     constant NTKSECTORS : natural := 9;
