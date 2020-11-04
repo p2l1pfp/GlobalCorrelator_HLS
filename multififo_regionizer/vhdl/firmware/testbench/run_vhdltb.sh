@@ -47,9 +47,6 @@ elif [[ "$1" == "vhdl-calo" ]]; then
     VHDLS="${VHDLS} ${FW}/calo_regionizer.vhd calo_regionizer_vhdl_tb.vhd"
     HLSPROJ="project_csim"
     DET="calo"
-#elif [[ "$1" == "calo_vhdl" ]]; then
-#    VHDLS="${FW}/regionizer_data.vhd ${FW}/calo_router.vhd ${FW}/rolling_fifo.vhd ${FW}/fifo_merge2.vhd ${FW}/fifo_merge2_full.vhd ${FW}/calo_phi_regionizer.vhd calo_phi_regionizer_vhdl_tb.vhd"
-#    HLSPROJ="project_MC_calo_input"
 #elif [[ "$1" == "calo_hls_slices" ]]; then
 #    VHDLS="$VHDLS project_MC_calo_input/solution/syn/vhdl/calo_router_input_slice.vhd"
 #    VHDLS="$VHDLS project_MC_calo_fifo/solution/syn/vhdl/calo_router_fifo_slice_fifos_data_V_0.vhd"
@@ -60,6 +57,12 @@ elif [[ "$1" == "vhdl-calo" ]]; then
 #    VHDLS="$VHDLS project_MC_calo_output/solution/syn/vhdl/calo_router_full_output_slice.vhd"
 #    VHDLS="$VHDLS ${FW}/regionizer_data_stdlogic.vhd ${FW}/calo_phi_regionizer_hls_slices.vhd calo_phi_regionizer_hls_slices_tb.vhd"
 #    HLSPROJ="project_MC_calo_input"
+elif [[ "$1" == "vhdl-mu" ]]; then
+    VHDLS="${FW}/regionizer_data.vhd ${FW}/mu_router.vhd ${FW}/rolling_fifo.vhd ${FW}/fifo_merge2.vhd "
+    VHDLS="${VHDLS} ${FW}/mu_regionizer.vhd mu_regionizer_vhdl_tb.vhd"
+    HLSPROJ="project_csim"
+    DET="mu"
+
 fi
 
 
