@@ -89,3 +89,39 @@ bool readEventCalo(FILE *file, std::vector<HadCaloObj> inputs[NCALOSECTORS][NCAL
 }
 
 
+
+bool readEventMu(FILE *file, std::vector<GlbMuObj> inputs[NMUFIBERS], uint32_t &irun, uint32_t &ilumi, uint64_t &ievent) {
+    if (feof(file)) return false;
+
+    uint32_t run, lumi; uint64_t event;
+    if (fscanf(file, "event %u %u %lu\n", &run, &lumi, &event) != 3) return false;
+    if (irun == 0 && ilumi == 0 && ievent == 0) { 
+        irun = run; ilumi = lumi; ievent = event; 
+    } else if (irun != run || ilumi != lumi || ievent != event) {
+        printf("event number mismatch: read  %u %u %lu, expected  %u %u %lu\n", run, lumi, event, irun, ilumi, ievent);
+        return false;
+    }
+    //printf("reading event  %u %u %lu\n", run, lumi, event); fflush(stdout);
+
+    for (int f = 0; f < NMUFIBERS; ++f) inputs[f].clear();
+
+    int nfound = 0;
+    uint64_t nmuons;
+    if (fscanf(file, "muons %lu\n", &nmuons) != 1) return false;
+    //printf("reading -> %d muons\n", int(nmuons)); fflush(stdout);
+    for (int i = 0, n = nmuons; i < n; ++i) {
+        int hwPt, hwEta, hwPhi, hwCharge, hwQual;
+        int ret = fscanf(file, "muon ipt %d ieta %d iphi %d icharge %d iqual %d\n",
+                                &hwPt, &hwEta, &hwPhi, &hwCharge, &hwQual);
+        if (ret != 5) return false;
+        GlbMuObj t;
+        t.hwPt = hwPt; t.hwEta = hwEta; t.hwPhi = hwPhi; 
+        t.hwPtErr = 0;
+        //t.hwCharge = hwCharge; t.hwQual = hwQual;
+        inputs[i % NMUFIBERS].push_back(t);
+        nfound++;
+    }
+    //printf("read %d muons for this event\n", nfound); fflush(stdout);
+    return true;
+}
+

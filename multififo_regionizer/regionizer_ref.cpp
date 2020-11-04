@@ -171,6 +171,56 @@ struct RegionBufferCalo {
 
 };
 
+struct RegionBufferMu { 
+    static const int REGION_PHI_HALFSIZE = PFREGION_PHI_SIZE/2+PFREGION_PHI_BORDER;
+    static const int REGION_ETA_HALFSIZE = PFREGION_ETA_SIZE/2+PFREGION_ETA_BORDER;
+    static const int INT_PI  = (PFREGION_PHI_SIZE * 9)/2;
+    std::list<MuObj> fifos[NMUFIBERS]; 
+    int etaCenter, phiCenter;
+    void flush() { 
+        for (int j = 0; j < NMUFIBERS; ++j) fifos[j].clear(); 
+    }
+    void maybe_push(unsigned int ifiber, const GlbMuObj & gmu) {
+        int local_phi = gmu.hwPhi.to_int() - phiCenter;
+        int local_eta = gmu.hwEta.to_int() - etaCenter;
+        if (local_phi >= INT_PI) local_phi -= 2*INT_PI;
+        if (local_phi < -INT_PI) local_phi += 2*INT_PI;
+        //printf("try push mu ipt %4d  glb eta %+4d phi %+4d -> local  eta %+4d phi %+4d \n",
+        //             gmu.hwPt.to_int(), gmu.hwEta.to_int(),  gmu.hwPhi.to_int(), local_eta, local_phi);
+        fflush(stdout);
+        if (std::abs(local_phi) <= REGION_PHI_HALFSIZE &&
+            std::abs(local_eta) <= REGION_ETA_HALFSIZE) {
+            MuObj lmu; 
+            lmu.hwPt    = gmu.hwPt;
+            lmu.hwPtErr = gmu.hwPtErr;
+            lmu.hwEta   = local_eta;
+            lmu.hwPhi   = local_phi;
+            fifos[ifiber].push_front(lmu); 
+        }
+    }
+    MuObj pop_next() {
+        MuObj ret; clear(ret);
+        for (int j = 0; j < NMUFIBERS; ++j) {
+            if (!fifos[j].empty()) {
+                ret = fifos[j].back();
+                fifos[j].pop_back();
+                break;
+            }
+        }
+        return ret;
+    }
+    void pop_all(MuObj out[]) {
+        for (int j = 0; j < NMUFIBERS; ++j) {
+            if (!fifos[j].empty()) {
+                out[j] = fifos[j].back();
+                fifos[j].pop_back(); 
+            } else {
+                clear(out[j]);
+            }
+        }
+    }
+
+};
 
 template<typename T, unsigned int NSORT>
 struct RegionBuilder {
@@ -324,6 +374,56 @@ struct RegionizerCalo {
     }
 };
 
+struct RegionizerMu {
+    RegionBufferMu buffers[NPFREGIONS];
+    RegionBuilder<MuObj,NMUSORTED> builder[NPFREGIONS];
+    RegionMux<MuObj,NMUSORTED,NMUSTREAMS> bigmux;
+    unsigned int nevt;
+    RegionizerMu(const glbeta_t etaCenter) { 
+        for (int i = 0; i < NPFREGIONS; ++i) {
+            buffers[i].phiCenter = i * PFREGION_PHI_SIZE;
+            buffers[i].etaCenter = etaCenter;
+        }
+        nevt = 0; 
+    }
+    void flush() { 
+        for (int i = 0; i < NPFREGIONS; ++i) buffers[i].flush();
+    }
+    void read_in(const GlbMuObj in[NMUFIBERS]) {
+        for (int j = 0; j < NMUFIBERS; ++j) {
+            if (in[j].hwPt == 0) continue;
+            for (int r = 0; r < NPFREGIONS; ++r) {
+                buffers[r].maybe_push(j,in[j]);
+            }
+        }
+    }
+    void write_out(MuObj out[NMUOUT]) {
+        for (unsigned int i = 0, offs = 0; i < NPFREGIONS; ++i, offs += NMUFIBERS) {
+#if defined(ROUTER_NOMERGE)
+            buffers[i].pop_all(&out[offs]);
+#else
+            out[i] = buffers[i].pop_next();
+#endif
+        }
+    }
+    bool run(bool newevt, const GlbMuObj in[NMUFIBERS], MuObj out[NMUOUT]) {
+        if (newevt) { flush(); nevt++; }
+        read_in(in);
+#ifdef ROUTER_MUX
+        MuObj routed[NPFREGIONS];
+        write_out(routed);
+        for (int i = 0; i < NPFREGIONS; ++i) {
+            builder[i].push(newevt, routed[i], &bigmux.buffer[i][0]);
+        }
+        return bigmux.stream(newevt && (nevt > 1), out);
+#else
+        write_out(out);
+        return true;
+#endif
+    }
+};
+
+
 bool tk_router_ref(bool newevent, const TkObj tracks_in[NTKSECTORS][NTKFIBERS], TkObj tracks_out[NTKOUT]) {
     static RegionizerTK impl;
     return impl.run(newevent, tracks_in, tracks_out);
@@ -333,4 +433,9 @@ bool tk_router_ref(bool newevent, const TkObj tracks_in[NTKSECTORS][NTKFIBERS], 
 bool calo_router_ref(bool newevent, const HadCaloObj calo_in[NCALOSECTORS][NCALOFIBERS], HadCaloObj calo_out[NCALOOUT]) {
     static RegionizerCalo impl;
     return impl.run(newevent, calo_in, calo_out);
+}
+
+bool mu_router_ref(bool newevent, const glbeta_t etaCenter, const GlbMuObj mu_in[NMUFIBERS], MuObj mu_out[NMUOUT]) {
+    static RegionizerMu impl(etaCenter);
+    return impl.run(newevent, mu_in, mu_out);
 }

@@ -6,6 +6,8 @@
 typedef ap_int<16> pt_t;
 typedef ap_int<10>  eta_t;
 typedef ap_int<10>  phi_t;
+typedef ap_int<12>  glbeta_t;
+typedef ap_int<11>  glbphi_t;
 typedef ap_int<5>  vtx_t;
 typedef ap_uint<3>  particleid_t;
 typedef ap_int<10> z0_t;  // 40cm / 0.1
