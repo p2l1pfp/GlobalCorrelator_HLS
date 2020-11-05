@@ -45,6 +45,8 @@ architecture rtl of emp_payload is
         signal mu_in:  w64s(NMUFIBERS-1 downto 0) := (others => (others => '0'));
         signal mu_out: w64s(NMUSORTED-1 downto 0) := (others => (others => '0'));
 
+        signal start, ready, idle, done : std_logic := '0';
+
 begin
 
     ipb_out <= IPB_RBUS_NULL;
@@ -53,7 +55,7 @@ begin
     regionizer : entity work.full_regionizer_mux
         generic map(MU_ETA_CENTER => 460)
         port map(ap_clk => clk, 
-                 ap_rst => rst, 
+                 ap_rst => rst_loc(0), 
                  ap_start => start,
                  ap_ready => ready,
                  ap_idle =>  idle,
@@ -108,6 +110,7 @@ begin
                     -- input
                     old_valid <= d(0).valid;
                     newevent  <= d(0).valid and not(old_valid);
+                    start     <= d(0).valid or old_valid; -- keep it on for the 1 null frame in between
                     for i in 0 to NTKSECTORS*NTKFIBERS-1 loop
                         tk_in(i) <= d(i).data;
                     end loop;
