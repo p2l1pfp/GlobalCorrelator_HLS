@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cassert>
 #include <vector>
+#include <algorithm>
 
 bool readEventTk(FILE *file, std::vector<TkObj> inputs[NTKSECTORS][NTKFIBERS], uint32_t &irun, uint32_t &ilumi, uint64_t &ievent) {
     if (feof(file)) return false;
@@ -122,6 +123,41 @@ bool readEventMu(FILE *file, std::vector<GlbMuObj> inputs[NMUFIBERS], uint32_t &
         nfound++;
     }
     //printf("read %d muons for this event\n", nfound); fflush(stdout);
+    return true;
+}
+
+bool readEventVtx(FILE *file, std::vector<std::pair<z0_t,pt_t>> & inputs, uint32_t &irun, uint32_t &ilumi, uint64_t &ievent) {
+    if (feof(file)) return false;
+
+    uint32_t run, lumi; uint64_t event;
+    if (fscanf(file, "event %u %u %lu\n", &run, &lumi, &event) != 3) return false;
+    if (irun == 0 && ilumi == 0 && ievent == 0) { 
+        irun = run; ilumi = lumi; ievent = event; 
+    } else if (irun != run || ilumi != lumi || ievent != event) {
+        printf("event number mismatch: read  %u %u %lu, expected  %u %u %lu\n", run, lumi, event, irun, ilumi, ievent);
+        return false;
+    }
+    //printf("reading event  %u %u %lu\n", run, lumi, event); fflush(stdout);
+
+    inputs.clear();
+
+    int nfound = 0;
+    uint64_t nvtxs;
+    if (fscanf(file, "vertices %lu\n", &nvtxs) != 1) return false;
+    //printf("reading -> %d vtxs\n", int(nvtxs)); fflush(stdout);
+    for (int i = 0, n = nvtxs; i < n; ++i) {
+        int hwZ0, hwSum;
+        int ret = fscanf(file, "vertex z0 %d sum %d\n", &hwZ0, &hwSum);
+        if (ret != 2) return false;
+        inputs.emplace_back(hwZ0, hwSum);
+        //printf("vertex z0 %d sum %d -> %d, %d\n", hwZ0, hwSum, inputs.back().first.to_int(), inputs.back().second.to_int());
+        nfound++;
+    }
+    if (inputs.size() > 1) {
+        std::sort(inputs.begin(), inputs.end(), 
+                  [](const std::pair<z0_t,pt_t> &a, const std::pair<z0_t,pt_t> &b) { return a.second > b.second; });
+    }
+    //printf("read %d vertices for this event\n", nfound); fflush(stdout);
     return true;
 }
 
