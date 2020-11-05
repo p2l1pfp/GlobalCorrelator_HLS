@@ -108,9 +108,14 @@ int main(int argc, char **argv) {
             bool calo_ref_good = calo_router_ref(i == 0, calo_links_in, calo_links_ref);
             bool mu_ref_good = mu_router_ref(i == 0, etaCenter, mu_links_in, mu_links_ref);
 
+#if defined(ROUTER_NOMERGE) || defined(ROUTER_NOMUX)
             bool tk_good   = tk_router(i == 0, tk_links64_in, tk_links64_out, tk_newevt_out);
             bool calo_good = calo_router(i == 0, calo_links64_in, calo_links64_out, calo_newevt_out);
             bool mu_good = mu_router(i == 0, etaCenter, mu_links64_in, mu_links64_out, mu_newevt_out);
+#else
+            // the routers are not implemented in this pattern, and may segfault due to size of the arrays
+            bool tk_good = false, calo_good = false, mu_good = false;
+#endif
 
             l1pf_pattern_unpack<NTKOUT,0>(tk_links64_out, tk_links_out);
             l1pf_pattern_unpack<NCALOOUT,0>(calo_links64_out, calo_links_out);

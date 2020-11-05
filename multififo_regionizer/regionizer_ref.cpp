@@ -266,7 +266,7 @@ struct RegionMux {
                 if (PFLOWII*i < NSORT) {
                     stream_out[i] = buffer[ireg][PFLOWII*i];
                 } else {
-                    clear(steam_out[i]);
+                    clear(stream_out[i]);
                 }
             }
             for (int i = 1; i < NSORT; ++i) {
@@ -309,7 +309,7 @@ struct RegionizerTK {
             }
         }
     }
-    void write_out(TkObj out[NPFREGIONS]) {
+    void write_out(TkObj out[]) {
         for (int i = 0; i < NTKSECTORS; ++i) {
 #if defined(ROUTER_NOMERGE)
             buffers[i].pop_all(&out[i*NTKFIFOS]);
@@ -321,7 +321,7 @@ struct RegionizerTK {
     bool run(bool newevt, const TkObj in[NTKSECTORS][NTKFIBERS], TkObj out[NTKSORTED]) {
         if (newevt) { flush(); nevt++; }
         read_in(in);
-#if defined(ROUTER_MUX) or defined(ROUTER_NOSTREAM)
+#if defined(ROUTER_STREAM) or defined(ROUTER_NOSTREAM)
         TkObj routed[NPFREGIONS];
         write_out(routed);
         for (int i = 0; i < NPFREGIONS; ++i) {
@@ -358,7 +358,7 @@ struct RegionizerCalo {
             }
         }
     }
-    void write_out(HadCaloObj out[NCALOOUT]) {
+    void write_out(HadCaloObj out[]) {
         for (unsigned int i = 0, offs = 0; i < NPFREGIONS; ++i) {
 #if defined(ROUTER_NOMERGE)
             buffers[i].pop_all(&out[offs]);
@@ -371,7 +371,7 @@ struct RegionizerCalo {
     bool run(bool newevt, const HadCaloObj in[NCALOSECTORS][NCALOFIBERS], HadCaloObj out[NCALOOUT]) {
         if (newevt) { flush(); nevt++; }
         read_in(in);
-#if defined(ROUTER_MUX) or defined(ROUTER_NOSTREAM)
+#if defined(ROUTER_STREAM) or defined(ROUTER_NOSTREAM)
         HadCaloObj routed[NPFREGIONS];
         write_out(routed);
         for (int i = 0; i < NPFREGIONS; ++i) {
@@ -408,7 +408,7 @@ struct RegionizerMu {
             }
         }
     }
-    void write_out(MuObj out[NMUOUT]) {
+    void write_out(MuObj out[]) {
         for (unsigned int i = 0, offs = 0; i < NPFREGIONS; ++i, offs += NMUFIBERS) {
 #if defined(ROUTER_NOMERGE)
             buffers[i].pop_all(&out[offs]);
@@ -420,7 +420,7 @@ struct RegionizerMu {
     bool run(bool newevt, const GlbMuObj in[NMUFIBERS], MuObj out[NMUOUT]) {
         if (newevt) { flush(); nevt++; }
         read_in(in);
-#if defined(ROUTER_MUX) or defined(ROUTER_NOSTREAM)
+#if defined(ROUTER_STREAM) or defined(ROUTER_NOSTREAM)
         MuObj routed[NPFREGIONS];
         write_out(routed);
         for (int i = 0; i < NPFREGIONS; ++i) {

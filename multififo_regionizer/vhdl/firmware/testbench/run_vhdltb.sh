@@ -76,6 +76,15 @@ elif [[ "$1" == "vhdl-mux-all" ]]; then
     VHDLS="${VHDLS} pattern_textio.vhd full_regionizer_vhdl_mux_tb.vhd"
     HLSPROJ="project_csim_mux"
     DET="all"
+elif [[ "$1" == "vhdl-stream-all" ]]; then
+    VHDLS="${FW}/regionizer_data.vhd ${FW}/rolling_fifo.vhd ${FW}/fifo_merge2.vhd ${FW}/fifo_merge2_full.vhd ${FW}/fifo_merge3.vhd ${FW}/stream_sort.vhd ${FW}/region_mux_stream.vhd"
+    VHDLS="${VHDLS} ${FW}/tk_router_element.vhd ${FW}/tk_router.vhd ${FW}/tk_regionizer.vhd "
+    VHDLS="${VHDLS} ${FW}/calo_router.vhd ${FW}/calo_regionizer.vhd "
+    VHDLS="${VHDLS} ${FW}/mu_router.vhd ${FW}/mu_regionizer.vhd "
+    VHDLS="${VHDLS} ${FW}/full_regionizer_mux_stream.vhd"
+    VHDLS="${VHDLS} pattern_textio.vhd full_regionizer_vhdl_mux_stream_tb.vhd"
+    HLSPROJ="project_csim_stream"
+    DET="all"
 fi
 
 
