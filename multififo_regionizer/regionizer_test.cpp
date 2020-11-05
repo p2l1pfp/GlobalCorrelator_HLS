@@ -241,6 +241,7 @@ int main(int argc, char **argv) {
 
     fclose(fMC_tk);
     fclose(fMC_calo);
+    fclose(fMC_mu);
     fclose(fin_tk);
     fclose(fref_tk);
     fclose(fout_tk);

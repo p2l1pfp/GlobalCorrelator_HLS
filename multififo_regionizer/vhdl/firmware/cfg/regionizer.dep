@@ -9,8 +9,9 @@ src tk_router_element.vhd
 src tk_router.vhd
 src calo_router.vhd
 src mu_router.vhd
-#src region_mux_stream.vhd
+src region_mux_stream.vhd
 src tk_regionizer.vhd
 src mu_regionizer.vhd
 src calo_regionizer.vhd
 src full_regionizer_mux.vhd
+src full_regionizer_mux_stream.vhd
