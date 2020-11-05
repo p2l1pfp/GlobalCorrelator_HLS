@@ -7,6 +7,7 @@ use ieee.numeric_std.all;
 use ieee.std_logic_textio.all;
 
 use work.regionizer_data.all;
+use work.pattern_textio.all;
 
 
 entity testbench is
@@ -14,6 +15,9 @@ entity testbench is
 end testbench;
 
 architecture Behavioral of testbench is
+    constant NPATTERNS_IN  : natural := NTKSECTORS*NTKFIBERS + NCALOSECTORS*NCALOFIBERS + NMUFIBERS;
+    constant NPATTERNS_OUT : natural := NTKSORTED + NCALOSORTED + NMUSORTED;
+
     signal clk : std_logic := '0';
     signal rst : std_logic := '0';
     signal start, ready, idle, done : std_logic;
@@ -26,10 +30,8 @@ architecture Behavioral of testbench is
     signal mu_in:  w64s(NMUFIBERS-1 downto 0) := (others => (others => '0'));
     signal mu_out: w64s(NMUSORTED-1 downto 0) := (others => (others => '0'));
 
-    file Fi_tk   : text open read_mode is "input-tk.txt";
-    file Fi_calo : text open read_mode is "input-calo.txt";
-    file Fi_mu   : text open read_mode is "input-mu.txt";
-    file Fo : text open write_mode is "output-tk-vhdl_tb.txt";
+    file Fi : text open read_mode  is "input-emp.txt";
+    file Fo : text open write_mode is "output-emp-vhdl_tb.txt";
 
 begin
     clk  <= not clk after 1.25 ns;
@@ -89,6 +91,11 @@ begin
 
     runit : process 
         variable remainingEvents : integer := 5;
+        variable patterns_in  : w64s(NPATTERNS_IN  - 1 downto 0);
+        variable patterns_out : w64s(NPATTERNS_OUT - 1 downto 0);
+        variable patterns_in_valid : std_logic;
+        variable patterns_in_valid_old : std_logic := '0';
+        variable patterns_out_valid : std_logic := '1';
         variable frame : integer := 0;
         variable Li, Lo : line;
         variable itest, iobj : integer;
@@ -104,77 +111,45 @@ begin
         mu_in <= (others => (others => '0'));
         wait until rising_edge(clk);
         while remainingEvents > 0 loop
-            if not endfile(Fi_tk) then
-                -- tracks
-                readline(Fi_tk, Li);
-                read(Li, itest);
-                read(Li, iobj); if (iobj > 0) then newevent <= '1'; else newevent <= '0'; end if;
-                for i in 0 to NTKSECTORS*NTKFIBERS-1  loop
-                    read(Li, iobj); part.pt   := (to_signed(iobj, 16));
-                    read(Li, iobj); part.eta  := (to_signed(iobj, 10));
-                    read(Li, iobj); part.phi  := (to_signed(iobj, 10));
-                                    part.rest := (others => '0');
-                    tk_in(i) <= particle_to_w64(part);
-                end loop;
-                -- calo
-                readline(Fi_calo, Li);
-                read(Li, itest);
-                read(Li, iobj); 
-                for i in 0 to NCALOSECTORS*NCALOFIBERS-1  loop
-                    read(Li, iobj); part.pt   := (to_signed(iobj, 16));
-                    read(Li, iobj); part.eta  := (to_signed(iobj, 10));
-                    read(Li, iobj); part.phi  := (to_signed(iobj, 10));
-                                    part.rest := (others => '0');
-                    calo_in(i) <= particle_to_w64(part);
-                end loop;
-                -- mu
-                readline(Fi_mu, Li);
-                read(Li, itest);
-                read(Li, iobj); 
-                for i in 0 to NMUFIBERS-1  loop
-                    read(Li, iobj); gpart.pt   := (to_signed(iobj, 16));
-                    read(Li, iobj); gpart.eta  := (to_signed(iobj, 12));
-                    read(Li, iobj); gpart.phi  := (to_signed(iobj, 11));
-                                    gpart.rest := (others => '0');
-                    mu_in(i) <= glbparticle_to_w64(gpart);
-                end loop;
-                start <= '1';
-             else
+            start <= '1';
+            if not endfile(Fi) then
+                read_pattern_frame(FI, patterns_in, patterns_in_valid);
+            else
+                patterns_in_valid := '0';
+                patterns_in := (others => (others => '0'));
                 remainingEvents := remainingEvents - 1;
-                newevent <= '0';
-                tk_in   <= (others => (others => '0'));
-                calo_in <= (others => (others => '0'));
-                mu_in   <= (others => (others => '0'));
-                start <= '1';
             end if;
+            if patterns_in_valid = '1' and patterns_in_valid_old = '0' then
+                newevent <= '1';
+            else
+                newevent <= '0';
+            end if;
+            patterns_in_valid_old := patterns_in_valid;
+            for i in 0 to NTKSECTORS*NTKFIBERS-1 loop
+                tk_in(i) <= patterns_in(i);
+            end loop;
+            for i in 0 to NCALOSECTORS*NCALOFIBERS-1 loop
+                calo_in(i) <= patterns_in(i+NTKSECTORS*NTKFIBERS);
+            end loop;
+            for i in 0 to NMUFIBERS-1 loop
+                mu_in(i) <= patterns_in(i+NTKSECTORS*NTKFIBERS+NCALOSECTORS*NCALOFIBERS);
+            end loop;
            -- ready to dispatch ---
             wait until rising_edge(clk);
             -- write out the output --
             write(Lo, frame, field=>5);  
-            write(Lo, string'(" 1 ")); 
-            write(Lo, newevent_out); 
-            write(Lo, string'(" ")); 
             for i in 0 to NTKSORTED-1 loop
-                part := w64_to_particle(tk_out(i));
-                write(Lo, to_integer(part.pt),   field => 5); 
-                write(Lo, to_integer(part.eta),  field => 5); 
-                write(Lo, to_integer(part.phi),  field => 5); 
+                patterns_out(i) := tk_out(i);
             end loop;
             for i in 0 to NCALOSORTED-1 loop
-                part := w64_to_particle(calo_out(i));
-                write(Lo, to_integer(part.pt),   field => 5); 
-                write(Lo, to_integer(part.eta),  field => 5); 
-                write(Lo, to_integer(part.phi),  field => 5); 
+                patterns_out(i+NTKSORTED) := calo_out(i);
             end loop;
             for i in 0 to NMUSORTED-1 loop
-                part := w64_to_particle(mu_out(i));
-                write(Lo, to_integer(part.pt),   field => 5); 
-                write(Lo, to_integer(part.eta),  field => 5); 
-                write(Lo, to_integer(part.phi),  field => 5); 
+                patterns_out(i+NTKSORTED+NCALOSORTED) := mu_out(i);
             end loop;
-            writeline(Fo, Lo);
-            frame := frame + 1;
+            write_pattern_frame(Fo, frame, patterns_out, patterns_out_valid);
             --if frame >= 50 then finish(0); end if;
+            frame := frame + 1;
         end loop;
         wait for 50 ns;
         finish(0);

@@ -72,7 +72,8 @@ elif [[ "$1" == "vhdl-mux-all" ]]; then
     VHDLS="${VHDLS} ${FW}/tk_router_element.vhd ${FW}/tk_router.vhd ${FW}/tk_regionizer.vhd "
     VHDLS="${VHDLS} ${FW}/calo_router.vhd ${FW}/calo_regionizer.vhd "
     VHDLS="${VHDLS} ${FW}/mu_router.vhd ${FW}/mu_regionizer.vhd "
-    VHDLS="${VHDLS} ${FW}/full_regionizer_mux.vhd full_regionizer_vhdl_mux_tb.vhd"
+    VHDLS="${VHDLS} ${FW}/full_regionizer_mux.vhd"
+    VHDLS="${VHDLS} pattern_textio.vhd full_regionizer_vhdl_mux_tb.vhd"
     HLSPROJ="project_csim_mux"
     DET="all"
 fi

@@ -84,7 +84,7 @@ int main(int argc, char **argv) {
                         calo_links_in[s][f]  = calo_inputs[s][f][i];
                     }
                     calo_links64_in[s][f] = l1pf_pattern_pack_one(calo_links_in[s][f]);
-                    all_channels_in[ilink++] = tk_links64_in[s][f];
+                    all_channels_in[ilink++] = calo_links64_in[s][f];
                 }
             }
 
@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
                     mu_links_in[f]  = mu_inputs[f][i];
                 }
                 mu_links64_in[f] = l1pf_pattern_pack_one(mu_links_in[f]);
-                all_channels_in[ilink++] = tk_links64_in[f];
+                all_channels_in[ilink++] = mu_links64_in[f];
             }
 
             TkObj tk_links_out[NTKOUT], tk_links_ref[NTKOUT]; PackedTkObj tk_links64_out[NTKOUT];
