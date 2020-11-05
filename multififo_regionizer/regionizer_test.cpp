@@ -101,7 +101,7 @@ int main(int argc, char **argv) {
 
             TkObj tk_links_out[NTKOUT], tk_links_ref[NTKOUT]; PackedTkObj tk_links64_out[NTKOUT];
             HadCaloObj calo_links_out[NCALOOUT], calo_links_ref[NCALOOUT]; PackedCaloObj calo_links64_out[NCALOOUT];
-            MuObj mu_links_out[NCALOOUT], mu_links_ref[NCALOOUT]; PackedMuObj mu_links64_out[NCALOOUT];
+            MuObj mu_links_out[NMUOUT], mu_links_ref[NMUOUT]; PackedMuObj mu_links64_out[NMUOUT];
 
             bool calo_newevt_out, tk_newevt_out, mu_newevt_out, newevt_ref = (i == 0);
             bool tk_ref_good   = tk_router_ref(i == 0, tk_links_in, tk_links_ref);
