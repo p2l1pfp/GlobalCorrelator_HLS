@@ -2,11 +2,11 @@
 set puppiReg "HGCal"
 #set puppiBoard "none"
 set puppiBoard "VCU118"
-set hlsIPVersion 25.6.0
+set hlsIPVersion 30.4.0
 
-set cflags "-std=c++0x -DREG_${puppiReg} -DBOARD_${puppiBoard} -DHLS_pipeline_II=6" 
+set cflags "-std=c++0x -DREG_${puppiReg} -DBOARD_${puppiBoard} -DHLS_pipeline_II=4" 
 
-open_project -reset "proj_linpuppi_${puppiReg}_${puppiBoard}_2.5ns_II6"
+open_project -reset "proj_linpuppi_${puppiReg}_${puppiBoard}_3ns_II4"
 
 if { $puppiBoard == "none" } {
     set hlsTopFunc linpuppiNoCrop
@@ -35,7 +35,7 @@ add_files -tb ../data/TTbar_PU200_${puppiReg}.dump
 # reset the solution
 open_solution -reset "solution"
 set_part {xcvu9p-flga2104-2L-e}
-create_clock -period 2.5 -name default
+create_clock -period 3.0 -name default
 
 config_interface -trim_dangling_port
 # do stuff

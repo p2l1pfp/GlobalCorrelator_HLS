@@ -2,12 +2,12 @@
 #set pfBoard "none"
 set pfBoard "VCU118"
 set pfReg "HGCal"
-set hlsIPVersion 25.6.0
+set hlsIPVersion 30.4.0
 
-set cflags "-std=c++0x -DREG_${pfReg} -DBOARD_${pfBoard} -DHLS_pipeline_II=6"
+set cflags "-std=c++0x -DREG_${pfReg} -DBOARD_${pfBoard} -DHLS_pipeline_II=4"
 
 # open the project, don't forget to reset
-open_project -reset "proj_pf${pfReg}_${pfBoard}_2.5ns_II6"
+open_project -reset "proj_pf${pfReg}_${pfBoard}_3ns_II4"
 if { $pfBoard == "none" } {
     set hlsTopFunc pfalgo2hgc
 } else {
@@ -25,7 +25,7 @@ add_files -tb data/TTbar_PU200_HGCal.dump
 # reset the solution
 open_solution -reset "solution"
 set_part {xcvu9p-flga2104-2L-e}
-create_clock -period 2.5 -name default
+create_clock -period 3 -name default
 
 config_interface -trim_dangling_port
 # do stuff
