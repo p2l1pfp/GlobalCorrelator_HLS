@@ -3,14 +3,13 @@
 #include "../utils/test_utils.h"
 
 #include "../ref/pfalgo2hgc_ref.h"
-//#include "../puppi/firmware/linpuppi.h"
 #include "../puppi/linpuppi_ref.h"
-//#include "../puppi/puppi_checker.h"
 
 #include <cstdlib>
 #include <cstdio>
 #include <cstdint>
 #include <vector>
+#include <string>
 
 #define TLEN REGIONIZERNCLOCKS 
 
@@ -36,11 +35,15 @@ int main(int argc, char **argv) {
                           LINPUPPI_priorNe, LINPUPPI_priorNe_1, LINPUPPI_priorPh, LINPUPPI_priorPh_1,
                           LINPUPPI_ptCut, LINPUPPI_ptCut_1);
 
-    FILE *fMC_calo  = fopen("caloDump_hgcal.TTbar_PU200.txt", "r");
-    FILE *fMC_tk  = fopen("trackDump_hgcalPos.TTbar_PU200.txt", "r");
-    FILE *fMC_mu  = fopen("muonDump_all.TTbar_PU200.txt", "r");
-    FILE *fMC_vtx = fopen("vertexDump_all.TTbar_PU200.txt", "r");
-    if (!fMC_calo || !fMC_tk || !fMC_mu || !fMC_vtx) return 2;
+    std::string sample = "TTbar_PU0";
+    FILE *fMC_calo  = fopen(("caloDump_hgcal."+sample+".txt").c_str(), "r");
+    FILE *fMC_tk  = fopen(("trackDump_hgcalPos."+sample+".txt").c_str(), "r");
+    FILE *fMC_mu  = fopen(("muonDump_all."+sample+".txt").c_str(), "r");
+    FILE *fMC_vtx = fopen(("vertexDump_all."+sample+".txt").c_str(), "r");
+    if (!fMC_calo || !fMC_tk || !fMC_mu || !fMC_vtx) {
+        printf("Couldn't open input files\n");
+        return 2;
+    }
     const glbeta_t etaCenter = 2*PFREGION_ETA_SIZE; // eta = +2.0
 
     PatternSerializer serPatternsIn("input-emp.txt"), serPatternsReg("output-emp-regionized-ref.txt"), serPatternsPf("output-emp-pf-ref.txt"), serPatternsPuppi("output-emp-puppi-ref.txt");
@@ -54,7 +57,10 @@ int main(int argc, char **argv) {
 
     int frame = 0; 
 
-    bool ok = true; z0_t oldZ0;
+    bool ok = true; 
+
+    z0_t pvZ0_prev = 0; // we have 1 event of delay in the reference regionizer, so we need to use the PV from 54 clocks before
+
     for (int itest = 0; itest < 10; ++itest) {
         std::vector<TkObj>      tk_inputs[NTKSECTORS][NTKFIBERS];
         std::vector<HadCaloObj> calo_inputs[NCALOSECTORS][NCALOFIBERS];
@@ -111,7 +117,7 @@ int main(int argc, char **argv) {
                 all_channels_in[ilink++] = mu_links64_in[f];
             }
 
-            all_channels_in[ilink++] = oldZ0;
+            all_channels_in[ilink++] = (i < int(vtx_inputs.size())) ? vtx_inputs[i].first : z0_t(0);
 
             TkObj        tk_links_ref[NTKOUT];
             HadCaloObj calo_links_ref[NCALOOUT];
@@ -131,15 +137,16 @@ int main(int argc, char **argv) {
                 // PF objects
                 PFChargedObj pfch[NTRACK], pfmu[NMU]; PFNeutralObj pfallne[NALLNEUTRALS];
                 assert(NTKOUT == NTRACK && NCALOOUT == NCALO && NMUOUT == NMU);
-                //pfalgo2hgc_ref_set_debug(itest == 1);
+                if (itest <= 5) printf("Will run PF event %d, region %d\n", itest-1, i/PFLOWII);
+                pfalgo2hgc_ref_set_debug(itest <= 5);
                 pfalgo2hgc_ref(pfcfg, calo_links_ref, tk_links_ref, mu_links_ref, pfch, pfallne, pfmu); 
                 pfalgo2hgc_pack_out(pfch, pfallne, pfmu, all_channels_pf);
                 // Puppi objects
-                //if (itest == 1) printf("Will run Puppi with z0 = %d\n", oldZ0.to_int());
+                if (itest <= 5) printf("Will run Puppi with z0 = %d in event %d, region %d\n", pvZ0_prev.to_int(), itest-1, i/PFLOWII);
                 PFChargedObj outallch[NTRACK];
                 PFNeutralObj outallne_nocut[NALLNEUTRALS], outallne[NALLNEUTRALS], outselne[NNEUTRALS]; 
-                linpuppi_ref(pucfg, tk_links_ref, oldZ0, pfallne, outallne_nocut, outallne, outselne, false); //itest == 1);
-                linpuppi_chs_ref(pucfg, oldZ0, pfch, outallch, false); //itest == 1);
+                linpuppi_ref(pucfg, tk_links_ref, pvZ0_prev, pfallne, outallne_nocut, outallne, outselne, itest <= 5);
+                linpuppi_chs_ref(pucfg, pvZ0_prev, pfch, outallch, itest <= 5);
                 l1pf_pattern_pack<NTRACK,0>(outallch, all_channels_puppi);
                 l1pf_pattern_pack<NALLNEUTRALS,NTRACK>(outallne, all_channels_puppi);
             }
@@ -149,10 +156,7 @@ int main(int argc, char **argv) {
             serPatternsPf(all_channels_pf);
             serPatternsPuppi(all_channels_puppi);
 
-            if (i == TLEN-1) {
-                oldZ0 = vtxZ0; 
-            }
-
+            if (i == TLEN-1) pvZ0_prev = vtx_inputs.empty() ? z0_t(0) : vtx_inputs.front().first;
         }
     } 
 
