@@ -283,7 +283,7 @@ begin
                             generic map(NREGIONS => NPFREGIONS, 
                                         NITEMS   => NTKSORTED,
                                         NSTREAM  => NTKSTREAM,
-                                        OUTII    => PFII)
+                                        OUTII    => PFII240)
                             port map(ap_clk => ap_clk,
                                 roll => tracks_sorted_roll(0),
                                 d_in => tracks_sorted,
@@ -296,7 +296,7 @@ begin
                             generic map(NREGIONS => NPFREGIONS, 
                                         NITEMS   => NCALOSORTED,
                                         NSTREAM  => NCALOSTREAM,
-                                        OUTII    => PFII)
+                                        OUTII    => PFII240)
                             port map(ap_clk => ap_clk,
                                 roll => calo_sorted_roll(0),
                                 d_in => calo_sorted,
@@ -309,7 +309,7 @@ begin
                             generic map(NREGIONS => NPFREGIONS, 
                                         NITEMS   => NMUSORTED,
                                         NSTREAM  => NMUSTREAM,
-                                        OUTII    => PFII)
+                                        OUTII    => PFII240)
                             port map(ap_clk => ap_clk,
                                 roll => mu_sorted_roll(0),
                                 d_in => mu_sorted,

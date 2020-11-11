@@ -6,16 +6,16 @@ set hlsIPVersion 25.6.0
 
 set cflags "-std=c++0x -DREG_${puppiReg} -DBOARD_${puppiBoard} -DHLS_pipeline_II=6" 
 
-open_project -reset "proj_linpuppi_${puppiReg}_${puppiBoard}_2.5ns_II6"
+open_project -reset "proj_linpuppi_${puppiReg}_${puppiBoard}_2.5ns_II6_chs"
 
 if { $puppiBoard == "none" } {
-    set hlsTopFunc linpuppiNoCrop
+    #set hlsTopFunc linpuppiNoCrop
     #set hlsTopFunc linpuppi
-    #set hlsTopFunc linpuppi_chs
+    set hlsTopFunc linpuppi_chs
 } else {
-    set hlsTopFunc packed_linpuppiNoCrop
+    #set hlsTopFunc packed_linpuppiNoCrop
     #set hlsTopFunc packed_linpuppi
-    #set hlsTopFunc packed_linpuppi_chs
+    set hlsTopFunc packed_linpuppi_chs
 }
 set_top ${hlsTopFunc}
 add_files firmware/linpuppi.cpp  -cflags "${cflags}"

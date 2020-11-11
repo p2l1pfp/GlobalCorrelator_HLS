@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
                           LINPUPPI_priorNe, LINPUPPI_priorNe_1, LINPUPPI_priorPh, LINPUPPI_priorPh_1,
                           LINPUPPI_ptCut, LINPUPPI_ptCut_1);
 
-    std::string sample = "TTbar_PU0";
+    std::string sample = "TTbar_PU200";
     FILE *fMC_calo  = fopen(("caloDump_hgcal."+sample+".txt").c_str(), "r");
     FILE *fMC_tk  = fopen(("trackDump_hgcalPos."+sample+".txt").c_str(), "r");
     FILE *fMC_mu  = fopen(("muonDump_all."+sample+".txt").c_str(), "r");

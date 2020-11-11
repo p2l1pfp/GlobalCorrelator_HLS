@@ -31,7 +31,6 @@ architecture Behavioral of region_mux_stream is
 begin
 
      logic: process(ap_clk) 
-           variable below : std_logic_vector(NITEMS-1 downto 0);
         begin
             if rising_edge(ap_clk) then
                 if roll = '1' then

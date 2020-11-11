@@ -50,13 +50,14 @@ package regionizer_data is
     constant PHI_2PI : signed(11 downto 0) := to_signed( PHI_SHIFT_INT*9,   12);  -- same but with negative sign
 
     constant PFII : natural := 6;
+    constant PFII240 : natural := 4;
     constant NPFREGIONS : natural := 9;
 
     constant NTKSECTORS : natural := 9;
     constant NTKFIBERS : natural := 2;
     constant NTKFIFOS : natural := NTKFIBERS*3;
     constant NTKSORTED : natural := 30;
-    constant NTKSTREAM : natural := (NTKSORTED+PFII-1)/PFII;
+    constant NTKSTREAM : natural := (NTKSORTED+PFII240-1)/PFII240;
 
     constant NCALOSECTORS : natural := 3;
     constant NCALOFIBERS : natural := 4;
@@ -64,11 +65,16 @@ package regionizer_data is
     constant NCALOFIFO12 : natural := 2*NCALOFIBERS;
     constant NCALOFIFOS : natural := NCALOFIFO0+2*NCALOFIFO12;
     constant NCALOSORTED : natural := 20;
-    constant NCALOSTREAM : natural := (NCALOSORTED+PFII-1)/PFII;
+    constant NCALOSTREAM : natural := (NCALOSORTED+PFII240-1)/PFII240;
 
     constant NMUFIBERS : natural := 2;
     constant NMUSORTED : natural := 4;
-    constant NMUSTREAM : natural := (NMUSORTED+PFII-1)/PFII;
+    constant NMUSTREAM : natural := (NMUSORTED+PFII240-1)/PFII240;
+
+    constant NPFTOT :     natural := NTKSORTED + NCALOSORTED + NMUSORTED;
+    constant NPFSTREAM :  natural := (NPFTOT+PFII240-1)/PFII240;
+
+    constant NPUPPI :     natural := NTKSORTED + NCALOSORTED;
 
     constant TKDELAY : natural := 1;
     constant MUDELAY : natural := 2;
