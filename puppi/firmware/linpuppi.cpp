@@ -19,7 +19,16 @@ inline int dr2_int(eta_t eta1, phi_t phi1, eta_t eta2, phi_t phi2) {
     ap_int<eta_t::width+1> deta = (eta1-eta2);
     ap_int<phi_t::width+1> dphi = (phi1-phi2);
     //ap_int<phi_t::width> dphi = (phi1-phi2); // intentional wrap-around
+#ifdef LINPUPPI_DR2_LATENCY4
+    int deta2 = deta*deta;
+    int dphi2 = dphi*dphi;
+    #pragma HLS resource variable=deta2 latency=4
+    #pragma HLS resource variable=dphi2 latency=4
+    int ret = deta2 + dphi2;
+    return ret;
+#else
     return deta*deta + dphi*dphi;
+#endif
 }
 
 void _lut_shift15_invert_init(ap_uint<16> _table[512]) { // returns 2^15 / x
