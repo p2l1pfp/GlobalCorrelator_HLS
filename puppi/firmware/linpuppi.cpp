@@ -425,6 +425,7 @@ inline bool linpuppi_fromPV(const T & obj, z0_t pvZ0) {
 void linpuppi_chs(z0_t pvZ0, const PFChargedObj pfch[NTRACK], PFChargedObj outallch[NTRACK]) {
     #pragma HLS ARRAY_PARTITION variable=pfch complete
     #pragma HLS ARRAY_PARTITION variable=outallch complete
+    #pragma HLS LATENCY min=1
 #ifdef HLS_pipeline_II
  #if HLS_pipeline_II == 1
     #pragma HLS pipeline II=1
