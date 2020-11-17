@@ -63,8 +63,10 @@ class PatternSerializer {
         ~PatternSerializer() ;
         
         void operator()(const Word event[PACKING_NCHANN], bool valid=true) ;
+        void operator()(const Word event[PACKING_NCHANN], const bool valid[PACKING_NCHANN]) ;
     
         template<typename T> void print(const T & event, bool valid = true, unsigned int ifirst = 0, unsigned int stride = 1);
+        template<typename T, typename TV> void printv(const T & event, const TV & valid, unsigned int ifirst = 0, unsigned int stride = 1);
         
     protected:
         const std::string fname_;

@@ -1,5 +1,5 @@
-#ifndef multitap_sr_h
-#define multitap_sr_h
+#ifndef multififo_regionizer_tdemux_h
+#define multififo_regionizer_tdemux_h
 
 #include <ap_int.h>
 

@@ -57,6 +57,17 @@ void PatternSerializer::operator()(const ap_uint<PACKING_DATA_SIZE> event[PACKIN
     }
 }
 
+void PatternSerializer::operator()(const ap_uint<PACKING_DATA_SIZE> event[PACKING_NCHANN], const bool valid[PACKING_NCHANN]) 
+{
+    if (!file_) return;
+    for (unsigned int j = 0; j < nmux_; ++j) {
+        printv(event, valid, j, nmux_);
+    }
+    for (unsigned int j = 0; j < nzero_; ++j) {
+      print(zeroframe_, zerovalid_);
+    }
+}
+
 template<typename T> void PatternSerializer::print(const T & event, bool valid, unsigned int ifirst, unsigned int stride) 
 {
     assert(PACKING_DATA_SIZE == 32 || PACKING_DATA_SIZE == 64);
@@ -72,6 +83,24 @@ template<typename T> void PatternSerializer::print(const T & event, bool valid, 
     fprintf(file_, "\n");
     ipattern_++;
 }
+
+
+template<typename T, typename TV> void PatternSerializer::printv(const T & event, const TV & valid, unsigned int ifirst, unsigned int stride) 
+{
+    assert(PACKING_DATA_SIZE == 32 || PACKING_DATA_SIZE == 64);
+
+    fprintf(file_, "Frame %04u :", ipattern_);
+    for (unsigned int i = 0, j = ifirst; i < nout_; ++i, j += stride) {
+#if PACKING_DATA_SIZE == 32
+        fprintf(file_, " %dv%08x", valid[j] ? 1 : 0, event[j].to_uint32());
+#else 
+        fprintf(file_, " %dv%016llx", valid[j] ? 1 : 0, event[j].to_uint64());
+#endif
+    }
+    fprintf(file_, "\n");
+    ipattern_++;
+}
+
 
 #endif
 

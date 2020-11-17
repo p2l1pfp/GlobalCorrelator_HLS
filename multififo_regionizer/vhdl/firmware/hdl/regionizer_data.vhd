@@ -19,6 +19,7 @@ package regionizer_data is
 
 
     subtype word64 is std_logic_vector(63 downto 0);
+    subtype word65 is std_logic_vector(63 downto 0);
 
     function particle_to_w64(p : particle) return word64;
     function w64_to_particle(d : word64) return particle;
@@ -29,6 +30,7 @@ package regionizer_data is
 
     type particles is array(natural range <>) of particle;
     type w64s      is array(natural range <>) of word64;
+    type w65s      is array(natural range <>) of word65;
     type glbparticles is array(natural range <>) of glbparticle;
 
     constant PHI_SHIFT_INT : natural := 160; -- 2*pi/9, size of a phi nonant, track finder sector or fiducial part of one PF region
@@ -78,6 +80,11 @@ package regionizer_data is
 
     constant TKDELAY : natural := 1;
     constant MUDELAY : natural := 2;
+
+    constant TDEMUX_FACTOR      : natural := 3;
+    constant TDEMUX_NTKFIBERS   : natural := NTKFIBERS*3/2/TDEMUX_FACTOR;
+    constant TDEMUX_NCALOFIBERS : natural := NCALOFIBERS;
+    constant TDEMUX_NMUFIBERS   : natural := 1;
 
 end package;
 
