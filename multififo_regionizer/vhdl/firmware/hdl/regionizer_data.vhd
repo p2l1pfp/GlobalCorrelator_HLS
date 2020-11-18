@@ -19,7 +19,7 @@ package regionizer_data is
 
 
     subtype word64 is std_logic_vector(63 downto 0);
-    subtype word65 is std_logic_vector(63 downto 0);
+    subtype word65 is std_logic_vector(64 downto 0);
 
     function particle_to_w64(p : particle) return word64;
     function w64_to_particle(d : word64) return particle;

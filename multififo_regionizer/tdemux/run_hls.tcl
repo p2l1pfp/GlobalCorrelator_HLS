@@ -4,9 +4,10 @@ open_project -reset "project"
 # specify the name of the function to synthetize
 set_top ${hlsTopFunc}
 # load source code for synthesis
-add_files firmware/tdemux.cc
+add_files firmware/tdemux.cpp
 # load source code for the testbench
-add_files -tb testbench_tdemux.cc
+add_files -tb testbench_tdemux.cpp
+add_files -tb tdemux_ref.cpp
 
 # create a solution (i.e. a hardware configuration for synthesis)
 open_solution -reset "solution"
