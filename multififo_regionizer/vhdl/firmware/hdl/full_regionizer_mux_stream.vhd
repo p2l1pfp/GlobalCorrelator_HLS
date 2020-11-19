@@ -66,10 +66,6 @@ architecture Behavioral of full_regionizer_mux_stream is
     signal tracks_regionized_valid:  std_logic_vector(NPFREGIONS-1 downto 0) := (others => '0');
     signal tracks_regionized_roll:   std_logic := '0';
 
-    signal tracks_delayed:        w64s(TKDELAY*NPFREGIONS-1 downto 0);
-    signal tracks_delayed_valid:  std_logic_vector(TKDELAY*NPFREGIONS-1 downto 0) := (others => '0');
-    signal tracks_delayed_roll:   std_logic_vector(TKDELAY-1 downto 0);
-
     signal calo_regionized:        w64s(NPFREGIONS-1 downto 0);
     signal calo_regionized_valid:  std_logic_vector(NPFREGIONS-1 downto 0) := (others => '0');
     signal calo_regionized_roll:   std_logic := '0';
@@ -77,34 +73,6 @@ architecture Behavioral of full_regionizer_mux_stream is
     signal mu_regionized:        w64s(NPFREGIONS-1 downto 0);
     signal mu_regionized_valid:  std_logic_vector(NPFREGIONS-1 downto 0) := (others => '0');
     signal mu_regionized_roll:   std_logic := '0';
-
-    signal mu_delayed:        w64s(MUDELAY*NPFREGIONS-1 downto 0);
-    signal mu_delayed_valid:  std_logic_vector(MUDELAY*NPFREGIONS-1 downto 0) := (others => '0');
-    signal mu_delayed_roll:   std_logic_vector(MUDELAY-1 downto 0);
-
-    signal tracks_sorted:        particles(NTKSORTED*NPFREGIONS-1 downto 0);
-    signal tracks_sorted_valid:  std_logic_vector(NTKSORTED*NPFREGIONS-1 downto 0) := (others => '0');
-    signal tracks_sorted_roll:   std_logic_vector(NPFREGIONS-1 downto 0) := (others => '0');
-
-    signal calo_sorted:        particles(NCALOSORTED*NPFREGIONS-1 downto 0);
-    signal calo_sorted_valid:  std_logic_vector(NCALOSORTED*NPFREGIONS-1 downto 0) := (others => '0');
-    signal calo_sorted_roll:   std_logic_vector(NPFREGIONS-1 downto 0) := (others => '0');
-
-    signal mu_sorted:        particles(NMUSORTED*NPFREGIONS-1 downto 0);
-    signal mu_sorted_valid:  std_logic_vector(NMUSORTED*NPFREGIONS-1 downto 0) := (others => '0');
-    signal mu_sorted_roll:   std_logic_vector(NPFREGIONS-1 downto 0) := (others => '0');
-
-    signal tracks_mux :        particles(NTKSTREAM-1 downto 0);
-    signal tracks_mux_valid :  std_logic_vector(NTKSTREAM-1 downto 0) := (others => '0');
-    signal tracks_mux_roll :   std_logic := '0';
-
-    signal calo_mux :        particles(NCALOSTREAM-1 downto 0);
-    signal calo_mux_valid :  std_logic_vector(NCALOSTREAM-1 downto 0) := (others => '0');
-    signal calo_mux_roll :   std_logic := '0';
-
-    signal mu_mux :        particles(NMUSTREAM-1 downto 0);
-    signal mu_mux_valid :  std_logic_vector(NMUSTREAM-1 downto 0) := (others => '0');
-    signal mu_mux_roll :   std_logic := '0';
 
 begin
 
@@ -214,137 +182,42 @@ begin
                              mu_out_valid_8 => mu_regionized_valid(8),
                              newevent_out => mu_regionized_roll);
 
-    tk_delay : process(ap_clk)
-            variable istart, iend: natural;
-        begin
-            if rising_edge(ap_clk) then
-                istart := (TKDELAY-1)*NPFREGIONS; iend := TKDELAY*NPFREGIONS;
-                tracks_delayed(      iend-1 downto istart) <= tracks_regionized(      NPFREGIONS-1 downto 0);
-                tracks_delayed_valid(iend-1 downto istart) <= tracks_regionized_valid(NPFREGIONS-1 downto 0);
-                tracks_delayed_roll(TKDELAY-1)             <= tracks_regionized_roll;
-                if TKDELAY > 1 then
-                    tracks_delayed(      istart-1 downto 0) <= tracks_delayed(      iend-1 downto NPFREGIONS);
-                    tracks_delayed_valid(istart-1 downto 0) <= tracks_delayed_valid(iend-1 downto NPFREGIONS);
-                    tracks_delayed_roll(TKDELAY-2 downto 0) <= tracks_delayed_roll(TKDELAY-1 downto 1);
-                end if;
-            end if;
-       end process tk_delay;
+    tk_delay_sort_mux_stream : entity work.delay_sort_mux_stream
+                generic map(NREGIONS => NPFREGIONS, 
+                            NSORTED  => NTKSORTED,
+                            NSTREAM  => NTKSTREAM,
+                            OUTII    => PFII240,
+                            DELAY    => TKDELAY)
+                port map(ap_clk => ap_clk,
+                         d_in => tracks_regionized,
+                         valid_in => tracks_regionized_valid,
+                         roll => tracks_regionized_roll,
+                         d_out => tracks_out,
+                         roll_out => newevent_out);
 
-   mu_delay : process(ap_clk)
-            variable istart, iend: natural;
-        begin
-            if rising_edge(ap_clk) then
-                istart := (MUDELAY-1)*NPFREGIONS; iend := MUDELAY*NPFREGIONS;
-                mu_delayed(      iend-1 downto istart) <= mu_regionized(      NPFREGIONS-1 downto 0);
-                mu_delayed_valid(iend-1 downto istart) <= mu_regionized_valid(NPFREGIONS-1 downto 0);
-                mu_delayed_roll(MUDELAY-1)             <= mu_regionized_roll;
-                if MUDELAY > 1 then
-                    mu_delayed(      istart-1 downto 0) <= mu_delayed(      iend-1 downto NPFREGIONS);
-                    mu_delayed_valid(istart-1 downto 0) <= mu_delayed_valid(iend-1 downto NPFREGIONS);
-                    mu_delayed_roll(MUDELAY-2 downto 0) <= mu_delayed_roll(MUDELAY-1 downto 1);
-                end if;
-            end if;
-       end process mu_delay;
+    calo_delay_sort_mux_stream : entity work.delay_sort_mux_stream
+                generic map(NREGIONS => NPFREGIONS, 
+                            NSORTED  => NCALOSORTED,
+                            NSTREAM  => NCALOSTREAM,
+                            OUTII    => PFII240,
+                            DELAY    => CALODELAY)
+                port map(ap_clk => ap_clk,
+                         d_in => calo_regionized,
+                         valid_in => calo_regionized_valid,
+                         roll => calo_regionized_roll,
+                         d_out => calo_out,
+                         roll_out => open);
 
-    gen_sorters: for isort in NPFREGIONS-1 downto 0 generate
-        tk_sorter : entity work.stream_sort
-                            generic map(NITEMS => NTKSORTED)
-                            port map(ap_clk => ap_clk,
-                                d_in => w64_to_particle(tracks_delayed(isort)),
-                                valid_in => tracks_delayed_valid(isort),
-                                roll => tracks_delayed_roll(0),
-                                d_out => tracks_sorted((isort+1)*NTKSORTED-1 downto isort*NTKSORTED),
-                                valid_out => tracks_sorted_valid((isort+1)*NTKSORTED-1 downto isort*NTKSORTED),
-                                roll_out => tracks_sorted_roll(isort)
-                            );
-        calo_sorter : entity work.stream_sort
-                            generic map(NITEMS => NCALOSORTED)
-                            port map(ap_clk => ap_clk,
-                                d_in => w64_to_particle(calo_regionized(isort)),
-                                valid_in => calo_regionized_valid(isort),
-                                roll => calo_regionized_roll,
-                                d_out => calo_sorted((isort+1)*NCALOSORTED-1 downto isort*NCALOSORTED),
-                                valid_out => calo_sorted_valid((isort+1)*NCALOSORTED-1 downto isort*NCALOSORTED),
-                                roll_out => calo_sorted_roll(isort)
-                            );
-        mu_sorter : entity work.stream_sort
-                            generic map(NITEMS => NMUSORTED)
-                            port map(ap_clk => ap_clk,
-                                d_in => w64_to_particle(mu_delayed(isort)),
-                                valid_in => mu_delayed_valid(isort),
-                                roll => mu_delayed_roll(0),
-                                d_out => mu_sorted((isort+1)*NMUSORTED-1 downto isort*NMUSORTED),
-                                valid_out => mu_sorted_valid((isort+1)*NMUSORTED-1 downto isort*NMUSORTED),
-                                roll_out => mu_sorted_roll(isort)
-                            );
-        end generate gen_sorters;
-
-    tk_muxer: entity work.region_mux_stream
-                            generic map(NREGIONS => NPFREGIONS, 
-                                        NITEMS   => NTKSORTED,
-                                        NSTREAM  => NTKSTREAM,
-                                        OUTII    => PFII240)
-                            port map(ap_clk => ap_clk,
-                                roll => tracks_sorted_roll(0),
-                                d_in => tracks_sorted,
-                                valid_in => tracks_sorted_valid,
-                                d_out => tracks_mux,
-                                valid_out => tracks_mux_valid,
-                                roll_out => tracks_mux_roll);
-
-    calo_muxer: entity work.region_mux_stream
-                            generic map(NREGIONS => NPFREGIONS, 
-                                        NITEMS   => NCALOSORTED,
-                                        NSTREAM  => NCALOSTREAM,
-                                        OUTII    => PFII240)
-                            port map(ap_clk => ap_clk,
-                                roll => calo_sorted_roll(0),
-                                d_in => calo_sorted,
-                                valid_in => calo_sorted_valid,
-                                d_out => calo_mux,
-                                valid_out => calo_mux_valid,
-                                roll_out => calo_mux_roll);
-
-    mu_muxer: entity work.region_mux_stream
-                            generic map(NREGIONS => NPFREGIONS, 
-                                        NITEMS   => NMUSORTED,
-                                        NSTREAM  => NMUSTREAM,
-                                        OUTII    => PFII240)
-                            port map(ap_clk => ap_clk,
-                                roll => mu_sorted_roll(0),
-                                d_in => mu_sorted,
-                                valid_in => mu_sorted_valid,
-                                d_out => mu_mux,
-                                valid_out => mu_mux_valid,
-                                roll_out => mu_mux_roll);
-
-    format: process(ap_clk)
-        begin
-            if rising_edge(ap_clk) then
-                for i in 0 to NTKSTREAM-1 loop
-                    if tracks_mux_valid(i) = '1' then
-                        tracks_out(i) <= particle_to_w64(tracks_mux(i));
-                    else
-                        tracks_out(i) <= (others => '0');
-                    end if;
-                end loop;
-                for i in 0 to NCALOSTREAM-1 loop
-                    if calo_mux_valid(i) = '1' then
-                        calo_out(i) <= particle_to_w64(calo_mux(i));
-                    else
-                        calo_out(i) <= (others => '0');
-                    end if;
-                end loop;
-                for i in 0 to NMUSTREAM-1 loop
-                    if mu_mux_valid(i) = '1' then
-                        mu_out(i) <= particle_to_w64(mu_mux(i));
-                    else
-                        mu_out(i) <= (others => '0');
-                    end if;
-                end loop;
-                newevent_out <= tracks_mux_roll;
-            end if;
-        end process format;
-
-
+    mu_delay_sort_mux_stream : entity work.delay_sort_mux_stream
+                generic map(NREGIONS => NPFREGIONS, 
+                            NSORTED  => NMUSORTED,
+                            NSTREAM  => NMUSTREAM,
+                            OUTII    => PFII240,
+                            DELAY    => MUDELAY)
+                port map(ap_clk => ap_clk,
+                         d_in => mu_regionized,
+                         valid_in => mu_regionized_valid,
+                         roll => mu_regionized_roll,
+                         d_out => mu_out,
+                         roll_out => open);
 end Behavioral;

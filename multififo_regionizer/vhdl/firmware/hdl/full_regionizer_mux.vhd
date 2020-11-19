@@ -74,6 +74,10 @@ architecture Behavioral of full_regionizer_mux is
     signal calo_regionized_valid:  std_logic_vector(NPFREGIONS-1 downto 0) := (others => '0');
     signal calo_regionized_roll:   std_logic := '0';
 
+    signal calo_delayed:        w64s(CALODELAY*NPFREGIONS-1 downto 0);
+    signal calo_delayed_valid:  std_logic_vector(CALODELAY*NPFREGIONS-1 downto 0) := (others => '0');
+    signal calo_delayed_roll:   std_logic_vector(CALODELAY-1 downto 0);
+
     signal mu_regionized:        w64s(NPFREGIONS-1 downto 0);
     signal mu_regionized_valid:  std_logic_vector(NPFREGIONS-1 downto 0) := (others => '0');
     signal mu_regionized_roll:   std_logic := '0';
@@ -230,6 +234,22 @@ begin
             end if;
        end process tk_delay;
 
+   calo_delay : process(ap_clk)
+            variable istart, iend: natural;
+        begin
+            if rising_edge(ap_clk) then
+                istart := (CALODELAY-1)*NPFREGIONS; iend := CALODELAY*NPFREGIONS;
+                calo_delayed(      iend-1 downto istart) <= calo_regionized(      NPFREGIONS-1 downto 0);
+                calo_delayed_valid(iend-1 downto istart) <= calo_regionized_valid(NPFREGIONS-1 downto 0);
+                calo_delayed_roll(CALODELAY-1)           <= calo_regionized_roll;
+                if CALODELAY > 1 then
+                    calo_delayed(      istart-1 downto 0) <= calo_delayed(      iend-1 downto NPFREGIONS);
+                    calo_delayed_valid(istart-1 downto 0) <= calo_delayed_valid(iend-1 downto NPFREGIONS);
+                    calo_delayed_roll(CALODELAY-2 downto 0) <= calo_delayed_roll(CALODELAY-1 downto 1);
+                end if;
+            end if;
+       end process calo_delay;
+
    mu_delay : process(ap_clk)
             variable istart, iend: natural;
         begin
@@ -260,9 +280,9 @@ begin
         calo_sorter : entity work.stream_sort
                             generic map(NITEMS => NCALOSORTED)
                             port map(ap_clk => ap_clk,
-                                d_in => w64_to_particle(calo_regionized(isort)),
-                                valid_in => calo_regionized_valid(isort),
-                                roll => calo_regionized_roll,
+                                d_in => w64_to_particle(calo_delayed(isort)),
+                                valid_in => calo_delayed_valid(isort),
+                                roll => calo_delayed_roll(0),
                                 d_out => calo_sorted((isort+1)*NCALOSORTED-1 downto isort*NCALOSORTED),
                                 valid_out => calo_sorted_valid((isort+1)*NCALOSORTED-1 downto isort*NCALOSORTED),
                                 roll_out => calo_sorted_roll(isort)

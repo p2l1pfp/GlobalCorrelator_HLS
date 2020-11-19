@@ -78,8 +78,9 @@ package regionizer_data is
 
     constant NPUPPI :     natural := NTKSORTED + NCALOSORTED;
 
-    constant TKDELAY : natural := 1;
-    constant MUDELAY : natural := 2;
+    constant TKDELAY : natural := 2;
+    constant MUDELAY   : natural := 3;
+    constant CALODELAY : natural := 1;
 
     constant TDEMUX_FACTOR      : natural := 3;
     constant TDEMUX_NTKFIBERS   : natural := NTKFIBERS*3/2/TDEMUX_FACTOR;
