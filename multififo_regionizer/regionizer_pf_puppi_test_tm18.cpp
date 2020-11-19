@@ -2,8 +2,13 @@
 #include "../utils/pattern_serializer.h"
 #include "../utils/test_utils.h"
 #include "firmware/obj_unpackers.h"
-#include "tdemux/tdemux_ref.h"
+#include "utils/obj_packers.h"
 
+#include "utils/tmux18_utils.h"
+#include "utils/readMC.h"
+
+#include "tdemux/tdemux_ref.h"
+#include "regionizer_ref.h"
 #include "../ref/pfalgo2hgc_ref.h"
 #include "../puppi/linpuppi_ref.h"
 
@@ -11,128 +16,9 @@
 #include <cstdio>
 #include <cstdint>
 #include <vector>
-#include <queue>
 #include <string>
 
 #define TLEN REGIONIZERNCLOCKS 
-
-bool tk_router_ref(bool newevent, const TkObj tracks_in[NTKSECTORS][NTKFIBERS], TkObj tracks_out[NTKOUT]) ;
-bool calo_router_ref(bool newevent, const HadCaloObj calo_in[NCALOSECTORS][NCALOFIBERS], HadCaloObj calo_out[NCALOOUT]) ;
-bool mu_router_ref(bool newevent, const glbeta_t etaCenter, const GlbMuObj mu_in[NMUFIBERS], MuObj mu_out[NMUOUT]) ;
-bool readEventTkTM18(FILE *file, std::vector<TkObj> inputs[NTKSECTORS], uint32_t &run, uint32_t &lumi, uint64_t &event) ;
-bool readEventCalo(FILE *file, std::vector<HadCaloObj> inputs[NCALOSECTORS][NCALOFIBERS], bool zside, uint32_t &run, uint32_t &lumi, uint64_t &event) ;
-bool readEventMuTM18(FILE *file, std::vector<GlbMuObj> inputs, uint32_t &run, uint32_t &lumi, uint64_t &event) ;
-bool readEventVtx(FILE *file, std::vector<std::pair<z0_t,pt_t>> & inputs, uint32_t &irun, uint32_t &ilumi, uint64_t &ievent) ;
-
-template<typename T>
-struct TM18LinkTriplet {
-    std::queue<std::pair<T,bool>> links[3];
-    
-    TM18LinkTriplet() { 
-        for (int i = 0; i <  TLEN; ++i)  links[1].emplace(T(0), false);
-        for (int i = 0; i < 2*TLEN; ++i) links[2].emplace(T(0), false);
-    };
-
-
-    template<typename C>
-    void push_event(unsigned int iev, const C & objs) {
-        auto & q = links[iev % 3];
-        unsigned int n = std::min<unsigned int>(3*TLEN-3, objs.size()); // let's leave 3 empty frames at the end, so they get reassebled as 1 row of nulls
-        //printf("Writing %u objects on link %u for iev %u\n", n, iev%3, iev);
-        for (unsigned int i = 0; i < n; ++i) {
-            q.emplace(objs[i], true);
-        }
-
-        for (unsigned int i = n; i < 3*TLEN; ++i) {
-            q.emplace(T(0), i < 3*TLEN-3);
-        }
-    }
-    template<typename TC, typename BC>
-    void pop_frame(TC & values, BC & valids, unsigned int start=0, unsigned int stride=1) {
-        for (int i = 0; i < 3; ++i) {
-            if (links[i].empty()) { 
-                printf("ERROR: link %d is empty (start = %u, stride = %u)\n", i, start, stride); fflush(stdout); 
-                continue;
-            }
-            assert(!links[i].empty());
-            auto obj = links[i].front();
-            values[start+i*stride] = obj.first;
-            valids[start+i*stride] = obj.second;
-            links[i].pop();
-        }
-    }
-};
-
-#ifdef TRIVIAL_ENCODING_64
-template<typename T>
-std::vector<ap_uint<64>> encode_objs(const std::vector<T> & objs) {
-    std::vector<ap_uint<64>> ret;
-    for (unsigned int i = 0, n = objs.size(); i < n; ++i) {
-        ret.push_back(l1pf_pattern_pack_one(objs[i]));
-    }
-    return ret;
-}
-#else
-std::vector<ap_uint<64>> encode_objs(const std::vector<TkObj> & tracks) {
-    std::vector<ap_uint<64>> ret;
-    for (unsigned int i = 0, n = tracks.size(); i < n; ++i) {
-        // simulate 96 bit objects
-        ap_uint<96> packedtk = l1pf_pattern_pack_one(tracks[i]);
-        if (i % 2 == 0) {
-            ret.emplace_back(packedtk(95,32));
-            ret.emplace_back((packedtk(31,0), ap_uint<32>(0)));
-        } else {
-            ret.back()(31,0) = packedtk(95,64);
-            ret.emplace_back(packedtk(63,0));
-        }
-    }
-    return ret;
-}
-std::vector<ap_uint<64>> encode_objs(const std::vector<HadCaloObj> & calo) {
-    std::vector<ap_uint<64>> ret;
-    for (unsigned int i = 0, n = calo.size(); i < n; ++i) {
-        // simulate 128 bit objects on a 16 G link
-        ap_uint<128> packed = l1pf_pattern_pack_one(calo[i]);
-        ret.emplace_back(packed(127,64));
-        ret.emplace_back(packed( 63, 0));
-        ret.push_back(0); // third zero frame, that will have the strobe bit off
-    }
-    return ret;
-
-}
-std::vector<ap_uint<64>> encode_objs(const std::vector<GlbMuObj> & mu) {
-    std::vector<ap_uint<64>> ret;
-    for (unsigned int i = 0, n = mu.size(); i < n; ++i) {
-        // simulate 128 bit objects on a 16 G link
-        ap_uint<128> packed = l1pf_pattern_pack_one(mu[i]);
-        ret.emplace_back(packed(127,64));
-        ret.emplace_back(packed( 63, 0));
-    }
-    return ret;
-}
-#endif
-
-class DelayQueue {
-    public:
-        DelayQueue(unsigned int n) : n_(n), data_(n, 0), ptr_(0) {}
-        ap_uint<65> operator()(const ap_uint<65> & in) {
-            ap_uint<65> ret = data_[ptr_];
-            data_[ptr_] = in;
-            ptr_++; 
-            if (ptr_ == n_) ptr_ = 0;
-            return ret;
-        }
-        void operator()(const ap_uint<64> & in,  const bool & in_valid,
-                              ap_uint<64> & out,       bool & out_valid) {
-            ap_uint<65> in65  = in; in65[64] = in_valid;
-            ap_uint<65> out65 = (*this)(in65);
-            out = out65(63,0); out_valid = out65[64];
-        }
-    private:
-        unsigned int n_, ptr_;
-        std::vector<ap_uint<65>> data_;
-};
-
 
 
 int main(int argc, char **argv) {
@@ -180,7 +66,7 @@ int main(int argc, char **argv) {
 
 
     // TMux encoders
-    TM18LinkTriplet<ap_uint<64>> tk_tmuxer[NTKSECTORS], calo_tmuxer[NCALOSECTORS][NCALOFIBERS], mu_tmuxer;
+    TM18LinkMultiplet<ap_uint<64>,TLEN> tk_tmuxer(NTKSECTORS), calo_tmuxer(NCALOSECTORS*NCALOFIBERS), mu_tmuxer(1);
     // TMux decoders, for testing
     TDemuxRef tk_tdemuxer[NTKSECTORS], calo_tdemuxer[NCALOSECTORS][NCALOFIBERS], mu_tdemuxer;
     // make a delay queue for the PV to realign it to the first frame
@@ -189,28 +75,25 @@ int main(int argc, char **argv) {
     int frame = 0; 
     bool ok = true; 
     z0_t pvZ0_prev = 0; // we have 1 event of delay in the reference regionizer, so we need to use the PV from 54 clocks before
-    for (int itest = 0; itest < 10; ++itest) {
+    for (int itest = 0; itest < 50; ++itest) {
         std::vector<TkObj>      tk_inputs[NTKSECTORS];
-        std::vector<HadCaloObj> calo_inputs[NCALOSECTORS][NCALOFIBERS];
+        std::vector<HadCaloObj> calo_inputs[NCALOSECTORS*NCALOFIBERS];
         std::vector<GlbMuObj>   mu_inputs;
         std::vector<std::pair<z0_t,pt_t>> vtx_inputs;
 
         uint32_t run = 0, lumi = 0; uint64_t event = 0;
-        if (!readEventTkTM18(fMC_tk, tk_inputs, run, lumi, event) || 
+        if (!readEventTk(fMC_tk, tk_inputs, run, lumi, event) || 
             !readEventCalo(fMC_calo, calo_inputs, /*zside=*/true, run, lumi, event) ||
-            !readEventMuTM18(fMC_mu, mu_inputs, run, lumi, event) ||
-            !readEventVtx(fMC_vtx, vtx_inputs, run, lumi, event)) break;
+            !readEventMu(fMC_mu, mu_inputs, run, lumi, event) ||
+            !readEventVtx(fMC_vtx, vtx_inputs, run, lumi, event)) {
+                printf("Reached end of input file.\n");
+            break;
+        }
 
         // enqueue frames (outside of the frame loop, since it takes 3*TLEN and not TLEN)
-        for (int s = 0; s < NTKSECTORS; ++s) {
-            tk_tmuxer[s].push_event(itest, encode_objs(tk_inputs[s]));
-        }
-        for (int s = 0; s < NCALOSECTORS; ++s) {
-            for (int f = 0; f < NCALOFIBERS; ++f) {
-                calo_tmuxer[s][f].push_event(itest, encode_objs(calo_inputs[s][f]));
-            }
-        }
-        mu_tmuxer.push_event(itest, encode_objs(mu_inputs));
+        tk_tmuxer.push_links(itest, tk_inputs, pack_tracks);
+        calo_tmuxer.push_links(itest, calo_inputs, pack_hgcal);
+        mu_tmuxer.push_link(itest, mu_inputs, pack_muons);
 
         z0_t vtxZ0 = vtx_inputs.empty() ? z0_t(0) : vtx_inputs.front().first;
         //if (itest == 0) printf("Vertexis at z0 = %d\n", vtxZ0.to_int());
@@ -238,8 +121,8 @@ int main(int argc, char **argv) {
             for (int s = 0; s < NCALOSECTORS; ++s) {
                 for (int f = 0; f < NCALOFIBERS; ++f) {
                     clear(calo_links_in[s][f]);
-                    if (i < TLEN-1 && i < int(calo_inputs[s][f].size())) { // emp protocol, must leave one null frame at the end
-                        calo_links_in[s][f]  = calo_inputs[s][f][i];
+                    if (i < TLEN-1 && i < int(calo_inputs[s*NCALOFIBERS+f].size())) { // emp protocol, must leave one null frame at the end
+                        calo_links_in[s][f]  = calo_inputs[s*NCALOFIBERS+f][i];
                     }
                     calo_links64_in[s][f] = l1pf_pattern_pack_one(calo_links_in[s][f]);
                     all_channels_in[ilink++] = calo_links64_in[s][f];
@@ -262,14 +145,8 @@ int main(int argc, char **argv) {
 
             // pop out frames from the tmuxer for printing. for each sector, we put the 3 links for 3 set of events next to each other
             unsigned int calo_offs = NTKSECTORS*3, mu_offs = calo_offs + NCALOSECTORS * NCALOFIBERS * 3, vtx_offs = mu_offs + 3;
-            for (int s = 0; s < NTKSECTORS; ++s) {
-                tk_tmuxer[s].pop_frame(all_channels_tmux, all_valids_tmux, 3*s); //s, NTKSECTORS); 
-            }
-            for (int s = 0; s < NCALOSECTORS; ++s) {
-                for (int f = 0; f < NCALOFIBERS; ++f) {
-                    calo_tmuxer[s][f].pop_frame(all_channels_tmux, all_valids_tmux, calo_offs+3*(s*NCALOFIBERS+f)); // s*NCALOFIBERS+f, NCALOSECTORS*NCALOFIBERS);
-                }
-            }
+            tk_tmuxer.pop_frame(all_channels_tmux, all_valids_tmux); 
+            calo_tmuxer.pop_frame(all_channels_tmux, all_valids_tmux, calo_offs);
             mu_tmuxer.pop_frame(all_channels_tmux, all_valids_tmux, mu_offs);
             // the vertex is not TMUXed so we just add it at the end
             all_channels_tmux[vtx_offs] = (i < int(vtx_inputs.size())) ? vtx_inputs[i].first : z0_t(0);

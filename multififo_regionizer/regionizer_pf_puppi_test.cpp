@@ -2,8 +2,11 @@
 #include "../utils/pattern_serializer.h"
 #include "../utils/test_utils.h"
 
+#include "regionizer_ref.h"
 #include "../ref/pfalgo2hgc_ref.h"
 #include "../puppi/linpuppi_ref.h"
+
+#include "utils/readMC.h"
 
 #include <cstdlib>
 #include <cstdio>
@@ -16,11 +19,6 @@
 bool tk_router_ref(bool newevent, const TkObj tracks_in[NTKSECTORS][NTKFIBERS], TkObj tracks_out[NTKOUT]) ;
 bool calo_router_ref(bool newevent, const HadCaloObj calo_in[NCALOSECTORS][NCALOFIBERS], HadCaloObj calo_out[NCALOOUT]) ;
 bool mu_router_ref(bool newevent, const glbeta_t etaCenter, const GlbMuObj mu_in[NMUFIBERS], MuObj mu_out[NMUOUT]) ;
-bool readEventTk(FILE *file, std::vector<TkObj> inputs[NTKSECTORS][NTKFIBERS], uint32_t &run, uint32_t &lumi, uint64_t &event) ;
-bool readEventCalo(FILE *file, std::vector<HadCaloObj> inputs[NCALOSECTORS][NCALOFIBERS], bool zside, uint32_t &run, uint32_t &lumi, uint64_t &event) ;
-bool readEventMu(FILE *file, std::vector<GlbMuObj> inputs[NMUFIBERS], uint32_t &run, uint32_t &lumi, uint64_t &event) ;
-bool readEventVtx(FILE *file, std::vector<std::pair<z0_t,pt_t>> & inputs, uint32_t &irun, uint32_t &ilumi, uint64_t &ievent) ;
- 
 
 int main(int argc, char **argv) {
     pfalgo_config pfcfg(NTRACK,NCALO,NMU, NSELCALO,
@@ -61,7 +59,7 @@ int main(int argc, char **argv) {
 
     z0_t pvZ0_prev = 0; // we have 1 event of delay in the reference regionizer, so we need to use the PV from 54 clocks before
 
-    for (int itest = 0; itest < 10; ++itest) {
+    for (int itest = 0; itest < 50; ++itest) {
         std::vector<TkObj>      tk_inputs[NTKSECTORS][NTKFIBERS];
         std::vector<HadCaloObj> calo_inputs[NCALOSECTORS][NCALOFIBERS];
         std::vector<GlbMuObj>   mu_inputs[NMUFIBERS];
@@ -71,7 +69,10 @@ int main(int argc, char **argv) {
         if (!readEventTk(fMC_tk, tk_inputs, run, lumi, event) || 
             !readEventCalo(fMC_calo, calo_inputs, /*zside=*/true, run, lumi, event) ||
             !readEventMu(fMC_mu, mu_inputs, run, lumi, event) ||
-            !readEventVtx(fMC_vtx, vtx_inputs, run, lumi, event)) break;
+            !readEventVtx(fMC_vtx, vtx_inputs, run, lumi, event)) {
+                printf("Reached end of input file.\n");
+            break;
+        }
 
         z0_t vtxZ0 = vtx_inputs.empty() ? z0_t(0) : vtx_inputs.front().first;
         //if (itest == 0) printf("Vertexis at z0 = %d\n", vtxZ0.to_int());

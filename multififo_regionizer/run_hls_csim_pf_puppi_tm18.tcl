@@ -7,11 +7,13 @@ set_top ${hlsTopFunc}
 
 set sample TTbar_PU200
 
-add_files -tb regionizer_ref.cpp -cflags "${cflags}"
-add_files -tb readMC.cpp -cflags "${cflags}"
 add_files -tb regionizer_pf_puppi_test_tm18.cpp -cflags "${cflags}"
+add_files -tb regionizer_ref.cpp -cflags "${cflags}"
+add_files -tb utils/readMC.cpp -cflags "${cflags}"
 add_files -tb tdemux/tdemux_ref.cpp   -cflags "${cflags}"
+add_files -tb utils/tmux18_utils.cpp -cflags "${cflags}"
 add_files -tb firmware/obj_unpackers.cpp -cflags "${cflags}"
+add_files -tb utils/obj_packers.cpp -cflags "${cflags}"
 add_files -tb ../utils/pattern_serializer.cpp -cflags "${cflags}"
 add_files -tb ../utils/test_utils.cpp -cflags "${cflags}"
 add_files -tb ../ref/pfalgo_common_ref.cpp   -cflags "${cflags}"

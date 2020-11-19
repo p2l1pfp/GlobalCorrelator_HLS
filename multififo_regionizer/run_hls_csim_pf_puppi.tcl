@@ -8,7 +8,7 @@ set_top ${hlsTopFunc}
 set sample TTbar_PU200
 
 add_files -tb regionizer_ref.cpp -cflags "${cflags}"
-add_files -tb readMC.cpp -cflags "${cflags}"
+add_files -tb utils/readMC.cpp -cflags "${cflags}"
 add_files -tb regionizer_pf_puppi_test.cpp -cflags "${cflags}"
 add_files -tb ../utils/pattern_serializer.cpp -cflags "${cflags}"
 add_files -tb ../utils/test_utils.cpp -cflags "${cflags}"

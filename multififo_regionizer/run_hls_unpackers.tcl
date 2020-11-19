@@ -10,7 +10,7 @@ foreach func ${funcs} {
 
     add_files firmware/obj_unpackers.cpp -cflags "${cflags}"
     add_files -tb regionizer_ref.cpp -cflags "${cflags}"
-    add_files -tb readMC.cpp -cflags "${cflags}"
+    add_files -tb utils/readMC.cpp -cflags "${cflags}"
     add_files -tb ../utils/pattern_serializer.cpp -cflags "${cflags}"
     add_files -tb obj_unpackers_test.cpp -cflags "${cflags}"
     add_files -tb data/caloDump_hgcal.TTbar_PU200.txt

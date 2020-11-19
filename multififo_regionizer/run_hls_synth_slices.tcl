@@ -20,7 +20,7 @@ foreach det ${dets} {
         add_files firmware/tk_regionizer.cpp -cflags "${cflags}"
         add_files firmware/mu_regionizer.cpp -cflags "${cflags}"
         add_files -tb regionizer_ref.cpp -cflags "${cflags}"
-        add_files -tb readMC.cpp -cflags "${cflags}"
+        add_files -tb utils/readMC.cpp -cflags "${cflags}"
         add_files -tb regionizer_test.cpp -cflags "${cflags}"
         add_files -tb ../utils/pattern_serializer.cpp -cflags "${cflags}"
         add_files -tb ../utils/test_utils.cpp -cflags "${cflags}"
