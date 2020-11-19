@@ -134,7 +134,7 @@ int main(int argc, char **argv) {
             for (int f = 0; f < NMUFIBERS; ++f) {
                 int imu = 3*i/2+f;
                 clear(mu_links_in[f]);
-                if ((f == 0 || i%2 == 0) && imu < TLEN-1 && imu < int(mu_inputs.size())) { // emp protocol, must leave one null frame at the end
+                if ((f == 0 || i%2 == 1) && imu < TLEN-1 && imu < int(mu_inputs.size())) { // emp protocol, must leave one null frame at the end
                     mu_links_in[f]  = mu_inputs[imu];
                 }
                 mu_links64_in[f] = l1pf_pattern_pack_one(mu_links_in[f]);

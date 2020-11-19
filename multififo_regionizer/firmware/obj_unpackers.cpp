@@ -94,6 +94,7 @@ void unpack_mu_3to12(ap_uint<64>   in1,   bool   in1_valid,
         queue       = in3;
         queue_valid = in3_valid;
         unpack_mu(w1, in1_valid && in2_valid, out1, out1_valid);
+        out2 = 0;
         out2_valid = false;
     }
 
