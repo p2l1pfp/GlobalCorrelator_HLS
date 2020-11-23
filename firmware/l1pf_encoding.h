@@ -204,30 +204,42 @@ inline void l1pf_pattern_pack(const MuObj mu[N], ap_uint<64> data[]) {
 }
 
 
+inline ap_uint<64> l1pf_pattern_pack_one(const PFChargedObj pfch) {
+    #pragma HLS inline
+    ap_uint<64> data = 0;
+    data(18+32, 16+32) = pfch.hwId;
+    data(15+32, 0+32) = pfch.hwPt;
+    data(9, 0)  = pfch.hwEta;
+    data(19,10) = pfch.hwPhi;
+    data(29,20) = pfch.hwZ0;
+    return data;
+}
+
 template<unsigned int N, unsigned int OFFS>
 inline void l1pf_pattern_pack(const PFChargedObj pfch[N], ap_uint<64> data[]){
     #pragma HLS inline
     for (unsigned int i = 0; i < N; ++i) {
-        data[i+OFFS] = 0;
-        data[i+OFFS](18+32, 16+32) = pfch[i].hwId;
-        data[i+OFFS](15+32, 0+32) = pfch[i].hwPt;
-        data[i+OFFS](9, 0)  = pfch[i].hwEta;
-        data[i+OFFS](19,10) = pfch[i].hwPhi;
-        data[i+OFFS](29,20) = pfch[i].hwZ0;
+        data[i+OFFS] = l1pf_pattern_pack_one(pfch[i]);
     }
+}
+
+inline ap_uint<64> l1pf_pattern_pack_one(const PFNeutralObj pfne) {
+    #pragma HLS inline
+    ap_uint<64> data = 0;
+    data(31+32, 16+32) = pfne.hwPtPuppi;
+    data(15+32, 0+32) = pfne.hwPt;
+    data(9, 0) = pfne.hwEta;
+    data(19,10) = pfne.hwPhi;
+    data(22, 20) = pfne.hwId;
+    return data;
+
 }
 
 template<unsigned int N, unsigned int OFFS> 
 inline void l1pf_pattern_pack(const PFNeutralObj pfne[N], ap_uint<64> data[]) {
     #pragma HLS inline
     for (unsigned int i = 0; i < N; ++i) {
-        //data[i+OFFS](18+32, 16+32) = pfne[i].hwId;
-        data[i+OFFS] = 0;
-        data[i+OFFS](31+32, 16+32) = pfne[i].hwPtPuppi;
-        data[i+OFFS](15+32, 0+32) = pfne[i].hwPt;
-        data[i+OFFS](9, 0) = pfne[i].hwEta;
-        data[i+OFFS](19,10) = pfne[i].hwPhi;
-        data[i+OFFS](22, 20) = pfne[i].hwId;
+        data[i+OFFS] = l1pf_pattern_pack_one(pfne[i]);
     }
 }
 
@@ -299,27 +311,38 @@ inline void l1pf_pattern_unpack(const ap_uint<64> data[], MuObj mu[N]) {
     }
 }
 
+inline void l1pf_pattern_unpack_one(const ap_uint<64> & data, PFChargedObj & pfch) {
+    #pragma HLS inline
+    pfch.hwId = data(18+32, 16+32);
+    pfch.hwPt = data(15+32, 0+32);
+    pfch.hwEta = data(9, 0);
+    pfch.hwPhi = data(19,10);
+    pfch.hwZ0 = data(29,20);
+
+}
+
 template<unsigned int N, unsigned int OFFS>
 inline void l1pf_pattern_unpack(const ap_uint<64> data[], PFChargedObj pfch[N]){
     #pragma HLS inline
     for (unsigned int i = 0; i < N; ++i) {
-        pfch[i].hwId = data[i+OFFS](18+32, 16+32);
-        pfch[i].hwPt = data[i+OFFS](15+32, 0+32);
-        pfch[i].hwEta = data[i+OFFS](9, 0);
-        pfch[i].hwPhi = data[i+OFFS](19,10);
-        pfch[i].hwZ0 = data[i+OFFS](29,20);
+        l1pf_pattern_unpack_one(data[i+OFFS], pfch[i]);
     }
+}
+
+inline void l1pf_pattern_unpack_one(const ap_uint<64> & data, PFNeutralObj & pfne) {
+    #pragma HLS inline
+    pfne.hwPtPuppi = data(31+32, 16+32);
+    pfne.hwPt = data(15+32, 0+32);
+    pfne.hwId = data(22, 20);
+    pfne.hwEta = data(9, 0);
+    pfne.hwPhi = data(19,10);
 }
 
 template<unsigned int N, unsigned int OFFS> 
 inline void l1pf_pattern_unpack(const ap_uint<64> data[], PFNeutralObj pfne[N]) {
     #pragma HLS inline
     for (unsigned int i = 0; i < N; ++i) {
-        pfne[i].hwPtPuppi = data[i+OFFS](31+32, 16+32);
-        pfne[i].hwPt = data[i+OFFS](15+32, 0+32);
-        pfne[i].hwId = data[i+OFFS](22, 20);
-        pfne[i].hwEta = data[i+OFFS](9, 0);
-        pfne[i].hwPhi = data[i+OFFS](19,10);
+        l1pf_pattern_unpack_one(data[i+OFFS], pfne[i]);
     }
 }
 
