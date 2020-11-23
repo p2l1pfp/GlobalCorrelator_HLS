@@ -96,6 +96,9 @@ int main() {
     #if defined(TEST_PUPPI_NOCROP)
         packed_linpuppiNoCrop(packed_input, packed_output);
         l1pf_pattern_unpack<NALLNEUTRALS,0>(packed_output, outallne);
+    #elif defined(TEST_PUPPI_STREAM)
+        packed_linpuppiNoCrop_streamed(track, hwZPV, pfallne, outallne);
+        packed_linpuppi_chs_streamed(hwZPV, pfch, outallch);  // we call this again, with the streamed version
     #else
         packed_linpuppi(packed_input, packed_output);
         l1pf_pattern_unpack<NNEUTRALS,0>(packed_output, outselne);
@@ -106,6 +109,9 @@ int main() {
         linpuppi_chs(hwZPV, pfch, outallch);
     #if defined(TEST_PUPPI_NOCROP)
         linpuppiNoCrop(track, hwZPV, pfallne, outallne);
+    #elif defined(TEST_PUPPI_STREAM)
+        linpuppiNoCrop_streamed(track, hwZPV, pfallne, outallne);
+        linpuppi_chs_streamed(hwZPV, pfch, outallch); // we call this again, with the streamed version
     #else
         linpuppi(track, hwZPV, pfallne, outselne);
     #endif
@@ -119,7 +125,7 @@ int main() {
         checker.checkIntVsFloat<PFNeutralObj,NALLNEUTRALS>(pfallne, outallne_ref_nocut, outallne_flt_nocut, verbose);
 
         bool ok = checker.checkChs<NTRACK>(hwZPV, outallch, outallch_ref) && 
-#if defined(TEST_PUPPI_NOCROP)
+#if defined(TEST_PUPPI_NOCROP) or defined(TEST_PUPPI_STREAM)
                   checker.check<NALLNEUTRALS>(outallne, outallne_ref, outallne_flt);
 #else
                   checker.check<NNEUTRALS>(outselne, outselne_ref, outselne_flt);
@@ -127,7 +133,7 @@ int main() {
         if (!ok) {
             printf("FAILED test %d\n", test);
             HumanReadablePatternSerializer dumper("-", true);
-#if defined(TEST_PUPPI_NOCROP)
+#if defined(TEST_PUPPI_NOCROP) or defined(TEST_PUPPI_STREAM)
             dumper.dump_puppi(NALLNEUTRALS, "all    ", outallne);
             dumper.dump_puppi(NALLNEUTRALS, "all ref", outallne_ref);
 #else

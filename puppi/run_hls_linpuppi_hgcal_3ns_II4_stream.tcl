@@ -4,7 +4,7 @@ set hlsIPVersion 30.4.0
 
 set cflags "-std=c++0x -DREG_${puppiReg} -DBOARD_${puppiBoard} -DHLS_pipeline_II=4" 
 
-set kinds { "neutral" "charged" }
+set kinds { "stream_prep" "stream_one" "stream_chs"  }
 
 foreach kind $kinds {
     open_project -reset "proj_linpuppi_${puppiReg}_${puppiBoard}_3ns_II4_${kind}"
