@@ -478,7 +478,6 @@ void linpuppiSum(const TkObj track[NTRACK], z0_t pvZ0, const PFNeutralObj caloin
     for (int in = 0; in < NALLNEUTRALS; ++in) {
         ap_uint<32> sum = 0;
         for (int it = 0; it < NTRACK; ++it) {
-            if (it == in) continue;
             int dr2 = dr2_int(track[it].hwEta, track[it].hwPhi, caloin[in].hwEta, caloin[in].hwPhi); 
             if (dr2 <= DR2MAX && fromPV[it]) { // if dr is inside puppi cone
                 ap_uint<9> dr2short = dr2 >> 5; // reduce precision to make divide LUT cheaper

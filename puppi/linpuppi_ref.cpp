@@ -227,7 +227,7 @@ void linpuppi_ref(const linpuppi_config &cfg, const TkObj track[/*cfg.nTrack*/],
         if (pfallne[in].hwPt == 0) continue;
         uint64_t sum = 0; // 2 ^ sum_bitShift times (int pt^2)/(int dr2)
         for (unsigned int it = 0; it < cfg.nTrack; ++it) {
-            if (it == in || track[it].hwPt == 0) continue;
+            if (track[it].hwPt == 0) continue;
             if (std::abs(int(track[it].hwZ0 - pvZ0)) > cfg.dzCut) continue;
             int dr2 = dr2_int(pfallne[in].hwEta, pfallne[in].hwPhi, track[it].hwEta, track[it].hwPhi); // if dr is inside puppi cone
             if (dr2 <= DR2MAX) {
@@ -328,7 +328,7 @@ void linpuppi_flt(const linpuppi_config &cfg, const TkObj track[/*cfg.nTrack*/],
         if (pfallne[in].hwPt == 0) continue;
         float sum = 0;
         for (unsigned int it = 0; it < cfg.nTrack; ++it) {
-            if (it == in || track[it].hwPt == 0) continue;
+            if (track[it].hwPt == 0) continue;
             if (std::abs(int(track[it].hwZ0 - pvZ0)) > cfg.dzCut) continue;
             int dr2 = dr2_int(pfallne[in].hwEta, pfallne[in].hwPhi, track[it].hwEta, track[it].hwPhi); // if dr is inside puppi cone
             if (dr2 <= DR2MAX) {
