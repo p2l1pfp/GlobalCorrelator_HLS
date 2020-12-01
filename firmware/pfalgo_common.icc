@@ -5,7 +5,16 @@ ap_uint<NB> dr2_int_cap(eta_t eta1, eta_t phi1, eta_t eta2, eta_t phi2, ap_uint<
     ap_int<eta_t::width+1> deta = (eta1-eta2);
     ap_int<phi_t::width+1> dphi = (phi1-phi2);
     //ap_int<phi_t::width> dphi = (phi1-phi2); // intentional wrap-around
+#ifdef L1PF_DSP_LATENCY3
+    int deta2 = deta*deta;
+    int dphi2 = dphi*dphi;
+    #pragma HLS resource variable=deta2 latency=3
+    #pragma HLS resource variable=dphi2 latency=3
+    int dr2 = deta2 + dphi2;
+#else
     int dr2 = deta*deta + dphi*dphi;
+#endif
+
 
     return (dr2 < int(max) ? ap_uint<NB>(dr2) : max);
 }
@@ -15,11 +24,28 @@ ap_uint<NB> dr2_dpt_int_cap(eta_t eta1, eta_t phi1, eta_t eta2, eta_t phi2, pt_t
     ap_int<eta_t::width+1> deta = (eta1-eta2);
     ap_int<phi_t::width+1> dphi = (phi1-phi2);
     //ap_int<phi_t::width> dphi = (phi1-phi2); // intentional wrap-around
+#ifdef L1PF_DSP_LATENCY3
+    int deta2 = deta*deta;
+    int dphi2 = dphi*dphi;
+    #pragma HLS resource variable=deta2 latency=3
+    #pragma HLS resource variable=dphi2 latency=3
+    int dr2 = deta2 + dphi2;
+#else
     int dr2 = deta*deta + dphi*dphi;
+#endif
     pt_t dpt = pt1 - pt2;
     if (dpt < 0) dpt = 0;
+#ifdef L1PF_DSP_LATENCY3
+    int int_dpt2 = dpt*dpt;
+    #pragma HLS resource variable=int_dpt2 latency=3
+    ap_int<26> dpt2 = (dpt > 5792) ? ap_int<26>((1<<25)-1) : ap_int<26>(int_dpt2);
+    int int_dpt2scaled = dpt2*ptscale;
+    #pragma HLS resource variable=int_dpt2scaled latency=3
+    int dq = dr2 + (int_dpt2scaled >> 8);
+#else
     ap_int<26> dpt2 = (dpt > 5792) ? ap_int<26>((1<<25)-1) : ap_int<26>(dpt*dpt);
     int dq = dr2 + (dpt2*ptscale >> 8);
+#endif
     return ((dr2 < int(dr2max)) && (dq < int(max))) ? ap_uint<NB>(dq) : max;
 }
 
@@ -286,7 +312,13 @@ void tk2calo_link_drdpt(const HadCaloObj calo[NCALO], const TkObj track[NTRACK],
 
 void tk2calo_tkerr2(const TkObj track[NTRACK], int tkerr2[NTRACK]) {
     for (int it = 0; it < NTRACK; ++it) {
+#ifdef L1PF_DSP_LATENCY3
+        int prod = (track[it].hwPtErr * track[it].hwPtErr);
+        #pragma HLS resource variable=prod latency=3
+        tkerr2[it] = prod;
+#else
         tkerr2[it] = (track[it].hwPtErr * track[it].hwPtErr);
+#endif
     }
 }
 

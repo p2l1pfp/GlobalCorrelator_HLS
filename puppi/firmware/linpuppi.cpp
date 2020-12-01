@@ -19,11 +19,11 @@ inline int dr2_int(eta_t eta1, phi_t phi1, eta_t eta2, phi_t phi2) {
     ap_int<eta_t::width+1> deta = (eta1-eta2);
     ap_int<phi_t::width+1> dphi = (phi1-phi2);
     //ap_int<phi_t::width> dphi = (phi1-phi2); // intentional wrap-around
-#ifdef LINPUPPI_DR2_LATENCY4
+#ifdef LINPUPPI_DR2_LATENCY3
     int deta2 = deta*deta;
     int dphi2 = dphi*dphi;
-    #pragma HLS resource variable=deta2 latency=4
-    #pragma HLS resource variable=dphi2 latency=4
+    #pragma HLS resource variable=deta2 latency=3
+    #pragma HLS resource variable=dphi2 latency=3
     int ret = deta2 + dphi2;
     return ret;
 #else

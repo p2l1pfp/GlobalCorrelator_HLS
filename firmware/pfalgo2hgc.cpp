@@ -56,7 +56,11 @@ void tk2calo_caloalgo_hgc(const HadCaloObj calo[NCALO], const pt_t sumtk[NCALO],
             calopt = calo[icalo].hwPt;
         } else {
             pt_t ptdiff = calo[icalo].hwPt - sumtk[icalo];
-            if (ptdiff > 0 && (ptdiff*ptdiff > sumtkerr2[icalo])) {
+            int ptdiff2 = ptdiff*ptdiff;
+#ifdef L1PF_DSP_LATENCY3
+            #pragma HLS resource variable=ptdiff2 latency=3
+#endif
+            if (ptdiff > 0 && (ptdiff2 > sumtkerr2[icalo])) {
                 calopt = ptdiff;
             } else {
                 calopt = 0;
