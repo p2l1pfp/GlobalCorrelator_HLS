@@ -4,6 +4,8 @@ src fifo_merge2.vhd
 src fifo_merge2_full.vhd
 src fifo_merge3.vhd
 src stream_sort.vhd
+src cascade_stream_sort_elem.vhd
+src cascade_stream_sort.vhd
 src region_mux.vhd
 src tk_router_element.vhd
 src tk_router.vhd

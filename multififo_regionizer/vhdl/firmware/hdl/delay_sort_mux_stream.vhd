@@ -9,7 +9,8 @@ entity delay_sort_mux_stream is
         DELAY  : natural;
         NREGIONS : natural := NPFREGIONS;
         NSTREAM : natural;
-        OUTII : natural := PFII240
+        OUTII : natural := PFII240;
+        SORT_NSTAGES : natural := 1
     );
     port(
         ap_clk : IN STD_LOGIC;
@@ -22,10 +23,11 @@ entity delay_sort_mux_stream is
 end delay_sort_mux_stream;
 
 architecture Behavioral of delay_sort_mux_stream is
+    constant EFFDELAY : natural := DELAY-(SORT_NSTAGES-1);
 
-    signal delayed:        w64s(DELAY*NREGIONS-1 downto 0);
-    signal delayed_valid:  std_logic_vector(DELAY*NREGIONS-1 downto 0) := (others => '0');
-    signal delayed_roll:   std_logic_vector(DELAY-1 downto 0);
+    signal delayed:        w64s(EFFDELAY*NREGIONS-1 downto 0);
+    signal delayed_valid:  std_logic_vector(EFFDELAY*NREGIONS-1 downto 0) := (others => '0');
+    signal delayed_roll:   std_logic_vector(EFFDELAY-1 downto 0);
 
     signal sorted:        particles(NSORTED*NREGIONS-1 downto 0);
     signal sorted_valid:  std_logic_vector(NSORTED*NREGIONS-1 downto 0) := (others => '0');
@@ -41,29 +43,43 @@ begin
         variable istart, iend: natural;
     begin
         if rising_edge(ap_clk) then
-            istart := (DELAY-1)*NREGIONS; iend := DELAY*NREGIONS;
+            istart := (EFFDELAY-1)*NREGIONS; iend := EFFDELAY*NREGIONS;
             delayed(      iend-1 downto istart) <= d_in(      NREGIONS-1 downto 0);
             delayed_valid(iend-1 downto istart) <= valid_in(NREGIONS-1 downto 0);
-            delayed_roll(DELAY-1)               <= roll;
-            if DELAY > 1 then
+            delayed_roll(EFFDELAY-1)               <= roll;
+            if EFFDELAY > 1 then
                 delayed(      istart-1 downto 0) <= delayed(      iend-1 downto NREGIONS);
                 delayed_valid(istart-1 downto 0) <= delayed_valid(iend-1 downto NREGIONS);
-                delayed_roll(DELAY-2 downto 0) <= delayed_roll(DELAY-1 downto 1);
+                delayed_roll(EFFDELAY-2 downto 0) <= delayed_roll(EFFDELAY-1 downto 1);
             end if;
         end if;
     end process delayer;
 
     gen_sorters: for isort in NREGIONS-1 downto 0 generate
-        sorter : entity work.stream_sort
-                    generic map(NITEMS => NSORTED)
-                    port map(ap_clk => ap_clk,
-                        d_in => w64_to_particle(delayed(isort)),
-                        valid_in => delayed_valid(isort),
-                        roll => delayed_roll(0),
-                        d_out => sorted((isort+1)*NSORTED-1 downto isort*NSORTED),
-                        valid_out => sorted_valid((isort+1)*NSORTED-1 downto isort*NSORTED),
-                        roll_out => sorted_roll(isort)
-                    );
+        gen_sort_simple: if SORT_NSTAGES = 1 generate
+            sorter : entity work.stream_sort
+                        generic map(NITEMS => NSORTED)
+                        port map(ap_clk => ap_clk,
+                            d_in => w64_to_particle(delayed(isort)),
+                            valid_in => delayed_valid(isort),
+                            roll => delayed_roll(0),
+                            d_out => sorted((isort+1)*NSORTED-1 downto isort*NSORTED),
+                            valid_out => sorted_valid((isort+1)*NSORTED-1 downto isort*NSORTED),
+                            roll_out => sorted_roll(isort)
+                        );
+            end generate gen_sort_simple;
+        gen_sort_cascade: if SORT_NSTAGES > 1 generate
+            sorter : entity work.cascade_stream_sort
+                        generic map(NITEMS => NSORTED, NSTAGES => SORT_NSTAGES)
+                        port map(ap_clk => ap_clk,
+                            d_in => w64_to_particle(delayed(isort)),
+                            valid_in => delayed_valid(isort),
+                            roll => delayed_roll(0),
+                            d_out => sorted((isort+1)*NSORTED-1 downto isort*NSORTED),
+                            valid_out => sorted_valid((isort+1)*NSORTED-1 downto isort*NSORTED),
+                            roll_out => sorted_roll(isort)
+                        );
+            end generate gen_sort_cascade;
         end generate gen_sorters;
 
     muxer: entity work.region_mux_stream
