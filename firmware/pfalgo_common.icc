@@ -171,23 +171,6 @@ void tk2calo_drdptvals(const HadCaloObj calo[NCALO], const TkObj track, tk2calo_
     }
 }
 
-#if 0 // version from Dylan
-template<int DR2MAX, int NCA, typename DR_T>
-void pick_closest(const DR_T calo_track_drval[NCA], ap_uint<NCA> &  calo_track_link_bit) {
-    const DR_T eDR2MAX = DR2MAX;
-    DR_T mydr = calo_track_drval[0];
-    int index = 0;
-    for (int icalo = 1; icalo < NCA; ++icalo) {
-        if (mydr > calo_track_drval[icalo]) {
-            mydr = calo_track_drval[icalo];
-            index = icalo;
-        }
-    }
-    calo_track_link_bit = 0;
-    calo_track_link_bit[index] = (mydr >= eDR2MAX) ? 0 : 1;
-}
-#else // tree-reduce version
-
 template<typename DR_T, typename INDEX_T> struct match { 
     DR_T val; INDEX_T idx; 
     match(DR_T dr, int i) : val(dr), idx(i) {}
@@ -253,28 +236,6 @@ template<int DR2MAX, int NTK, int NCA, typename DR_T>
 void pick_closest(const DR_T calo_track_drval[NTK][NCA], ap_uint<NCA> calo_track_link_bit[NTK]) {
     const DR_T eDR2MAX = DR2MAX;
     for (int it = 0; it < NTK; ++it) {
-#if 0 // original version
-        for (int icalo = 0; icalo < NCA; ++icalo) {
-            DR_T mydr = calo_track_drval[it][icalo];
-            bool link = (mydr != eDR2MAX);
-            for (int j = 0; j < NCA; ++j) {
-                if (icalo <= j) link = link && (calo_track_drval[it][j] >= mydr);
-                else            link = link && (calo_track_drval[it][j] >  mydr);
-            }
-            calo_track_link_bit[it][icalo] = link;
-        }
-#elif 0  // fix from Dylan (the nested loop above explodes for large numbers in some Vivado versions) 
-        DR_T mydr = calo_track_drval[it][0];
-        int index = 0;
-        for (int icalo = 1; icalo < NCA; ++icalo) {
-            if (mydr > calo_track_drval[it][icalo]) {
-                mydr = calo_track_drval[it][icalo];
-                index = icalo;
-            }
-        }
-        calo_track_link_bit[it] = 0;
-        calo_track_link_bit[it][index] = (mydr >= eDR2MAX) ? 0 : 1;
-#else // tree-reduce version
         typedef match<DR_T,ap_uint<ct_log2_ceil<NCA>::value>> match_t;
         match_t candidates[NCA];
         #pragma HLS ARRAY_PARTITION variable=candidates complete
@@ -284,11 +245,8 @@ void pick_closest(const DR_T calo_track_drval[NTK][NCA], ap_uint<NCA> calo_track
         match_t best = picker_of_closest<match_t, NCA>::pick(candidates);
         calo_track_link_bit[it] = 0;
         calo_track_link_bit[it][best.idx] = (best.val >= eDR2MAX) ? 0 : 1;
-#endif
     }
 }
-
-#endif
 
 
 void tk2calo_link_dronly(const HadCaloObj calo[NCALO], const TkObj track[NTRACK], ap_uint<NCALO> calo_track_link_bit[NTRACK]) {
@@ -303,11 +261,14 @@ void tk2calo_link_dronly(const HadCaloObj calo[NCALO], const TkObj track[NTRACK]
 void tk2calo_link_drdpt(const HadCaloObj calo[NCALO], const TkObj track[NTRACK], ap_uint<NCALO> calo_track_link_bit[NTRACK]) {
     const int DR2MAX = PFALGO_DR2MAX_TK_CALO;
     const int DQMAX = 5*DR2MAX;
-    tk2calo_dq_t drvals[NTRACK][NCALO];
-    #pragma HLS ARRAY_PARTITION variable=drvals complete dim=0
+    for (int i = 0; i < NTRACK; ++i) {
+        #pragma HLS unroll
+        tk2calo_dq_t drvals[NCALO];
+        #pragma HLS ARRAY_PARTITION variable=drvals complete dim=0
 
-    tk2calo_drdptvals<DR2MAX>(calo, track, drvals);
-    pick_closest<DQMAX,NTRACK,NCALO,tk2calo_dq_t>(drvals, calo_track_link_bit);
+        tk2calo_drdptvals<DR2MAX>(calo, track[i], drvals);
+        calo_track_link_bit[i] = pick_closest<DQMAX,NCALO,tk2calo_dq_t>(drvals);
+    }
 }
 
 void tk2calo_tkerr2(const TkObj track[NTRACK], int tkerr2[NTRACK]) {
@@ -341,16 +302,19 @@ void mu2trk_dptvals(const MuObj mu[NMU], const TkObj track[NTRACK], pt_t mu_trac
 }
 
 void mu2trk_linkstep(const MuObj mu[NMU], const pt_t mu_track_dptval[NMU][NTRACK], ap_uint<NMU> mu_track_link_bit[NTRACK]) {
+    for (int it = 0; it < NTRACK; ++it) {
+        mu_track_link_bit[it] = 0;
+    }
     for (int im = 0; im < NMU; ++im) {
-        for (int it = 0; it < NTRACK; ++it) {
-            pt_t mydpt = mu_track_dptval[im][it];
-            bool link = (mydpt < (mu[im].hwPt >> 1));
-            for (int j = 0; j < NTRACK; ++j) {
-                if (it <= j) link = link && (mu_track_dptval[im][j] >= mydpt);
-                else         link = link && (mu_track_dptval[im][j] >  mydpt);
-            }   
-            mu_track_link_bit[it][im] = link;
+        typedef match<pt_t,ap_uint<ct_log2_ceil<NTRACK>::value>> match_t;
+        match_t candidates[NTRACK];
+        #pragma HLS ARRAY_PARTITION variable=candidates complete
+        for (int i = 0; i < NTRACK; ++i) {
+            candidates[i] = match_t(mu_track_dptval[im][i], i);
         }
+        match_t best = picker_of_closest<match_t, NTRACK>::pick(candidates);
+        bool link = best.val < (mu[im].hwPt >> 1);
+        mu_track_link_bit[best.idx][im] = link ? 1 : 0;
     }
 }
 
