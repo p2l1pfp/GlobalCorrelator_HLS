@@ -9,9 +9,9 @@ if { $pfBoard == "none" } {
 
 set hlsIPVersion 22.6
 
-set hlsProjName "proj_pf${pfReg}_${pfBoard}_2p2ns_II6"
+set hlsProjName "proj_pf${pfReg}_${pfBoard}_360MHz_II6"
 
-set cflags "-std=c++0x -DREG_${pfReg} -DBOARD_${pfBoard} -DHLS_pipeline_II=6"
+set cflags "-std=c++0x -DREG_${pfReg} -DBOARD_${pfBoard} -DHLS_pipeline_II=6 -DL1PF_DSP_LATENCY3"
 
 # open the project, don't forget to reset
 open_project -reset ${hlsProjName}
