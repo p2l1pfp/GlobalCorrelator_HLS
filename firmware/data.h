@@ -20,10 +20,10 @@ enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=
 
 // DEFINE MULTIPLICITIES
 #if defined(REG_HGCal)
-    #define NTRACK 20
-    #define NCALO 12
+    #define NTRACK 30
+    #define NCALO 20
     #define NMU 4
-    #define NSELCALO 12
+    #define NSELCALO 20
     #define NALLNEUTRALS NSELCALO
     // dummy
     #define NEMCALO 1

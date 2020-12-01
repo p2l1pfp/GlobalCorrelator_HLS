@@ -58,7 +58,7 @@ package regionizer_data is
     constant NTKSECTORS : natural := 9;
     constant NTKFIBERS : natural := 2;
     constant NTKFIFOS : natural := NTKFIBERS*3;
-    constant NTKSORTED : natural := 20;
+    constant NTKSORTED : natural := 30;
     constant NTKSTREAM : natural := (NTKSORTED+PFII240-1)/PFII240;
 
     constant NCALOSECTORS : natural := 3;
@@ -66,7 +66,7 @@ package regionizer_data is
     constant NCALOFIFO0 : natural := NCALOFIBERS;
     constant NCALOFIFO12 : natural := 2*NCALOFIBERS;
     constant NCALOFIFOS : natural := NCALOFIFO0+2*NCALOFIFO12;
-    constant NCALOSORTED : natural := 12;
+    constant NCALOSORTED : natural := 20;
     constant NCALOSTREAM : natural := (NCALOSORTED+PFII240-1)/PFII240;
 
     constant NMUFIBERS : natural := 2;
