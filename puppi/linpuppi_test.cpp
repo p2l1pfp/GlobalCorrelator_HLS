@@ -52,9 +52,9 @@ int main() {
     PFNeutralObj pfpho[NPHOTON], pfne[NSELCALO], pfallne[NALLNEUTRALS];
 
     // Puppi objects
-    PFChargedObj outallch[NTRACK], outallch_ref[NTRACK];
-    PFNeutralObj outallne[NALLNEUTRALS], outallne_ref_nocut[NALLNEUTRALS], outallne_ref[NALLNEUTRALS], outallne_flt_nocut[NALLNEUTRALS], outallne_flt[NALLNEUTRALS];
-    PFNeutralObj outselne[NNEUTRALS], outselne_ref[NNEUTRALS], outselne_flt[NNEUTRALS];
+    PuppiObj outallch[NTRACK], outallch_ref[NTRACK];
+    PuppiObj outallne[NALLNEUTRALS], outallne_ref_nocut[NALLNEUTRALS], outallne_ref[NALLNEUTRALS], outallne_flt_nocut[NALLNEUTRALS], outallne_flt[NALLNEUTRALS];
+    PuppiObj outselne[NNEUTRALS], outselne_ref[NNEUTRALS], outselne_flt[NNEUTRALS];
 
 #if defined(PACKING_DATA_SIZE) && defined(PACKING_NCHANN)
     PatternSerializer serPatternsIn("linpuppi_input_patterns.txt"), serPatternsOut("linpuppi_output_patterns.txt");

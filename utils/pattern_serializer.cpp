@@ -130,6 +130,7 @@ HumanReadablePatternSerializer::~HumanReadablePatternSerializer()
 bool HumanReadablePatternSerializer::startframe() {
     if (!file_) return false;
     fprintf(file_, "Frame %04u:\n", ipattern_);
+    return true;
 }
 void HumanReadablePatternSerializer::endframe() {
     fprintf(file_, "\n");
@@ -156,11 +157,11 @@ void HumanReadablePatternSerializer::operator()(const PFChargedObj inch[NTRACK],
 {
     if (!startframe()) return;
     fprintf(file_, "Frame %04u:\n", ipattern_);
-    dump_puppi(NTRACK,    "in ch", inch); // FIXME: do we want to dump PF or Puppi here?
-    dump_puppi(NPHOTON,   "in em", inem); 
-    dump_puppi(NSELCALO,  "in ne", inne);
-    dump_puppi(NMU,       "in mu", inmu);
-    dump_puppi(DATA_SIZE, "out  ", outpart); // FIXME: do we want to dump PF or Puppi here?
+    dump_pf(NTRACK,    "in ch", inch); // FIXME: do we want to dump PF or Puppi here?
+    dump_pf(NPHOTON,   "in em", inem); 
+    dump_pf(NSELCALO,  "in ne", inne);
+    dump_pf(NMU,       "in mu", inmu);
+    dump_pf(DATA_SIZE, "out  ", outpart); // FIXME: do we want to dump PF or Puppi here?
     endframe();
 }
 
@@ -169,8 +170,8 @@ void HumanReadablePatternSerializer::operator()(unsigned int DATA_SIZE, const PF
 {
     if (!startframe()) return;
     fprintf(file_, "Frame %04u:\n", ipattern_);
-    dump_puppi(DATA_SIZE, "input puppi", outpart);
-    dump_puppi(NTAU,      "output taus", outtau); // FIXME: do we want to dump PF or Puppi here?
+    dump_pf(DATA_SIZE, "input puppi", outpart);
+    dump_pf(NTAU,      "output taus", outtau); // FIXME: do we want to dump PF or Puppi here?
     endframe();
 }
 
@@ -248,23 +249,16 @@ void HumanReadablePatternSerializer::dump_pf(unsigned int N, const char *label, 
     }
     if (file_ == stdout) fflush(file_);
 }
-void HumanReadablePatternSerializer::dump_puppi(unsigned int N, const char *label, const PFChargedObj outpuppi[/*N*/]) 
+void HumanReadablePatternSerializer::dump_puppi(unsigned int N, const char *label, const PuppiObj outpuppi[/*N*/]) 
 {
-    //FIXME: PFCharged doesn't have a Puppi PT
     for (int i = 0; i < N; ++i) {
         if (zerosuppress_ && !outpuppi[i].hwPt) continue; 
-        fprintf(file_, "   %s %3d, hwPtPuppi % 7d   hwPt % 7d   hwEta %+7d   hwPhi %+7d   hwId %1d      hwZ0 %+7d\n", label, i, 
-                int(outpuppi[i].hwPt), int(outpuppi[i].hwPt), int(outpuppi[i].hwEta), int(outpuppi[i].hwPhi), int(outpuppi[i].hwId), int(outpuppi[i].hwZ0));
+        if (outpuppi[i].hwId == 0 || outpuppi[i].hwId == 3 || outpuppi[i].hwId == 4) {
+            fprintf(file_, "   %s %3d, hwPt % 7d   hwEta %+7d   hwPhi %+7d   hwId %1d      hwZ0     %+7d\n", label, i, 
+                    int(outpuppi[i].hwPt), int(outpuppi[i].hwEta), int(outpuppi[i].hwPhi), int(outpuppi[i].hwId), int(outpuppi[i].hwZ0()));
+        } else {
+            fprintf(file_, "   %s %3d, hwPt % 7d   hwEta %+7d   hwPhi %+7d   hwId %1d      hwPuppiW % 7d\n", label, i, 
+                    int(outpuppi[i].hwPt), int(outpuppi[i].hwEta), int(outpuppi[i].hwPhi), int(outpuppi[i].hwId), int(outpuppi[i].hwPuppiW()));
+        }
     }
 }
-void HumanReadablePatternSerializer::dump_puppi(unsigned int N, const char *label, const PFNeutralObj outpuppi[/*N*/]) 
-{
-    for (int i = 0; i < N; ++i) {
-        if (zerosuppress_ && !outpuppi[i].hwPtPuppi) continue;
-        fprintf(file_, "   %s %3d, hwPtPuppi % 7d   hwPt % 7d   hwEta %+7d   hwPhi %+7d   hwId %1d\n", label, i,
-                int(outpuppi[i].hwPtPuppi), int(outpuppi[i].hwPt), int(outpuppi[i].hwEta), int(outpuppi[i].hwPhi), int(outpuppi[i].hwId));
-    }
-    if (file_ == stdout) fflush(file_);
-}
-
-

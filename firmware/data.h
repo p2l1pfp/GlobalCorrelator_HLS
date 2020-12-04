@@ -2,6 +2,7 @@
 #define FIRMWARE_DATA_H
 
 #include <ap_int.h>
+#include <cassert>
 
 typedef ap_int<16> pt_t;
 typedef ap_int<10>  eta_t;
@@ -11,6 +12,7 @@ typedef ap_int<11>  glbphi_t;
 typedef ap_int<5>  vtx_t;
 typedef ap_uint<3>  particleid_t;
 typedef ap_int<10> z0_t;  // 40cm / 0.1
+typedef ap_uint<9> puppiWgt_t; // 256 = 1.0 
 typedef ap_uint<14> tk2em_dr_t;
 typedef ap_uint<14> tk2calo_dr_t;
 typedef ap_uint<10> em2calo_dr_t;
@@ -184,11 +186,75 @@ struct PFNeutralObj {
 	eta_t hwEta; // relative to the region center, at calo
 	phi_t hwPhi; // relative to the region center, at calo
 	particleid_t hwId;
-	pt_t hwPtPuppi;
 };
+
 inline void clear(PFNeutralObj & c) {
-    c.hwPt = 0; c.hwEta = 0; c.hwPhi = 0; c.hwId = 0; c.hwPtPuppi = 0;
+    c.hwPt = 0; c.hwEta = 0; c.hwPhi = 0; c.hwId = 0; 
 }
+
+struct PuppiObj {
+	pt_t hwPt;
+	eta_t hwEta; // relative to the region center, at calo
+	phi_t hwPhi; // relative to the region center, at calo
+	particleid_t hwId;
+	ap_uint<12> hwData;
+
+        inline z0_t hwZ0() const { 
+            #ifndef __SYNTHESIS__
+            assert(hwId == PID_Charged || hwId == PID_Electron || hwId == PID_Muon);
+            #endif
+            return z0_t(hwData(9,0)); 
+        }
+        inline void setHwZ0(z0_t z0) { 
+            #ifndef __SYNTHESIS__
+            assert(hwId == PID_Charged || hwId == PID_Electron || hwId == PID_Muon);
+            #endif
+            hwData(9,0) = z0(9,0); 
+        }
+        inline puppiWgt_t hwPuppiW() const { 
+            #ifndef __SYNTHESIS__
+            assert(hwId == PID_Neutral || hwId == PID_Photon);
+            #endif
+            return puppiWgt_t(hwData(8,0)); 
+        }
+        inline void setHwPuppiW(puppiWgt_t w) { 
+            #ifndef __SYNTHESIS__
+            assert(hwId == PID_Neutral || hwId == PID_Photon);
+            #endif
+            hwData(8,0) = w(8,0); 
+        }
+};
+inline void clear(PuppiObj & c) {
+    c.hwPt = 0; c.hwEta = 0; c.hwPhi = 0; c.hwId = 0; c.hwData = 0;
+}
+inline void fill(PuppiObj &out, const PFChargedObj &src) {
+    out.hwEta = src.hwEta;
+    out.hwPhi = src.hwPhi;
+    out.hwId  = src.hwId;
+    out.hwPt  = src.hwPt;
+    out.hwData = 0;
+    out.setHwZ0(src.hwZ0);
+}
+inline void fill(PuppiObj &out, const PFNeutralObj &src, pt_t puppiPt, puppiWgt_t puppiWgt) {
+    out.hwEta = src.hwEta;
+    out.hwPhi = src.hwPhi;
+    out.hwId  = src.hwId;
+    out.hwPt  = puppiPt;
+    out.hwData = 0;
+    out.setHwPuppiW(puppiWgt);
+}
+inline void fill(PuppiObj &out, const HadCaloObj &src, pt_t puppiPt, puppiWgt_t puppiWgt) {
+    out.hwEta = src.hwEta;
+    out.hwPhi = src.hwPhi;
+    out.hwId  = src.hwIsEM ? PID_Photon : PID_Neutral;
+    out.hwPt  = puppiPt;
+    out.hwData = 0;
+    out.setHwPuppiW(puppiWgt);
+}
+
+
+
+
 
 //TMUX
 #define NETA_TMUX 2

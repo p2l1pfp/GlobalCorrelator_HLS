@@ -59,15 +59,15 @@ bool pf_equals(const PFNeutralObj &out_ref, const PFNeutralObj &out, const char 
     }
     return ret;
 }
-bool puppi_equals(const PFNeutralObj &out_ref, const PFNeutralObj &out, const char *what, int idx) {
-    bool ret = (out_ref.hwPtPuppi == out.hwPtPuppi && out_ref.hwPt == out.hwPt && out_ref.hwEta == out.hwEta && out_ref.hwPhi == out.hwPhi && out_ref.hwId  == out.hwId);
+bool puppi_equals(const PuppiObj &out_ref, const PuppiObj &out, const char *what, int idx) {
+    bool ret = (out_ref.hwData == out.hwData && out_ref.hwPt == out.hwPt && out_ref.hwEta == out.hwEta && out_ref.hwPhi == out.hwPhi && out_ref.hwId  == out.hwId);
     if  (!ret) {
-        printf("Mismatch at %s[%d] ref vs test, hwPt % 7d % 7d   hwEta %+7d %+7d   hwPhi %+7d %+7d   hwId %1d %1d      hwPtPuppi % 7d % 7d   \n", what, idx,
+        printf("Mismatch at %s[%d] ref vs test, hwPt % 7d % 7d   hwEta %+7d %+7d   hwPhi %+7d %+7d   hwId %1d %1d      hwData % 7d % 7d   \n", what, idx,
                 int(out_ref.hwPt), int(out.hwPt),
                 int(out_ref.hwEta), int(out.hwEta),
                 int(out_ref.hwPhi), int(out.hwPhi),
                 int(out_ref.hwId), int(out.hwId),
-                int(out_ref.hwPtPuppi), int(out.hwPtPuppi));
+                int(out_ref.hwData), int(out.hwData));
     }
     return ret;
 }

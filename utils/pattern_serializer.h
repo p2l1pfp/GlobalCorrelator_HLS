@@ -103,8 +103,7 @@ class HumanReadablePatternSerializer {
         void dump_mu(const MuObj mu[NMU], unsigned int N = NMU) ;
         void dump_pf(unsigned int N, const char *label, const PFChargedObj outch[/*N*/]) ;
         void dump_pf(unsigned int N, const char *label, const PFNeutralObj outch[/*N*/]) ;
-        void dump_puppi(unsigned int N, const char *label, const PFChargedObj outpuppi[/*N*/]) ;
-        void dump_puppi(unsigned int N, const char *label, const PFNeutralObj outpuppi[/*N*/]) ;
+        void dump_puppi(unsigned int N, const char *label, const PuppiObj outpuppi[/*N*/]) ;
         bool startframe();
         void endframe();
     protected:

@@ -69,12 +69,41 @@ namespace fw2dpf {
         pf.hwStatus = 0;
         out.push_back(pf);
     }
-    inline void convert_puppi(const PFNeutralObj & src, std::vector<l1tpf_impl::PFParticle> &out) {
-        convert(src, out);
-        out.back().hwPt = src.hwPtPuppi;
-        out.back().setPuppiW(out.back().hwPt/float(src.hwPt));
+    inline void convert_puppi(const PuppiObj & src, const l1tpf_impl::PropagatedTrack * track, std::vector<l1tpf_impl::PFParticle> &out) {
+        l1tpf_impl::PFParticle pf;
+        pf.hwPt = src.hwPt;
+        pf.hwEta = src.hwEta;
+        pf.hwPhi = src.hwPhi;
+        pf.hwVtxEta = src.hwEta;
+        pf.hwVtxPhi = src.hwPhi;
+        switch(src.hwId) {
+            case PID_Photon: pf.hwId = 3; break;
+            case PID_Neutral: pf.hwId = 2; break;
+            case PID_Electron: pf.hwId =  1; break;
+            case PID_Muon: pf.hwId =  4; break;
+            case PID_Charged: pf.hwId = 0; break;
+        }
+        if (src.hwId == PID_Charged || src.hwId == PID_Electron || src.hwId == PID_Muon) {
+            if (track != nullptr) {
+                pf.track = *track; // FIXME: ok only as long as there is a 1-1 mapping
+            } else {
+                pf.track.hwPt = src.hwPt;
+                pf.track.src = nullptr;
+            }
+            pf.cluster.hwPt = 0;
+            pf.cluster.src = nullptr;
+            pf.setPuppiW(1.0);
+        } else {
+            pf.track.hwPt = 0;
+            pf.track.src = nullptr;
+            pf.cluster.hwPt = src.hwPt;
+            pf.cluster.src = nullptr;
+            pf.hwPuppiWeight = src.hwPuppiW();
+        }
+        pf.muonsrc = nullptr;
+        pf.hwStatus = 0;
+        out.push_back(pf);
     }
-
 
 
     // convert inputs from discrete to firmware
@@ -121,14 +150,21 @@ namespace fw2dpf {
             if (in[i].hwPt > 0) convert(in[i], out);
         }
     } 
-    inline void convert_puppi(unsigned int NMAX, const PFNeutralObj in[], std::vector<l1tpf_impl::PFParticle> &out) {
+    inline void convert_puppi(unsigned int NMAX, const PuppiObj in[], std::vector<l1tpf_impl::PFParticle> &out) {
         for (unsigned int i = 0; i < NMAX; ++i) {
-            if (in[i].hwPtPuppi > 0) convert_puppi(in[i], out);
+            if (in[i].hwPt > 0) convert_puppi(in[i], nullptr, out);
+        }
+    } 
+    inline void convert_puppi(unsigned int NMAX, const PuppiObj in[], const std::vector<l1tpf_impl::PropagatedTrack> & srctracks, std::vector<l1tpf_impl::PFParticle> &out) {
+        for (unsigned int i = 0; i < NMAX; ++i) {
+            if (in[i].hwPt > 0) convert_puppi(in[i], &srctracks[i], out);
         }
     } 
 
+
+
     template<unsigned int NMAX>
-    void convert(const PFChargedObj in[NMAX], std::vector<l1tpf_impl::PropagatedTrack> srctracks, std::vector<l1tpf_impl::PFParticle> &out) {
+    void convert(const PFChargedObj in[NMAX], const std::vector<l1tpf_impl::PropagatedTrack> & srctracks, std::vector<l1tpf_impl::PFParticle> &out) {
         for (unsigned int i = 0; i < NMAX; ++i) {
             if (in[i].hwPt > 0) {
                 assert(i < srctracks.size());
@@ -136,7 +172,7 @@ namespace fw2dpf {
             }
         }
     }
-    inline void convert(unsigned int NMAX, const PFChargedObj in[], std::vector<l1tpf_impl::PropagatedTrack> srctracks, std::vector<l1tpf_impl::PFParticle> &out) {
+    inline void convert(unsigned int NMAX, const PFChargedObj in[], const std::vector<l1tpf_impl::PropagatedTrack> &srctracks, std::vector<l1tpf_impl::PFParticle> &out) {
         for (unsigned int i = 0; i < NMAX; ++i) {
             if (in[i].hwPt > 0) {
                 assert(i < srctracks.size());

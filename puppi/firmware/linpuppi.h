@@ -15,24 +15,24 @@
 int dr2_int(eta_t eta1, phi_t phi1, eta_t eta2, eta_t phi2);
 
 // charged
-void linpuppi_chs(z0_t pvZ0, const PFChargedObj pfch[NTRACK], PFChargedObj outallch[NTRACK]) ;
+void linpuppi_chs(z0_t pvZ0, const PFChargedObj pfch[NTRACK], PuppiObj outallch[NTRACK]) ;
 
 // neutrals, in the tracker
-void linpuppiNoCrop(const TkObj track[NTRACK], z0_t pvZ0, const PFNeutralObj pfallne[NALLNEUTRALS], PFNeutralObj outallne[NALLNEUTRALS]) ;
-void linpuppi(const TkObj track[NTRACK], z0_t pvZ0, const PFNeutralObj pfallne[NALLNEUTRALS], PFNeutralObj outselne[NNEUTRALS]) ;
+void linpuppiNoCrop(const TkObj track[NTRACK], z0_t pvZ0, const PFNeutralObj pfallne[NALLNEUTRALS], PuppiObj outallne[NALLNEUTRALS]) ;
+void linpuppi(const TkObj track[NTRACK], z0_t pvZ0, const PFNeutralObj pfallne[NALLNEUTRALS], PuppiObj outselne[NNEUTRALS]) ;
 
 // streaming versions, taking one object at a time 
 struct linpuppi_refobj { ap_uint<17> pt2_shift; eta_t hwEta; phi_t hwPhi; };
 linpuppi_refobj linpuppi_prepare_track(const TkObj & track, z0_t pvZ0);
-PFNeutralObj linpuppi_one(const PFNeutralObj & in, const linpuppi_refobj sel_track[NTRACK]);
-PFChargedObj linpuppi_chs_one(const PFChargedObj pfch, z0_t pvZ0) ;
-void linpuppiNoCrop_streamed(const TkObj track[NTRACK], z0_t pvZ0, const PFNeutralObj pfallne[NALLNEUTRALS], PFNeutralObj outallne[NALLNEUTRALS]) ;
-void linpuppi_chs_streamed(z0_t pvZ0, const PFChargedObj pfch[NTRACK], PFChargedObj outallch[NTRACK]) ;
+PuppiObj linpuppi_one(const PFNeutralObj & in, const linpuppi_refobj sel_track[NTRACK]);
+PuppiObj linpuppi_chs_one(const PFChargedObj pfch, z0_t pvZ0) ;
+void linpuppiNoCrop_streamed(const TkObj track[NTRACK], z0_t pvZ0, const PFNeutralObj pfallne[NALLNEUTRALS], PuppiObj outallne[NALLNEUTRALS]) ;
+void linpuppi_chs_streamed(z0_t pvZ0, const PFChargedObj pfch[NTRACK], PuppiObj outallch[NTRACK]) ;
 
 
 // neutrals, forward
-void fwdlinpuppi(const HadCaloObj caloin[NCALO], PFNeutralObj pfselne[NNEUTRALS]);
-void fwdlinpuppiNoCrop(const HadCaloObj caloin[NCALO], PFNeutralObj pfallne[NCALO]);
+void fwdlinpuppi(const HadCaloObj caloin[NCALO], PuppiObj pfselne[NNEUTRALS]);
+void fwdlinpuppiNoCrop(const HadCaloObj caloin[NCALO], PuppiObj pfallne[NCALO]);
 
 #if defined(PACKING_DATA_SIZE) && defined(PACKING_NCHANN)
 void packed_fwdlinpuppi(const ap_uint<PACKING_DATA_SIZE> input[PACKING_NCHANN], ap_uint<PACKING_DATA_SIZE> output[PACKING_NCHANN]) ;
@@ -71,8 +71,8 @@ ap_uint<64> packed_linpuppi_one(const ap_uint<64> & in, const packed_linpuppi_re
 ap_uint<64> packed_linpuppi_chs_one(const ap_uint<64> & pfch, const ap_uint<64> & pvZ0) ;
 
 // these two call the packed versions internally, and are used for valiation (they are not synthethized directly)
-void packed_linpuppiNoCrop_streamed(const TkObj track[NTRACK], z0_t pvZ0, const PFNeutralObj pfallne[NALLNEUTRALS], PFNeutralObj outallne[NALLNEUTRALS]) ;
-void packed_linpuppi_chs_streamed(z0_t pvZ0, const PFChargedObj pfch[NTRACK], PFChargedObj outallch[NTRACK]) ;
+void packed_linpuppiNoCrop_streamed(const TkObj track[NTRACK], z0_t pvZ0, const PFNeutralObj pfallne[NALLNEUTRALS], PuppiObj outallne[NALLNEUTRALS]) ;
+void packed_linpuppi_chs_streamed(z0_t pvZ0, const PFChargedObj pfch[NTRACK], PuppiObj outallch[NTRACK]) ;
 
 #endif //packing = 64
 

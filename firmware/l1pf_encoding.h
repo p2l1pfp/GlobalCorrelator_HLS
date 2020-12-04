@@ -226,7 +226,6 @@ inline void l1pf_pattern_pack(const PFChargedObj pfch[N], ap_uint<64> data[]){
 inline ap_uint<64> l1pf_pattern_pack_one(const PFNeutralObj pfne) {
     #pragma HLS inline
     ap_uint<64> data = 0;
-    data(31+32, 16+32) = pfne.hwPtPuppi;
     data(15+32, 0+32) = pfne.hwPt;
     data(9, 0) = pfne.hwEta;
     data(19,10) = pfne.hwPhi;
@@ -240,6 +239,25 @@ inline void l1pf_pattern_pack(const PFNeutralObj pfne[N], ap_uint<64> data[]) {
     #pragma HLS inline
     for (unsigned int i = 0; i < N; ++i) {
         data[i+OFFS] = l1pf_pattern_pack_one(pfne[i]);
+    }
+}
+
+inline ap_uint<64> l1pf_pattern_pack_one(const PuppiObj pup) {
+    #pragma HLS inline
+    ap_uint<64> data = 0;
+    data(18+32, 16+32) = pup.hwId;
+    data(15+32, 0+32) = pup.hwPt;
+    data(9, 0)  = pup.hwEta;
+    data(19,10) = pup.hwPhi;
+    data(31,20) = pup.hwData;
+    return data;
+}
+
+template<unsigned int N, unsigned int OFFS>
+inline void l1pf_pattern_pack(const PuppiObj pup[N], ap_uint<64> data[]){
+    #pragma HLS inline
+    for (unsigned int i = 0; i < N; ++i) {
+        data[i+OFFS] = l1pf_pattern_pack_one(pup[i]);
     }
 }
 
@@ -331,7 +349,6 @@ inline void l1pf_pattern_unpack(const ap_uint<64> data[], PFChargedObj pfch[N]){
 
 inline void l1pf_pattern_unpack_one(const ap_uint<64> & data, PFNeutralObj & pfne) {
     #pragma HLS inline
-    pfne.hwPtPuppi = data(31+32, 16+32);
     pfne.hwPt = data(15+32, 0+32);
     pfne.hwId = data(22, 20);
     pfne.hwEta = data(9, 0);
@@ -343,6 +360,23 @@ inline void l1pf_pattern_unpack(const ap_uint<64> data[], PFNeutralObj pfne[N]) 
     #pragma HLS inline
     for (unsigned int i = 0; i < N; ++i) {
         l1pf_pattern_unpack_one(data[i+OFFS], pfne[i]);
+    }
+}
+
+inline void l1pf_pattern_unpack_one(const ap_uint<64> & data, PuppiObj & pupp) {
+    #pragma HLS inline
+    pupp.hwId = data(18+32, 16+32);
+    pupp.hwPt = data(15+32, 0+32);
+    pupp.hwEta = data(9, 0);
+    pupp.hwPhi = data(19,10);
+    pupp.hwData = data(31, 20);
+}
+
+template<unsigned int N, unsigned int OFFS> 
+inline void l1pf_pattern_unpack(const ap_uint<64> data[], PuppiObj pupp[N]) {
+    #pragma HLS inline
+    for (unsigned int i = 0; i < N; ++i) {
+        l1pf_pattern_unpack_one(data[i+OFFS], pupp[i]);
     }
 }
 

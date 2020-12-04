@@ -188,7 +188,7 @@ namespace l1tpf_impl {
       bool operator<(const PFParticle &other) const { return hwPt > other.hwPt; }
 
 #ifdef L1Trigger_Phase2L1ParticleFlow_DiscretePFInputs_MORE
-      static constexpr float PUPPI_SCALE = 100;
+      static constexpr float PUPPI_SCALE = 256;
 
       float floatPt() const { return float(hwPt) / CaloCluster::PT_SCALE; }
       float floatEta() const { return float(hwEta) / CaloCluster::ETAPHI_SCALE; }
