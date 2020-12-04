@@ -47,15 +47,17 @@ int main(int argc, char **argv) {
 
     PatternSerializer serPatternsTM("input-emp.txt"), serPatternsIn("input-emp-tm6.txt");
     PatternSerializer serPatternsTDemux("input-emp-tdemux.txt"), serPatternsDecode("input-emp-decoded.txt");
-    PatternSerializer serPatternsReg("output-emp-regionized-ref.txt"), serPatternsPf("output-emp-pf-ref.txt"), serPatternsPuppi("output-emp-puppi-ref.txt");
+    PatternSerializer serPatternsReg("output-emp-regionized-ref.txt"), serPatternsPf("output-emp-pf-ref.txt");
+    PatternSerializer serPatternsPuppi("output-emp-puppi-ref.txt"), serPatternsPuppiSort("output-emp-puppisort-ref.txt");;
     assert(PACKING_NCHANN >= NTKSECTORS*3 + 3*NCALOSECTORS*NCALOFIBERS + 3 + 1);
     assert(PACKING_NCHANN >= NTKOUT + NCALOOUT + NMUOUT);
-    ap_uint<64> all_channels_tmux[PACKING_NCHANN], all_channels_in[PACKING_NCHANN], all_channels_regionized[PACKING_NCHANN], all_channels_pf[PACKING_NCHANN], all_channels_puppi[PACKING_NCHANN];
+    ap_uint<64> all_channels_tmux[PACKING_NCHANN], all_channels_in[PACKING_NCHANN], all_channels_regionized[PACKING_NCHANN];
+    ap_uint<64> all_channels_pf[PACKING_NCHANN], all_channels_puppi[PACKING_NCHANN], all_channels_puppisort[PACKING_NCHANN];
     ap_uint<64> all_channels_tdemux[PACKING_NCHANN], all_channels_decode[PACKING_NCHANN];
     bool all_valids_tmux[PACKING_NCHANN], all_valids_tdemux[PACKING_NCHANN], all_valids_decode[PACKING_NCHANN];
     for (unsigned int i = 0; i < PACKING_NCHANN; ++i) {
         all_channels_tmux[i] = 0; all_channels_tdemux[i] = 0;  all_channels_decode[i] = 0; 
-        all_channels_in[i] = 0; all_channels_regionized[i] = 0; all_channels_pf[i] = 0; all_channels_puppi[i] = 0;  
+        all_channels_in[i] = 0; all_channels_regionized[i] = 0; all_channels_pf[i] = 0; all_channels_puppi[i] = 0;  all_channels_puppisort[i] = 0;  
         all_valids_tmux[i] = 0;  all_valids_tdemux[i] = 0; all_valids_decode[i] = 0; 
 
     }
@@ -228,12 +230,17 @@ int main(int argc, char **argv) {
                 pfalgo2hgc_pack_out(pfch, pfallne, pfmu, all_channels_pf);
                 // Puppi objects
                 if (itest <= 5) printf("Will run Puppi with z0 = %d in event %d, region %d\n", pvZ0_prev.to_int(), itest-1, i/PFLOWII);
-                PFChargedObj outallch[NTRACK];
-                PFNeutralObj outallne_nocut[NALLNEUTRALS], outallne[NALLNEUTRALS], outselne[NNEUTRALS]; 
+                PuppiObj outallch[NTRACK];
+                PuppiObj outallne_nocut[NALLNEUTRALS], outallne[NALLNEUTRALS], outselne[NNEUTRALS]; 
+                PuppiObj outpresort[NTRACK+NALLNEUTRALS];
                 linpuppi_ref(pucfg, tk_links_ref, pvZ0_prev, pfallne, outallne_nocut, outallne, outselne, itest <= 1);
                 linpuppi_chs_ref(pucfg, pvZ0_prev, pfch, outallch, itest <= 1);
-                l1pf_pattern_pack<NTRACK,0>(outallch, all_channels_puppi);
-                l1pf_pattern_pack<NALLNEUTRALS,NTRACK>(outallne, all_channels_puppi);
+                std::copy(outallch, outallch+NTRACK, outpresort);
+                std::copy(outallne, outallne+NALLNEUTRALS, outpresort+NTRACK);
+                PuppiObj outsorted[NPUPPIFINALSORTED];
+                puppisort_and_crop_ref(NTRACK+NALLNEUTRALS, NPUPPIFINALSORTED, outpresort, outsorted);
+                l1pf_pattern_pack<NTRACK+NALLNEUTRALS,0>(outpresort, all_channels_puppi);
+                l1pf_pattern_pack<NPUPPIFINALSORTED,0>(outsorted, all_channels_puppisort);
             }
 
             serPatternsTM(all_channels_tmux, all_valids_tmux);
@@ -245,6 +252,7 @@ int main(int argc, char **argv) {
             serPatternsReg(all_channels_regionized);
             serPatternsPf(all_channels_pf);
             serPatternsPuppi(all_channels_puppi);
+            serPatternsPuppiSort(all_channels_puppisort);
 
             if (i == TLEN-1) pvZ0_prev = vtx_inputs.empty() ? z0_t(0) : vtx_inputs.front().first;
         }

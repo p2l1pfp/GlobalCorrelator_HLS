@@ -1,6 +1,5 @@
 library std;
 use std.textio.all;
-use std.env.all;
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -70,7 +69,10 @@ package body pattern_textio is
         end loop;
         --report "read line of length " & integer'image(L.all'length);
         if L.all'length = 0 or L.all(1 to 5) /= "Frame" then
-            valid := '0'; data := (others => (others => '0'));
+            valid := '0'; 
+            for i in 0 to data'length-1 loop
+                data(i) := (others => '0');
+            end loop;
         else
             read(L, id); read(L, iframe); read(L, colon);
             --report "read frame " & integer'image(ifame);
@@ -98,7 +100,10 @@ package body pattern_textio is
         end loop;
         --report "read line of length " & integer'image(L.all'length);
         if L.all'length = 0 or L.all(1 to 5) /= "Frame" then
-            valid := (others => '0'); data := (others => (others => '0'));
+            for i in 0 to data'length-1 loop
+                valid(i) := '0';
+                data(i) := (others => '0');
+            end loop;
         else
             read(L, id); read(L, iframe); read(L, colon);
             --report "read frame " & integer'image(ifame);

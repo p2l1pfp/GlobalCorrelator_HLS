@@ -52,6 +52,8 @@ inline P phiShifted(const P & t, int phi_shift) {
 #define PFREGION_ETA_BORDER 58 // size of the eta border of a PF region (0.25 rad = 58, 0.30 rad = 69)
 #define PFLOWII  6
 
+#define NPUPPIFINALSORTED 18
+
 #define NTKSECTORS 9
 #define NTKFIBERS  2
 #define NTKFIFOS   6

@@ -2,11 +2,12 @@
 #include "../utils/pattern_serializer.h"
 #include "../utils/test_utils.h"
 
+
+#include "utils/readMC.h"
+
 #include "regionizer_ref.h"
 #include "../ref/pfalgo2hgc_ref.h"
 #include "../puppi/linpuppi_ref.h"
-
-#include "utils/readMC.h"
 
 #include <cstdlib>
 #include <cstdio>
@@ -16,9 +17,6 @@
 
 #define TLEN REGIONIZERNCLOCKS 
 
-bool tk_router_ref(bool newevent, const TkObj tracks_in[NTKSECTORS][NTKFIBERS], TkObj tracks_out[NTKOUT]) ;
-bool calo_router_ref(bool newevent, const HadCaloObj calo_in[NCALOSECTORS][NCALOFIBERS], HadCaloObj calo_out[NCALOOUT]) ;
-bool mu_router_ref(bool newevent, const glbeta_t etaCenter, const GlbMuObj mu_in[NMUFIBERS], MuObj mu_out[NMUOUT]) ;
 
 int main(int argc, char **argv) {
     pfalgo_config pfcfg(NTRACK,NCALO,NMU, NSELCALO,
@@ -144,8 +142,8 @@ int main(int argc, char **argv) {
                 pfalgo2hgc_pack_out(pfch, pfallne, pfmu, all_channels_pf);
                 // Puppi objects
                 if (itest <= 5) printf("Will run Puppi with z0 = %d in event %d, region %d\n", pvZ0_prev.to_int(), itest-1, i/PFLOWII);
-                PFChargedObj outallch[NTRACK];
-                PFNeutralObj outallne_nocut[NALLNEUTRALS], outallne[NALLNEUTRALS], outselne[NNEUTRALS]; 
+                PuppiObj outallch[NTRACK];
+                PuppiObj outallne_nocut[NALLNEUTRALS], outallne[NALLNEUTRALS], outselne[NNEUTRALS]; 
                 linpuppi_ref(pucfg, tk_links_ref, pvZ0_prev, pfallne, outallne_nocut, outallne, outselne, itest <= 5);
                 linpuppi_chs_ref(pucfg, pvZ0_prev, pfch, outallch, itest <= 5);
                 l1pf_pattern_pack<NTRACK,0>(outallch, all_channels_puppi);
