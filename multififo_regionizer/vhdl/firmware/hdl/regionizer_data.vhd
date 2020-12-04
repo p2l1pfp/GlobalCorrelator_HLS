@@ -77,6 +77,7 @@ package regionizer_data is
     constant NPFSTREAM :  natural := (NPFTOT+PFII240-1)/PFII240;
 
     constant NPUPPI :     natural := NTKSORTED + NCALOSORTED;
+    constant NPUPPIFINALSORTED : natural := 18;
 
     constant TKDELAY : natural := 2;
     constant MUDELAY   : natural := 3;
