@@ -99,7 +99,7 @@ void track_convert(l1tpf_int::PropagatedTrack track_in, TkObj &track_pf, int lin
     track_pf.hwEta = pf_eta;
     track_pf.hwPhi = pf_phi;
     track_pf.hwZ0 = pf_z0;
-    track_pf.hwTightQuality = pf_z0;
+    track_pf.hwTightQuality = pf_TightQuality;
 }
 
 void tp_track_to_words(l1tpf_int::PropagatedTrack track_in, MP7DataWord data[NWORDS_TRACK]) {
