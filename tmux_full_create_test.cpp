@@ -1,4 +1,5 @@
 #include "tmux_create_test.h"
+#include <map>
 
 #define NETA_SMALL 2
 #define NPHI_SMALL 9
@@ -8,6 +9,7 @@ int mp7DataLength = NTRACK+NCALO+NEMCALO+NMU;
 int objDataLength[4] = {(NWORDS_TRACK*NTRACK), ((NWORDS_EMCALO*NEMCALO)+(NWORDS_TRACK*NTRACK)), ((NWORDS_EMCALO*NEMCALO)+(NWORDS_CALO*NCALO)+(NWORDS_TRACK*NTRACK)), ((NWORDS_EMCALO*NEMCALO)+(NWORDS_CALO*NCALO)+(NWORDS_TRACK*NTRACK)+(NWORDS_MU*NMU))};
 int link_max[4] = {NLINKS_PER_TRACK, NLINKS_PER_TRACK+NLINKS_PER_EMCALO, NLINKS_PER_TRACK+NLINKS_PER_CALO+NLINKS_PER_EMCALO, NLINKS_PER_TRACK+NLINKS_PER_CALO+NLINKS_PER_EMCALO+NLINKS_PER_MU};
 int link_min[4] = {0, NLINKS_PER_TRACK, NLINKS_PER_TRACK+NLINKS_PER_EMCALO, NLINKS_PER_TRACK+NLINKS_PER_EMCALO+NLINKS_PER_CALO};
+
 
 //unsigned int outputOrder[TMUX_IN] = {0,2,4,6,8,10,12,14,16,15,17,1,3,5,7,9,11,13};//NPHI x NETA
 //unsigned int outputOrder[TMUX_IN] = {0,11,1,12,2,13,3,14,4,15,5,16,6,17,7,9,8,10};//NPHI x NETA
@@ -33,7 +35,54 @@ void pick_link(int &link, l1tpf_int::Muon in) {
     if (link>=NLINKS_PER_MU) link = 0;
 }
 
+// int cantor_pair(int a, int b){
+//     return (a+b)*(a+b+1)/2+b;
+// }
+// void cantor_invert(int z, int &a, int &b){
+//     int w = int((sqrt(8*z+1)-1)/2); // floor
+//     int t = (w*w+w)/2;
+//     b=z-t;
+//     a=w-b;
+// }
+
 int main() {
+
+    
+
+    // make ordering for (link,clock)
+    std::map<std::pair<int,int>, int> ilink_iclk_order;
+    std::map<int, std::pair<int,int> > order_ilink_iclk;
+
+    int CLKMAX = ((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_TRACK;
+    int counter=0;
+    for(int iclk_plus_ilink=0; iclk_plus_ilink < CLKMAX+NLINKS_PER_TRACK-1; iclk_plus_ilink++){ // clock
+        for(int iclk=0;iclk<CLKMAX && iclk<=iclk_plus_ilink; iclk++){ // ilink
+            //for(int il=0;il<NLINKS_PER_TRACK && il<=iclk_plus_ilink; il++){ // ilink
+            int il = iclk_plus_ilink-iclk;
+            if (il >= NLINKS_PER_TRACK) continue;
+            // cout << il << " " << iclk << " -> " << counter << endl;
+
+            // record correspondence
+            auto p = std::make_pair(il,iclk);
+            ilink_iclk_order[p]=counter;
+            order_ilink_iclk[counter]=p;
+
+            counter++;
+        }
+    }
+        
+
+    // for(int il=0;il<NLINKS_PER_TRACK;il++) // clock
+    //     for(int j=0;j<CLKMAX;j++){ // link
+
+
+    // for(int i=0;i<5;i++) // clock
+    //     for(int j=0;j<5;j++){ // link
+    //         int z = cantor_pair(i,j);
+    //         int a,b;
+    //         cantor_invert(z,a,b);
+    //         cout << i << " " << j << " -> " << z << " -> " << a << " " << b << " \n ";
+    //     }
 
     // input format: could be random or coming from simulation
     //RandomPFInputs inputs(37); // 37 is a good random number
@@ -124,6 +173,26 @@ int main() {
     int etalo = eta_bounds_lo.front();
     int etahi = eta_bounds_hi.back();
 
+    // for now, we want to just consider the
+    // [-243,-90) and [-154,32) regions
+    etahi = 31;
+
+    // Log region boundaries for later reference
+    std::vector< std::string > str_lims;
+    for (int ies = 0; ies < NETA_SMALL; ies++) {
+        for (int ips = 0; ips < NPHI_SMALL; ips++) {
+            char str[80];
+            sprintf(str, "eta in [%d,%d) and phi in [%d,%d)", eta_bounds_lo[ies], eta_bounds_hi[ies],
+                    phi_bounds_lo[ips], phi_bounds_hi[ips]);
+            str_lims.push_back( str );
+        }
+    }
+    std::ofstream outfile_srs;
+    outfile_srs.open("../../../../SR_limits.txt");
+    for(int i=0;i<TMUX_IN;i++)
+        outfile_srs << "Small region " << i << " has " << str_lims[outputOrder[i]] << std::endl;
+    outfile_srs.close();
+
 
     // -----------------------------------------
     // run multiple tests (events)
@@ -201,6 +270,7 @@ int main() {
             // convert from L1Tk input format to PF format
             TkObj pf_track; 
             track_convert(track[i], pf_track, ilink);
+            //cout << " - " << track[i].to_string(16) << "  " << pf_track.to_string(16) << endl;
             track_cvt[ilink].push_back(pf_track);
             ntracks++;
         }
@@ -243,18 +313,26 @@ int main() {
 
         // resize to ensure number of objects can be sent in one link group
         for (int il = 0; il < NLINKS_PER_TRACK; il++) {
+            if (track_tp[il].size() > ((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_TRACK)
+                cout << "Event " << test << ": truncating input tracks on link " << il << endl;
             track_tp [il].resize(((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_TRACK, track_dummy);
             track_cvt[il].resize(((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_TRACK, track_cvt_dummy);
         }
         for (int il = 0; il < NLINKS_PER_CALO; il++) {
+            if (calo_tp[il].size() > ((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_CALO)
+                cout << "Event " << test << ": truncating input hadcalos on link " << il << endl;
             calo_tp [il].resize(((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_CALO, calo_dummy);
             calo_cvt[il].resize(((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_CALO, calo_cvt_dummy);
         }
         for (int il = 0; il < NLINKS_PER_EMCALO; il++) {
+            if (emcalo_tp[il].size() > ((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_EMCALO)
+                cout << "Event " << test << ": truncating input emcalos on link " << il << endl;
             emcalo_tp [il].resize(((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_EMCALO, emcalo_dummy);
             emcalo_cvt[il].resize(((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_EMCALO, emcalo_cvt_dummy);
         }
         for (int il = 0; il < NLINKS_PER_MU; il++) {
+            if (mu_tp[il].size() > ((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_MU)
+                cout << "Event " << test << ": truncating input muons on link " << il << endl;
             mu_tp [il].resize(((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_MU, mu_dummy);
             mu_cvt[il].resize(((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_MU, mu_cvt_dummy);
         }
@@ -272,27 +350,44 @@ int main() {
             else if (link_ctr < link_max[3]) link_type = 3;
             obj_link_no = link_ctr-link_min[link_type];
 
+            
             if (link_type == 0) {
+                
+                // if(link_off+link_ctr==2)
+                //     std::cout << " <1><><> " << link_off+link_ctr << " " << input_datawords_cvt[2][3] << std::endl;
                 write_track_vector_to_link(track_tp[obj_link_no], input_datawords[link_off+link_ctr], input_offset);
                 write_track_vector_to_link(track_cvt[obj_link_no], input_datawords_cvt[link_off+link_ctr], input_offset);
+                //std::cout << " tk " << input_datawords[link_off+link_ctr] << " " << input_datawords_cvt[link_off+link_ctr] << std::endl;
+                //std::cout << " <><><> " << link_ctr << " " << input_datawords_cvt[2][3] << std::endl;
+                // if(link_off+link_ctr==2)
+                //     std::cout << " <2><><> " << link_off+link_ctr << " " << input_datawords_cvt[2][3] << std::endl;
+                
             } else if (link_type == 1) {
+                //cout << link_off+link_ctr << " em " << (link_off+link_ctr)%32 << endl;
                 write_emcalo_vector_to_link(emcalo_tp[obj_link_no], input_datawords[link_off+link_ctr], input_offset); 
                 // for non-track, just write the same objects to the converted outputs
                 write_emcalo_vector_to_link(emcalo_tp[obj_link_no], input_datawords_cvt[link_off+link_ctr], input_offset); 
+                //std::cout << " em " << input_datawords[link_off+link_ctr] << " " << input_datawords_cvt[link_off+link_ctr] << std::endl;
+                
             } else if (link_type == 2) {
+                //cout << link_off+link_ctr << " ca " << (link_off+link_ctr)%32 << endl;
                 write_calo_vector_to_link(calo_tp[obj_link_no], input_datawords[link_off+link_ctr], input_offset);
                 write_calo_vector_to_link(calo_tp[obj_link_no], input_datawords_cvt[link_off+link_ctr], input_offset);
+                //std::cout << " hd " << input_datawords[link_off+link_ctr] << " " << input_datawords_cvt[link_off+link_ctr] << std::endl;
             } else if (link_type == 3) {
                 write_mu_vector_to_link(mu_tp[obj_link_no], input_datawords[link_off+link_ctr], input_offset);
                 write_mu_vector_to_link(mu_tp[obj_link_no], input_datawords_cvt[link_off+link_ctr], input_offset);
             }
         }
-        
-        std::stringstream stream2;
-        stream2.str("");
-        stream2 << "0x00000000" << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(hwZPV.range(9,0))) << 14) << "00"; 
-        input_datawords[link_off+NLINKS_PER_REG][input_offset] = stream2.str();
-        input_datawords_cvt[link_off+NLINKS_PER_REG][input_offset] = stream2.str();
+
+        // turn off vtx for now
+        if (false){
+            std::stringstream stream2;
+            stream2.str("");
+            stream2 << "0x00000000" << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(hwZPV.range(9,0))) << 14) << "00"; 
+            input_datawords[link_off+NLINKS_PER_REG][input_offset] = stream2.str();
+            input_datawords_cvt[link_off+NLINKS_PER_REG][input_offset] = stream2.str();
+        }
         
         link_off += NLINKS_PER_REG+1;
         // 2 schemes should be equivalent in 18 / 6 setup
@@ -334,17 +429,45 @@ int main() {
             }
         }
 
+        // bool dbg[NETA_SMALL*NPHI_SMALL]{};
+
         // fill regions, starting from beginning of each link
         std::fill(i_temp, i_temp+TMUX_IN, 0);
-        for (int ind = 0; ind < track_tp[0].size(); ind++) { // works since same size for all links
-            for (int il = 0; il < NLINKS_PER_TRACK; il++) {
+
+        for(int i=0; i<CLKMAX*NLINKS_PER_TRACK;i++){
+            auto p = order_ilink_iclk[i];
+            int il = p.first;
+            //il = NLINKS_PER_TRACK-1-il; // reverse to prefer high links!
+            int ind = p.second;
+        //     cout << p.first << " " << p.second << endl;
+        // }
+
+        // for (int ind = 0; ind < track_tp[0].size(); ind++) { // works since same size for all links
+        //     for (int il = 0; il < NLINKS_PER_TRACK; il++) {
+        // for (int il = NLINKS_PER_TRACK-1; il >= 0; il--) {
+        //     for (int ind = 0; ind < track_tp[0].size(); ind++) { // works since same size for all links
                 auto pf_track = track_cvt[il].at(ind);
+                if (!(pf_track.hwPt>0)) continue;
                 // find region
                 for (int ies = 0; ies < NETA_SMALL; ies++) {
                     if (int(pf_track.hwEta) >= eta_bounds_lo[ies] and int(pf_track.hwEta) < eta_bounds_hi[ies]) {
                         for (int ips = 0; ips < NPHI_SMALL; ips++) {
                             if ( isInPhiRegion(pf_track.hwPhi, phi_bounds_lo[ips], phi_bounds_hi[ips]) ) { 
-                                if (i_temp[ies*NPHI_SMALL+ips]==NTRACK) continue;
+                                //if (i_temp[ies*NPHI_SMALL+ips]==NTRACK) continue;
+                                if (i_temp[ies*NPHI_SMALL+ips]==NTRACK){
+                                    // cout << "dropping track (SR "<< ies*NPHI_SMALL+ips <<" -> "<< outputOrder[ies*NPHI_SMALL+ips] <<") " 
+                                    //      << pf_track.hwPt << " " << pf_track.hwEta << " " << pf_track.hwPhi 
+                                    //      << " " << endl;
+                                    // if (!dbg[ies*NPHI_SMALL+ips]){
+                                    //     dbg[ies*NPHI_SMALL+ips]=true;
+                                    //     cout << " -> Up to " << i_temp[ies*NPHI_SMALL+ips] << ": ";
+                                    //     for(int i=0; i<NTRACK;i++){
+                                    //         auto x = track_pf_in[ies*NPHI_SMALL+ips][i];
+                                    //         cout << "    ("<< x.hwPt << " " << x.hwEta << " " << x.hwPhi <<") \n";
+                                    //     } cout << endl;
+                                    // }
+                                    continue;
+                                }
                                 track_pf_in[ies*NPHI_SMALL+ips][i_temp[ies*NPHI_SMALL+ips]] = pf_track;
                                 i_temp[ies*NPHI_SMALL+ips] += 1;
                                 ntracks_smallreg[ies*NPHI_SMALL+ips]++;
@@ -353,11 +476,13 @@ int main() {
                         }
                     }
                 }
-            }
+                //}
         }
         std::fill(i_temp, i_temp+TMUX_IN, 0);
         for (int ind = 0; ind < calo_tp[0].size(); ind++) { // works since same size for all links
             for (int il = 0; il < NLINKS_PER_CALO; il++) {
+        // for (int il = NLINKS_PER_CALO-1; il >= 0; il--) {
+        //     for (int ind = 0; ind < calo_tp[0].size(); ind++) { // works since same size for all links
                 auto pf_calo = calo_cvt[il].at(ind);
                 // find region
                 for (int ies = 0; ies < NETA_SMALL; ies++) {
@@ -379,11 +504,21 @@ int main() {
         for (int ind = 0; ind < emcalo_tp[0].size(); ind++) { // works since same size for all links
             for (int il = 0; il < NLINKS_PER_EMCALO; il++) {
                 auto pf_emcalo = emcalo_cvt[il].at(ind);
+                bool dbg=false;
+                if (pf_emcalo.hwPt==7 && pf_emcalo.hwEta==78 && pf_emcalo.hwPhi==-458){
+                    dbg=true;
+                    cout << "debugging: \n";
+                }
                 // find region
                 for (int ies = 0; ies < NETA_SMALL; ies++) {
+                    //if(dbg) cout << " test eta in [" << eta_bounds_lo[ies] << "," << eta_bounds_hi[ies] << ")\n";
+                    if(dbg) cout << " test eta " << pf_emcalo.hwEta << " (" << int(pf_emcalo.hwEta) << ") in [" << eta_bounds_lo[ies] << "," << eta_bounds_hi[ies] << ")\n";
                     if (int(pf_emcalo.hwEta) >= eta_bounds_lo[ies] and int(pf_emcalo.hwEta) < eta_bounds_hi[ies]) {
+                        if(dbg) cout << " eta " << pf_emcalo.hwEta << " (" << int(pf_emcalo.hwEta) << ") in [" << eta_bounds_lo[ies] << "," << eta_bounds_hi[ies] << ")\n";
                         for (int ips = 0; ips < NPHI_SMALL; ips++) {
+                            if(dbg) cout << "  test phi " << pf_emcalo.hwPhi << " in [" << phi_bounds_lo[ips] << "," << phi_bounds_hi[ips] << ")\n";
                             if ( isInPhiRegion(pf_emcalo.hwPhi, phi_bounds_lo[ips], phi_bounds_hi[ips]) ) { 
+                                if(dbg) cout << "  phi " << pf_emcalo.hwPhi << " in [" << phi_bounds_lo[ips] << "," << phi_bounds_hi[ips] << ")\n";
                                 if (i_temp[ies*NPHI_SMALL+ips]==NEMCALO) continue;
                                 emcalo_pf_in[ies*NPHI_SMALL+ips][i_temp[ies*NPHI_SMALL+ips]] = pf_emcalo;
                                 i_temp[ies*NPHI_SMALL+ips] += 1;
@@ -437,6 +572,9 @@ int main() {
                 stream1 << std::uppercase << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in_reg[id*2+1]);
                 stream1 << std::uppercase << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (data_in_reg[id*2+0]);
                 output_datawords[test*TMUX_IN+ir][id] = stream1.str();
+                if( output_datawords[test*TMUX_IN+ir][id]=="000A5B5A0004000A" )
+                    cout << "filling: " << test << " " << ir << " " << test*TMUX_IN+ir << "  " << id << endl;
+
             }
             std::stringstream stream1;
             stream1 << "00000000";
@@ -472,6 +610,11 @@ int main() {
         for (int ia = NLINKS_APX_GEN0-1; ia >=0; ia--){ // write backwards
             outfile_inputs << input_datawords[ia][ib] << "    ";
             outfile_inputs_cvt << input_datawords_cvt[ia][ib] << "    ";
+            //if( input_datawords[ia][ib]=="0x0008d84e00040007" ) 
+            // if( input_datawords_cvt[ia][ib]=="0x40012415000b0009" ) 
+            //     cout << "input 0x40012415000b0009: " << ia << "  " << ib << endl;
+            // if( input_datawords_cvt[ia][ib]=="0x00012415000b0009" ) 
+            //     cout << "input 0x00012415000b0009: " << ia << "  " << ib << endl;
         }
         outfile_inputs << std::endl;
         outfile_inputs_cvt << std::endl;
@@ -487,6 +630,8 @@ int main() {
             outfile_outputs << "0x" << std::setfill('0') << std::setw(4) << std::hex << iclk << "   " <<std::dec;
             for (int ib = 0; ib < mp7DataLength+1; ib++){
                 outfile_outputs << output_datawords[ia*TMUX_IN+outputOrder[io]][ib] << "    ";
+                // if( output_datawords[ia*TMUX_IN+outputOrder[io]][ib]=="000A5B5A0004000A" )
+                //     cout << "writing: " << ia << " " << io << " " << ia*TMUX_IN+outputOrder[io] << "  " << ib << endl;
             }
             outfile_outputs << std::endl;
             iclk++;
