@@ -112,7 +112,7 @@ enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=
     #define PACKING_NCHANN    42
 #elif defined(BOARD_VCU118)
     #define PACKING_DATA_SIZE 64
-    #define PACKING_NCHANN    96
+    #define PACKING_NCHANN    120
 #elif defined(BOARD_APD1)
     #define PACKING_DATA_SIZE 64
     #define PACKING_NCHANN    96
