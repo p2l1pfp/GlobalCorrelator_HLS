@@ -1,4 +1,5 @@
 #include "tmux_create_test.h"
+#include <map>
 
 #define NETA_SMALL 2
 #define NPHI_SMALL 9
@@ -34,6 +35,30 @@ void pick_link(int &link, l1tpf_int::Muon in) {
 }
 
 int main() {
+
+    
+
+    // make ordering for (link,clock)
+    std::map<std::pair<int,int>, int> ilink_iclk_order;
+    std::map<int, std::pair<int,int> > order_ilink_iclk;
+
+    int CLKMAX = ((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_TRACK;
+    int counter=0;
+    for(int iclk_plus_ilink=0; iclk_plus_ilink < CLKMAX+NLINKS_PER_TRACK-1; iclk_plus_ilink++){ // clock
+        for(int iclk=0;iclk<CLKMAX && iclk<=iclk_plus_ilink; iclk++){ // ilink
+            //for(int il=0;il<NLINKS_PER_TRACK && il<=iclk_plus_ilink; il++){ // ilink
+            int il = iclk_plus_ilink-iclk;
+            if (il >= NLINKS_PER_TRACK) continue;
+            // cout << il << " " << iclk << " -> " << counter << endl;
+
+            // record correspondence
+            auto p = std::make_pair(il,iclk);
+            ilink_iclk_order[p]=counter;
+            order_ilink_iclk[counter]=p;
+
+            counter++;
+        }
+    }
 
     // input format: could be random or coming from simulation
     //RandomPFInputs inputs(37); // 37 is a good random number
@@ -124,6 +149,26 @@ int main() {
     int etalo = eta_bounds_lo.front();
     int etahi = eta_bounds_hi.back();
 
+    // for now, we want to just consider the
+    // [-243,-90) and [-154,32) regions
+    etahi = 31;
+
+    // Log region boundaries for later reference
+    std::vector< std::string > str_lims;
+    for (int ies = 0; ies < NETA_SMALL; ies++) {
+        for (int ips = 0; ips < NPHI_SMALL; ips++) {
+            char str[80];
+            sprintf(str, "eta in [%d,%d) and phi in [%d,%d)", eta_bounds_lo[ies], eta_bounds_hi[ies],
+                    phi_bounds_lo[ips], phi_bounds_hi[ips]);
+            str_lims.push_back( str );
+        }
+    }
+    std::ofstream outfile_srs;
+    outfile_srs.open("../../../../SR_limits.txt");
+    for(int i=0;i<TMUX_IN;i++)
+        outfile_srs << "Small region " << i << " has " << str_lims[outputOrder[i]] << std::endl;
+    outfile_srs.close();
+
 
     // -----------------------------------------
     // run multiple tests (events)
@@ -201,6 +246,7 @@ int main() {
             // convert from L1Tk input format to PF format
             TkObj pf_track; 
             track_convert(track[i], pf_track, ilink);
+            //cout << " - " << track[i].to_string(16) << "  " << pf_track.to_string(16) << endl;
             track_cvt[ilink].push_back(pf_track);
             ntracks++;
         }
@@ -243,18 +289,26 @@ int main() {
 
         // resize to ensure number of objects can be sent in one link group
         for (int il = 0; il < NLINKS_PER_TRACK; il++) {
+            if (track_tp[il].size() > ((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_TRACK)
+                cout << "Event " << test << ": truncating input tracks on link " << il << endl;
             track_tp [il].resize(((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_TRACK, track_dummy);
             track_cvt[il].resize(((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_TRACK, track_cvt_dummy);
         }
         for (int il = 0; il < NLINKS_PER_CALO; il++) {
+            if (calo_tp[il].size() > ((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_CALO)
+                cout << "Event " << test << ": truncating input hadcalos on link " << il << endl;
             calo_tp [il].resize(((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_CALO, calo_dummy);
             calo_cvt[il].resize(((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_CALO, calo_cvt_dummy);
         }
         for (int il = 0; il < NLINKS_PER_EMCALO; il++) {
+            if (emcalo_tp[il].size() > ((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_EMCALO)
+                cout << "Event " << test << ": truncating input emcalos on link " << il << endl;
             emcalo_tp [il].resize(((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_EMCALO, emcalo_dummy);
             emcalo_cvt[il].resize(((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_EMCALO, emcalo_cvt_dummy);
         }
         for (int il = 0; il < NLINKS_PER_MU; il++) {
+            if (mu_tp[il].size() > ((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_MU)
+                cout << "Event " << test << ": truncating input muons on link " << il << endl;
             mu_tp [il].resize(((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_MU, mu_dummy);
             mu_cvt[il].resize(((NCLK_PER_BX*TMUX_IN-1)*2)/NWORDS_MU, mu_cvt_dummy);
         }
@@ -272,13 +326,13 @@ int main() {
             else if (link_ctr < link_max[3]) link_type = 3;
             obj_link_no = link_ctr-link_min[link_type];
 
-            if (link_type == 0) {
+            
+            if (link_type == 0) {                
                 write_track_vector_to_link(track_tp[obj_link_no], input_datawords[link_off+link_ctr], input_offset);
                 write_track_vector_to_link(track_cvt[obj_link_no], input_datawords_cvt[link_off+link_ctr], input_offset);
             } else if (link_type == 1) {
                 write_emcalo_vector_to_link(emcalo_tp[obj_link_no], input_datawords[link_off+link_ctr], input_offset); 
-                // for non-track, just write the same objects to the converted outputs
-                write_emcalo_vector_to_link(emcalo_tp[obj_link_no], input_datawords_cvt[link_off+link_ctr], input_offset); 
+                write_emcalo_vector_to_link(emcalo_tp[obj_link_no], input_datawords_cvt[link_off+link_ctr], input_offset);                
             } else if (link_type == 2) {
                 write_calo_vector_to_link(calo_tp[obj_link_no], input_datawords[link_off+link_ctr], input_offset);
                 write_calo_vector_to_link(calo_tp[obj_link_no], input_datawords_cvt[link_off+link_ctr], input_offset);
@@ -287,12 +341,15 @@ int main() {
                 write_mu_vector_to_link(mu_tp[obj_link_no], input_datawords_cvt[link_off+link_ctr], input_offset);
             }
         }
-        
-        std::stringstream stream2;
-        stream2.str("");
-        stream2 << "0x00000000" << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(hwZPV.range(9,0))) << 14) << "00"; 
-        input_datawords[link_off+NLINKS_PER_REG][input_offset] = stream2.str();
-        input_datawords_cvt[link_off+NLINKS_PER_REG][input_offset] = stream2.str();
+
+        // turn off vtx for now
+        if (false){
+            std::stringstream stream2;
+            stream2.str("");
+            stream2 << "0x00000000" << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(hwZPV.range(9,0))) << 14) << "00"; 
+            input_datawords[link_off+NLINKS_PER_REG][input_offset] = stream2.str();
+            input_datawords_cvt[link_off+NLINKS_PER_REG][input_offset] = stream2.str();
+        }
         
         link_off += NLINKS_PER_REG+1;
         // 2 schemes should be equivalent in 18 / 6 setup
@@ -336,20 +393,25 @@ int main() {
 
         // fill regions, starting from beginning of each link
         std::fill(i_temp, i_temp+TMUX_IN, 0);
-        for (int ind = 0; ind < track_tp[0].size(); ind++) { // works since same size for all links
-            for (int il = 0; il < NLINKS_PER_TRACK; il++) {
-                auto pf_track = track_cvt[il].at(ind);
-                // find region
-                for (int ies = 0; ies < NETA_SMALL; ies++) {
-                    if (int(pf_track.hwEta) >= eta_bounds_lo[ies] and int(pf_track.hwEta) < eta_bounds_hi[ies]) {
-                        for (int ips = 0; ips < NPHI_SMALL; ips++) {
-                            if ( isInPhiRegion(pf_track.hwPhi, phi_bounds_lo[ips], phi_bounds_hi[ips]) ) { 
-                                if (i_temp[ies*NPHI_SMALL+ips]==NTRACK) continue;
-                                track_pf_in[ies*NPHI_SMALL+ips][i_temp[ies*NPHI_SMALL+ips]] = pf_track;
-                                i_temp[ies*NPHI_SMALL+ips] += 1;
-                                ntracks_smallreg[ies*NPHI_SMALL+ips]++;
-                                ntracks_reg++;
+        for(int i=0; i<CLKMAX*NLINKS_PER_TRACK;i++){
+            auto p = order_ilink_iclk[i];
+            int il = p.first;
+            int ind = p.second;
+
+            auto pf_track = track_cvt[il].at(ind);
+            if (!(pf_track.hwPt>0)) continue;
+            // find region
+            for (int ies = 0; ies < NETA_SMALL; ies++) {
+                if (int(pf_track.hwEta) >= eta_bounds_lo[ies] and int(pf_track.hwEta) < eta_bounds_hi[ies]) {
+                    for (int ips = 0; ips < NPHI_SMALL; ips++) {
+                        if ( isInPhiRegion(pf_track.hwPhi, phi_bounds_lo[ips], phi_bounds_hi[ips]) ) { 
+                            if (i_temp[ies*NPHI_SMALL+ips]==NTRACK){
+                                continue;
                             }
+                            track_pf_in[ies*NPHI_SMALL+ips][i_temp[ies*NPHI_SMALL+ips]] = pf_track;
+                            i_temp[ies*NPHI_SMALL+ips] += 1;
+                            ntracks_smallreg[ies*NPHI_SMALL+ips]++;
+                            ntracks_reg++;
                         }
                     }
                 }
