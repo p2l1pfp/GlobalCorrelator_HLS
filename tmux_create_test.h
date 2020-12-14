@@ -16,13 +16,15 @@ using namespace l1tk;
 
 #include "converter/firmware/tk_input_converter.h"
 
+using std::cout;
+using std::endl;
 
 #include <math.h>
 
 #define NTEST 6
 #define NLINKS_APX_GEN0 96
 #define NFRAMES_APX_GEN0 3
-#define NCLK_PER_BX 8
+#define NCLK_PER_BX 9
 // NFRAMES_APX_GEN0 is the number of 64b words per frame. 
 //   Must reserve leading 8b for header, but we simply zero first 32b
 // NCLK_PER_BX is the number of frames per bx (320 mhz / 40mhz)
