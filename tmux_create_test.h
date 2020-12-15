@@ -53,7 +53,9 @@ using std::endl;
 #define NWORDS_CALO 2
 #define NWORDS_EMCALO 2
 #define NWORDS_MU 2
+#define NWORDS_VTX 2
 
+#define NCLOCK_OFFSET_VTX 0
 
 // This fn essentially replaces placeholder dpf2fw::convert from DiscretePF2Firmware.h
 void track_convert(l1tpf_int::PropagatedTrack track_in, TkObj &track_pf, int linkNo) {
@@ -265,6 +267,30 @@ void write_mu_vector_to_link(std::vector<l1tpf_int::Muon> in_vec, std::string da
         dpf2fw::convert(*itr, mu);
         tmpdata[0] = ( mu.hwPtErr, mu.hwPt );
         tmpdata[1] = ( mu.hwPhi, mu.hwEta );
+        ss.str("");
+        ss << "0x";
+        ss << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (tmpdata[1]);
+        ss << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (tmpdata[0]);
+        datawords[offset+index] = ss.str();
+        index++;
+    }
+}
+
+//built to look like other detectors, although not fully necessary yet
+void write_vtx_vector_to_link(std::vector<z0_t> in_vec, std::string datawords[], int offset) {
+    int index = 0;
+    std::stringstream ss;
+    for (auto itr = in_vec.begin(); itr != in_vec.end(); ++itr) {
+        MP7DataWord tmpdata[NWORDS_VTX];
+        // z0		15b
+        // nTrkPV	8b
+        // sum pT	10b
+        // quality	3b
+        // nTrkNotPV	10b
+        // valid	1b
+        // open		17b
+        tmpdata[0] = ( ap_uint<9>(0), ap_uint<8>(0), ap_int<15>(int(*itr)*32) ); 
+        tmpdata[1] = ( ap_uint<14>(0), ap_uint<1>(1), ap_uint<14>(0) );
         ss.str("");
         ss << "0x";
         ss << std::setfill('0') << std::setw(8) << std::hex << (unsigned int) (tmpdata[1]);

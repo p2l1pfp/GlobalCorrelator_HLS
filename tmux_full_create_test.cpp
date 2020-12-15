@@ -71,6 +71,7 @@ int main() {
     l1tpf_int::PropagatedTrack track[NTRACK_TMUX]; 
     l1tpf_int::Muon mu[NMU_TMUX];
     z0_t hwZPV;
+    std::vector<z0_t> hwZPVvec;
 
     // Data words for input to regionizer
     //   NCLK_PER_BX is the number of frames per bx (320 mhz / 40mhz)
@@ -176,6 +177,7 @@ int main() {
     int link_off = 0;
     int input_offset = 0;
     for (int test = 0; test < NTEST; ++test) {
+        hwZPVvec.clear();
 
         // initialize TP objects receiving input data
         for (int i = 0; i < NTRACK_TMUX; ++i) {
@@ -203,6 +205,7 @@ int main() {
             mu[0].hwPt     = 4 + test * 16;
             hwZPV          = 7 + test * 16;
         }
+        hwZPVvec.push_back(hwZPV);
         
         // initialize TP object structures, distributed across input links
         std::vector<l1tpf_int::CaloCluster> calo_tp[NLINKS_PER_CALO]; 
@@ -342,13 +345,9 @@ int main() {
             }
         }
 
-        // turn off vtx for now
-        if (false){
-            std::stringstream stream2;
-            stream2.str("");
-            stream2 << "0x00000000" << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(hwZPV.range(9,0))) << 14) << "00"; 
-            input_datawords[link_off+NLINKS_PER_REG][input_offset] = stream2.str();
-            input_datawords_cvt[link_off+NLINKS_PER_REG][input_offset] = stream2.str();
+        // turn vtx back on (leave option to disable)
+        if (true){
+            write_vtx_vector_to_link(hwZPVvec, input_datawords[3*(NLINKS_PER_REG+1)-1], (NCLK_PER_BX*TMUX_OUT*test)+NCLOCK_OFFSET_VTX); //we may want to adjust NLINKS_PER_REG eventually, but to avoid additional changes I leave things as is for now
         }
         
         link_off += NLINKS_PER_REG+1;
@@ -502,12 +501,12 @@ int main() {
             }
             std::stringstream stream1;
             stream1 << "00000000";
-            stream1 << std::uppercase << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(hwZPV.range(9,0))) << 14) << "00";
+            stream1 << std::uppercase << std::setfill('0') << std::setw(6) << std::hex << (((unsigned int)(hwZPVvec[0].range(9,0))) << 14) << "00";
             output_datawords[test*TMUX_IN+ir][mp7DataLength] = stream1.str();
 
             // pack input to PF+PUPPI block (only diff from above due to reordering)
             mp7wrapped_pack_in(emcalo_pf_in[ir], calo_pf_in[ir], track_pf_in[ir], mu_pf_in[ir], data_in);
-            mp7wrapped_pfalgo3_full(data_in, data_out, hwZPV);
+            mp7wrapped_pfalgo3_full(data_in, data_out, hwZPVvec[0]);
 
             for (int id = 0; id < mp7DataLength; id++) {
                 std::stringstream stream1;
