@@ -350,29 +350,5 @@ void pfalgo3_full_ref(EmCaloObj emcalo[NEMCALO], HadCaloObj hadcalo[NCALO], TkOb
     }
 
     ptsort_ref<PFNeutralObj,NCALO,NSELCALO>(outne_all, outne);
-    /*PFNeutralObj outpho_tmp[NPHOTON];
-    ptsort_ref<PFNeutralObj,NPHOTON,NPHOTON>(outpho, outpho_tmp);
-    for (unsigned int it = 0; it < NPHOTON; it++) {outpho[it] = outpho_tmp[it];}
-    PFChargedObj outch_tmp[NTRACK];
-    ptsort_ref<PFChargedObj,NTRACK,NTRACK>(outch, outch_tmp);
-    for (unsigned int it = 0; it < NTRACK; it++) {outch[it] = outch_tmp[it];}*/
-    /*std::cout<<" -- SW --"<<std::endl;
-    std::cout<<"\t ** NE **"<<std::endl;
-    for (int ic=0; ic<NSELCALO; ic++) {
-        std::cout<<"\t"<<outne[ic].hwPt<<"\t\t";
-        for (int it=0; it<NTRACK; it++) {
-            if ((int)(dr2_int(outch[it].hwEta, outch[it].hwPhi, outne[ic].hwEta, outne[ic].hwPhi))<4195) std::cout<<(int)(dr2_int(outch[it].hwEta, outch[it].hwPhi, outne[ic].hwEta, outne[ic].hwPhi))<<" ";
-        }
-        std::cout<<std::endl;
-    }*/
-    /*
-    std::cout<<"\t ** PHO **"<<std::endl;
-    for (int ic=0; ic<NPHOTON; ic++) {
-        std::cout<<"\t"<<outpho[ic].hwPt<<"\t\t";
-        for (int it=0; it<NTRACK; it++) {
-            if ((int)(dr2_int(outch[it].hwEta, outch[it].hwPhi, outpho[ic].hwEta, outpho[ic].hwPhi))<4195) std::cout<<(int)(dr2_int(outch[it].hwEta, outch[it].hwPhi, outpho[ic].hwEta, outpho[ic].hwPhi))<<" ";
-        }
-        std::cout<<std::endl;
-    }*/
 
 }

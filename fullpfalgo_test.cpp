@@ -14,6 +14,25 @@ bool compare_hwPt(PFOutputObj i1, PFOutputObj i2)
     return (i1.hwPt > i2.hwPt); 
 } 
 
+//copied from simple_fullpfalgo_ref.cpp
+template<typename T, int NIn, int NOut>
+void ptsort_ref(T in[NIn], T out[NOut]) {
+    for (int iout = 0; iout < NOut; ++iout) {
+        out[iout].hwPt = 0;
+    }
+    for (int it = 0; it < NIn; ++it) {
+        for (int iout = 0; iout < NOut; ++iout) {
+            if (in[it].hwPt >= out[iout].hwPt) {
+                for (int i2 = NOut-1; i2 > iout; --i2) {
+                    out[i2] = out[i2-1];
+                }
+                out[iout] = in[it];
+                break;
+            }
+        }
+    }
+}
+
 #define NTEST 10
 #define NLINKS_APX_GEN0 48
 #define NFRAMES_APX_GEN0 3
@@ -186,7 +205,9 @@ int main() {
             outpf_ref[id+NTRACK+NNEUTRALS].hwId = outmupf_ref[id].hwId;
             outpf_ref[id+NTRACK+NNEUTRALS].hwZ0Pup = outmupf_ref[id].hwZ0;
         }
-        sorting_network(outpf_ref);
+
+        PFOutputObj outpf_ref_sort[NALL];
+        ptsort_ref<PFOutputObj,NALL,NALL>(outpf_ref, outpf_ref_sort);
         /* to check against simple sort (order will not match, the above avoids these mismatch errors (could also look to adjust  pf_equals() function (would need to track, seems complicated for now)
         std::sort(outpf_ref,outpf_ref+NALL,compare_hwPt);
         */
@@ -197,14 +218,14 @@ int main() {
 
         // check pf
         for (int i = 0; i < NOUT_SORT; ++i) {
-            if (!pf_equals(outpf_ref[i], outpf[i], "PF", i)) errors++;
-            if (outpf_ref[i].hwPt > 0) { ntot++; }
+            if (!pf_equals(outpf_ref_sort[i], outpf[i], "PF", i)) errors++;
+            if (outpf_ref_sort[i].hwPt > 0) { ntot++; }
         }
 
         if (errors != 0) {
             printf("Error in pf test %d (%d)\n", test, errors);
             printf("Inputs: \n"); debugHR.dump_inputs(emcalo, calo, track, mu);
-            printf("Reference output: \n"); debugHR.dump_outputs(outpf_ref);
+            printf("Reference output: \n"); debugHR.dump_outputs(outpf_ref_sort);
             printf("Current output: \n"); debugHR.dump_outputs(outpf);
             //return 1;
         } else {
