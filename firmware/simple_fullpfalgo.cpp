@@ -4,7 +4,6 @@
 #include <cmath>
 #include <cassert>
 #include "../bitonic-sort-48/hls/sorting_network_corr.hpp"
-#include "../sorting/sort_group.h"
 #ifndef __SYNTHESIS__
 #include <cstdio>
 #endif
