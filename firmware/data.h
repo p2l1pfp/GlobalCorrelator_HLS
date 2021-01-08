@@ -133,10 +133,11 @@ struct PFOutputObj {
 /* #define TMUX_OUT 18 */
 #define TMUX_IN 18
 #define TMUX_OUT 6
-#define NTRACK_TMUX (NTRACK*TMUX_OUT*NETA_TMUX*NPHI_TMUX)
-#define NCALO_TMUX (NCALO*TMUX_OUT*NETA_TMUX*NPHI_TMUX)
-#define NEMCALO_TMUX (NEMCALO*TMUX_OUT*NETA_TMUX*NPHI_TMUX)
-#define NMU_TMUX (NMU*TMUX_OUT*NETA_TMUX*NPHI_TMUX)
+#define NTRACK_TMUX 10000
+#define NCALO_TMUX 10000
+#define NEMCALO_TMUX 10000
+#define NMU_TMUX 10000
+///these are arbitrary, just want them to be large enough to handle really large dump files
 
 
 
