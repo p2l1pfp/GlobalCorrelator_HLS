@@ -62,6 +62,20 @@ void pf_input_track_conv_hw(l1tk_word_t in, pf_tk_word_t& out, numlink_t nlink){
     etaphi_t pf_eta_at_calo;
     convert_eta(tanlam_at_calo, pf_eta_at_calo);
 
+    // per-link phi offset
+    etaphi_t phi_offset = 0;
+    if(nlink==0) phi_offset = -455;
+    if(nlink==1) phi_offset = -341;
+    if(nlink==2) phi_offset = -227;
+    if(nlink==3) phi_offset = -113;
+    if(nlink==4) phi_offset = 1;
+    if(nlink==5) phi_offset = 115;
+    if(nlink==6) phi_offset = 229;
+    if(nlink==7) phi_offset = 342;
+    if(nlink==8) phi_offset = 455;
+    pf_phi_at_calo = pf_phi_at_calo + phi_offset;
+
+
     //     // initialize conversion constants
     // #ifdef __HLS_SYN__
     //     bool initialized = false;
@@ -80,6 +94,7 @@ void pf_input_track_conv_hw(l1tk_word_t in, pf_tk_word_t& out, numlink_t nlink){
 
     // z0_t pf_z0 = bigfix_t(tkz0)*bigfix_t(PF_Z0_SCALE); // scale=20
     // for now, copy z0 values without explicitly converting... must be replaced
+
     
     z0_t pf_z0 = zdet_t(tkz0) * zdet_t(PF_Z0_SCALE);
 
