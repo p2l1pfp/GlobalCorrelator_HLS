@@ -3,6 +3,7 @@
 #include "mp7pf_encoding.h"
 #include <cmath>
 #include <cassert>
+#include "../bitonic-sort-48/hls/sorting_network_corr.hpp"
 #ifndef __SYNTHESIS__
 #include <cstdio>
 #endif
@@ -282,23 +283,20 @@ void tk2calo_link_dronly(HadCaloObj calo[NCALO], TkObj track[NTRACK], ap_uint<NC
     tk2calo_drvals_cut<PFPUPPI_DR2MAX>(calo, track, drvals, drvals_cut);
     pick_closest<DR2MAX,NTRACK,NCALO,tk2calo_dr_t>(drvals_cut, calo_track_link_bit);
 }
-void tk2calo_link_drdpt(HadCaloObj calo[NCALO], TkObj track[NTRACK], ap_uint<NCALO> calo_track_link_bit[NTRACK], tk2calo_dr_t drvals[NTRACK][NCALO]) {
+void tk2calo_link_drdpt(HadCaloObj calo[NCALO], TkObj track[NTRACK], ap_uint<NCALO> calo_track_link_bit[NTRACK]) {
     const int DR2MAX = PFALGO3_DR2MAX_TK_CALO;
     const int DQMAX = 5*DR2MAX;
-    //tk2calo_dq_t drvals[NTRACK][NCALO];
+    tk2calo_dq_t drvals[NTRACK][NCALO];
     #pragma HLS ARRAY_PARTITION variable=drvals complete dim=0
-    tk2calo_dq_t drvals_cut[NTRACK][NCALO];
-    #pragma HLS ARRAY_PARTITION variable=drvals_cut complete dim=0
 
-    //tk2calo_drdptvals<DR2MAX>(calo, track, drvals);
-    tk2calo_drdptvals_cut<PFPUPPI_DR2MAX,DR2MAX>(calo, track, drvals, drvals_cut);
-    pick_closest<DQMAX,NTRACK,NCALO,tk2calo_dq_t>(drvals_cut, calo_track_link_bit);
+    tk2calo_drdptvals<DR2MAX>(calo, track, drvals);
+    pick_closest<DQMAX,NTRACK,NCALO,tk2calo_dq_t>(drvals, calo_track_link_bit);
 }
 
-void tk2em_link(EmCaloObj calo[NEMCALO], TkObj track[NTRACK], ap_uint<NEMCALO> calo_track_link_bit[NTRACK], bool isMu[NTRACK], tk2em_dr_t drvals[NTRACK][NEMCALO]) {
+void tk2em_link(EmCaloObj calo[NEMCALO], TkObj track[NTRACK], ap_uint<NEMCALO> calo_track_link_bit[NTRACK], bool isMu[NTRACK]) {
     const int DR2MAX = PFALGO3_DR2MAX_TK_EM;
-    //tk2em_dr_t drvals[NTRACK][NEMCALO];
-    //#pragma HLS ARRAY_PARTITION variable=drvals complete dim=0
+    tk2em_dr_t drvals[NTRACK][NEMCALO];
+    #pragma HLS ARRAY_PARTITION variable=drvals complete dim=0
 
     //tk2em_drvals<DR2MAX>(calo, track, drvals, isMu);
     tk2em_drvals<PFPUPPI_DR2MAX>(calo, track, drvals, isMu);
@@ -631,7 +629,110 @@ void buffer_ff_2d(OBJ_T calo[NOBJ1][NOBJ2], OBJ_T calo_out[NOBJ1][NOBJ2]) {
 // PF Algos
 //-------------------------------------------------------
 
-void pfalgo3_full(EmCaloObj calo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj track[NTRACK], MuObj mu[NMU], PFChargedObj outch[NTRACK], PFNeutralObj outpho[NPHOTON], PFNeutralObj outne[NSELCALO], PFChargedObj outmu[NMU], tk2em_dr_t drvals_tk2em[NTRACK][NPHOTON], tk2calo_dr_t drvals_tk2calo[NTRACK][NSELCALO]) {
+void pfalgo3_part1(EmCaloObj calo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj track[NTRACK], MuObj mu[NMU], PFNeutralObj outpho[NPHOTON], PFChargedObj outmu[NMU], HadCaloObj hadcalo_sub[NCALO], bool isMu[NTRACK], bool isEle[NTRACK]) {
+    
+    #pragma HLS ARRAY_PARTITION variable=calo complete
+    #pragma HLS ARRAY_PARTITION variable=hadcalo complete
+    #pragma HLS ARRAY_PARTITION variable=track complete
+    #pragma HLS ARRAY_PARTITION variable=mu complete    
+    #pragma HLS ARRAY_PARTITION variable=outpho complete
+    #pragma HLS ARRAY_PARTITION variable=outmu complete
+
+    #pragma HLS pipeline II=HLS_pipeline_II rewind
+
+    // ---------------------------------------------------------------
+    // TK-MU Linking
+    ap_uint<NMU> mu_track_link_bit[NTRACK];
+    #pragma HLS ARRAY_PARTITION variable=mu_track_link_bit complete
+    for (int it = 0; it < NTRACK; ++it) { isMu[it] = 0; }
+
+    spfph_mutrk_link(mu, track, mu_track_link_bit);
+    spfph_mualgo(mu, track, mu_track_link_bit, outmu, isMu);
+
+    // ---------------------------------------------------------------
+    // TK-EM Linking
+    ap_uint<NEMCALO> em_track_link_bit[NTRACK];
+    #pragma HLS ARRAY_PARTITION variable=em_track_link_bit complete
+    //#pragma HLS RESOURCE variable=drvals_tk2em_unsort type=RAM_2P
+    tk2em_link(calo, track, em_track_link_bit, isMu);
+
+    pt_t sumtk2em[NEMCALO]; 
+    #pragma HLS ARRAY_PARTITION variable=sumtk2em complete
+
+    pt_t photonPt[NEMCALO];
+    #pragma HLS ARRAY_PARTITION variable=photonPt complete
+
+    bool isEM[NEMCALO];
+    #pragma HLS ARRAY_PARTITION variable=isEM complete
+
+    PFNeutralObj outpho_all[NPHOTON];
+    #pragma HLS ARRAY_PARTITION variable=outpho_all complete
+    tk2em_sumtk(track, em_track_link_bit, sumtk2em);
+    tk2em_emalgo(calo, sumtk2em, isEM, photonPt);
+    tk2em_photons(calo, photonPt, outpho_all);
+
+    #pragma HLS ARRAY_PARTITION variable=isEle complete
+    tk2em_elealgo(em_track_link_bit, isEM, isEle);
+
+    ap_uint<NCALO> em_calo_link_bit[NEMCALO];
+    #pragma HLS ARRAY_PARTITION variable=em_calo_link_bit complete
+    em2calo_link(calo, hadcalo, em_calo_link_bit);
+
+    bool keepcalo[NCALO];
+    pt_t sumem[NCALO]; 
+    #pragma HLS ARRAY_PARTITION variable=sumem complete
+    em2calo_sumem(calo, isEM, em_calo_link_bit, sumem, keepcalo);
+
+    #pragma HLS ARRAY_PARTITION variable=hadcalo_sub complete
+    em2calo_sub(hadcalo, sumem, keepcalo, hadcalo_sub);
+
+    for (unsigned int ipho = 0; ipho < NEMCALO; ipho++) {outpho[ipho] = outpho_all[ipho];}
+
+
+}
+void pfalgo3_part2(TkObj track[NTRACK], HadCaloObj hadcalo_sub[NCALO], bool isMu[NTRACK], bool isEle[NTRACK], PFChargedObj outch[NTRACK], PFNeutralObj outne[NSELCALO]) {
+
+    
+    #pragma HLS ARRAY_PARTITION variable=track complete
+    #pragma HLS ARRAY_PARTITION variable=hadcalo_sub complete
+    #pragma HLS ARRAY_PARTITION variable=isEle complete
+    #pragma HLS ARRAY_PARTITION variable=outch complete
+    #pragma HLS ARRAY_PARTITION variable=outne complete
+
+    #pragma HLS pipeline II=HLS_pipeline_II rewind
+
+    // ---------------------------------------------------------------
+    // TK-HAD Linking
+    ap_uint<NCALO> calo_track_link_bit[NTRACK];
+    #pragma HLS ARRAY_PARTITION variable=calo_track_link_bit complete
+
+    tk2calo_link_drdpt(hadcalo_sub, track, calo_track_link_bit);
+    //tk2calo_link_dronly(hadcalo_sub, track, calo_track_link_bit, drvals_tk2calo_unsort);
+
+    int tkerr2[NTRACK];
+    #pragma HLS ARRAY_PARTITION variable=tkerr2 complete
+    tk2calo_tkerr2(track, tkerr2);
+
+    pt_t sumtk[NCALO]; int sumtkerr2[NCALO];
+    #pragma HLS ARRAY_PARTITION variable=sumtk complete
+    #pragma HLS ARRAY_PARTITION variable=sumtkerr2 complete
+
+    PFChargedObj outch_all[NTRACK];
+    #pragma HLS ARRAY_PARTITION variable=outch_all complete
+
+    tk2calo_tkalgo(track, isEle, isMu, calo_track_link_bit, outch_all);
+    tk2calo_sumtk(track, isEle, isMu, tkerr2, calo_track_link_bit, sumtk, sumtkerr2);
+
+    PFNeutralObj outne_all[NCALO];
+    #pragma HLS ARRAY_PARTITION variable=outne_all complete
+    tk2calo_caloalgo(hadcalo_sub, sumtk, sumtkerr2, outne_all);
+
+    ptsort_hwopt<PFNeutralObj,NCALO,NSELCALO>(outne_all, outne);
+    for (unsigned int ich = 0; ich < NTRACK; ich++) {outch[ich] = outch_all[ich];}
+
+}
+
+void pfalgo3_full(EmCaloObj calo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj track[NTRACK], MuObj mu[NMU], PFChargedObj outch[NTRACK], PFNeutralObj outpho[NPHOTON], PFNeutralObj outne[NSELCALO], PFChargedObj outmu[NMU]) {
     
     #pragma HLS ARRAY_PARTITION variable=calo complete
     #pragma HLS ARRAY_PARTITION variable=hadcalo complete
@@ -642,10 +743,7 @@ void pfalgo3_full(EmCaloObj calo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj trac
     #pragma HLS ARRAY_PARTITION variable=outne complete
     #pragma HLS ARRAY_PARTITION variable=outmu complete
 
-    #pragma HLS ARRAY_PARTITION variable=drvals_tk2em complete dim=0
-    #pragma HLS ARRAY_PARTITION variable=drvals_tk2calo complete dim=0
-
-    #pragma HLS pipeline II=HLS_pipeline_II
+    #pragma HLS pipeline II=HLS_pipeline_II rewind
 
     // ---------------------------------------------------------------
     // TK-MU Linking
@@ -661,10 +759,8 @@ void pfalgo3_full(EmCaloObj calo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj trac
     // TK-EM Linking
     ap_uint<NEMCALO> em_track_link_bit[NTRACK];
     #pragma HLS ARRAY_PARTITION variable=em_track_link_bit complete
-    tk2em_dr_t drvals_tk2em_unsort[NTRACK][NPHOTON];
-    #pragma HLS ARRAY_PARTITION variable=drvals_tk2em_unsort complete dim=0
     //#pragma HLS RESOURCE variable=drvals_tk2em_unsort type=RAM_2P
-    tk2em_link(calo, track, em_track_link_bit, isMu, drvals_tk2em_unsort);
+    tk2em_link(calo, track, em_track_link_bit, isMu);
 
     pt_t sumtk2em[NEMCALO]; 
     #pragma HLS ARRAY_PARTITION variable=sumtk2em complete
@@ -708,10 +804,8 @@ void pfalgo3_full(EmCaloObj calo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj trac
     // TK-HAD Linking
     ap_uint<NCALO> calo_track_link_bit[NTRACK];
     #pragma HLS ARRAY_PARTITION variable=calo_track_link_bit complete
-    tk2calo_dr_t drvals_tk2calo_unsort[NTRACK][NCALO];
-    #pragma HLS ARRAY_PARTITION variable=drvals_tk2calo_unsort complete dim=0
 
-    tk2calo_link_drdpt(hadcalo_sub_out, track, calo_track_link_bit, drvals_tk2calo_unsort);
+    tk2calo_link_drdpt(hadcalo_sub_out, track, calo_track_link_bit);
     //tk2calo_link_dronly(hadcalo_sub, track, calo_track_link_bit, drvals_tk2calo_unsort);
 
     int tkerr2[NTRACK];
@@ -732,26 +826,10 @@ void pfalgo3_full(EmCaloObj calo[NEMCALO], HadCaloObj hadcalo[NCALO], TkObj trac
     #pragma HLS ARRAY_PARTITION variable=outne_all complete
     tk2calo_caloalgo(hadcalo_sub, sumtk, sumtkerr2, outne_all);
 
-    //ptsort_hwopt<PFNeutralObj,NCALO,NSELCALO>(outne_all, outne);
-    ap_uint<6> calind[NSELCALO];
-    #pragma HLS ARRAY_PARTITION variable=calind complete
-    ptsort_hwopt_ind<PFNeutralObj,NCALO,NSELCALO>(outne_all, outne, calind);
-    for (unsigned int ich = 0; ich < NTRACK; ich++) {outch[ich] = outch_all[ich];}
-    for (unsigned int ipho = 0; ipho < NEMCALO; ipho++) {outpho[ipho] = outpho_all[ipho];}
-    for (int ic=0; ic<NSELCALO; ic++) {
-        #pragma HLS LOOP UNROLL
-        for (int it=0; it<NTRACK; it++) {
-            #pragma HLS LOOP UNROLL
-            drvals_tk2calo[it][ic] = drvals_tk2calo_unsort[it][calind[ic]];
-        }
-    }
-    for (int ic=0; ic<NPHOTON; ic++) {
-        #pragma HLS LOOP UNROLL
-        for (int it=0; it<NTRACK; it++) {
-            #pragma HLS LOOP UNROLL
-            drvals_tk2em[it][ic] = drvals_tk2em_unsort[it][ic];
-        }
-    }
+    ptsort_hwopt<PFNeutralObj,NCALO,NSELCALO>(outne_all, outne);
+    //ap_uint<6> calind[NSELCALO];
+    //#pragma HLS ARRAY_PARTITION variable=calind complete
+    //ptsort_hwopt_ind<PFNeutralObj,NCALO,NSELCALO>(outne_all, outne, calind);
     //once a sort is implemented, this syntax above will be necessary
     //could remove for now, but it doesnt impact synthesis so I leave it
 
@@ -818,6 +896,23 @@ void mp7wrapped_pack_out( PFChargedObj pfch[NTRACK], PFNeutralObj pfpho[NPHOTON]
     for (unsigned int i = 0; i < NMU; ++i) {
         data[2*i+0+PFMUOFFS] = ( pfmu[i].hwId, pfmu[i].hwPt );
         data[2*i+1+PFMUOFFS] = ( pfmu[i].hwZ0, pfmu[i].hwPhi, pfmu[i].hwEta );
+    }
+
+}
+
+template<int NOUT>
+void mp7wrapped_pack_out_comb( PFOutputObj pfout[NOUT], MP7DataWord data[NALL*2]) {
+    #pragma HLS ARRAY_PARTITION variable=data complete
+    #pragma HLS ARRAY_PARTITION variable=pfout complete
+    // pack outputs
+    assert(2*NOUT <= MP7_NCHANN);
+    for (unsigned int i = 0; i < NOUT; ++i) {
+        data[2*i+0] = ( pfout[i].hwZ0Pup, pfout[i].hwPt );
+        data[2*i+1] = ( pfout[i].hwId, pfout[i].hwPhi, pfout[i].hwEta );
+    }
+    for (unsigned int i = NOUT; i < NALL; ++i) {
+        data[2*i+0] = MP7DataWord(0);
+        data[2*i+1] = MP7DataWord(0);
     }
 
 }
@@ -888,6 +983,61 @@ void mp7wrapped_unpack_out( MP7DataWord data[MP7_NCHANN], PFChargedObj pfch[NTRA
     }
 
 }
+void mp7wrapped_unpack_out_comb( MP7DataWord data[MP7_NCHANN], PFOutputObj pfout[NALL]) {
+    #pragma HLS ARRAY_PARTITION variable=data complete
+    #pragma HLS ARRAY_PARTITION variable=pfout complete
+    // unpack outputs
+    assert(2*NALL <= MP7_NCHANN);
+    for (unsigned int i = 0; i < NALL; ++i) {
+        pfout[i].hwPt    = data[2*i+0](15, 0);
+        pfout[i].hwZ0Pup = data[2*i+0](31,16);
+        pfout[i].hwEta   = data[2*i+1](9, 0);
+        pfout[i].hwPhi   = data[2*i+1](19,10);
+        pfout[i].hwId    = data[2*i+1](22,20);
+    }
+
+}
+void mp7wrapped_unpack_out_comb( MP7DataWord data[MP7_NCHANN], PFChargedObj pfch[NTRACK], PFNeutralObj pfpho[NPHOTON], PFNeutralObj pfne[NSELCALO], PFChargedObj pfmu[NMU]) {
+    #pragma HLS ARRAY_PARTITION variable=data complete
+    #pragma HLS ARRAY_PARTITION variable=pfch complete
+    #pragma HLS ARRAY_PARTITION variable=pfpho complete
+    #pragma HLS ARRAY_PARTITION variable=pfne complete
+    #pragma HLS ARRAY_PARTITION variable=pfmu complete
+    // unpack outputs
+    assert(2*NTRACK + 2*NPHOTON + 2*NSELCALO + 2*NMU <= MP7_NCHANN);
+    #define PHOOFFS 2*NTRACK
+    #define NHOFFS 2*NPHOTON+PHOOFFS
+    #define PFMUOFFS 2*NSELCALO+NHOFFS
+    for (unsigned int i = 0; i < NTRACK; ++i) {
+        pfch[i].hwPt  = data[2*i+0](15, 0);
+        pfch[i].hwZ0  = data[2*i+0](31,16);
+        pfch[i].hwEta = data[2*i+1](9, 0);
+        pfch[i].hwPhi = data[2*i+1](19,10);
+        pfch[i].hwId  = data[2*i+1](22,20);
+    }
+    for (unsigned int i = 0; i < NPHOTON; ++i) {
+        pfpho[i].hwPtPuppi  = data[2*i+0+PHOOFFS](15,0);
+        pfpho[i].hwPt  = data[2*i+0+PHOOFFS](31, 16);
+        pfpho[i].hwEta = data[2*i+1+PHOOFFS](9, 0);
+        pfpho[i].hwPhi = data[2*i+1+PHOOFFS](19,10);
+        pfpho[i].hwId  = data[2*i+1+PHOOFFS](22,20);
+    }
+    for (unsigned int i = 0; i < NSELCALO; ++i) {
+        pfne[i].hwPt  = data[2*i+0+NHOFFS](15, 0);
+        pfne[i].hwPtPuppi  = data[2*i+0+NHOFFS](31, 16);
+        pfne[i].hwEta = data[2*i+1+NHOFFS](9, 0);
+        pfne[i].hwPhi = data[2*i+1+NHOFFS](19,10);
+        pfne[i].hwId  = data[2*i+1+NHOFFS](22,20);
+    }
+    for (unsigned int i = 0; i < NMU; ++i) {
+        pfmu[i].hwPt  = data[2*i+0+PFMUOFFS](15, 0);
+        pfmu[i].hwZ0  = data[2*i+0+PFMUOFFS](31,16);
+        pfmu[i].hwEta = data[2*i+1+PFMUOFFS](9, 0);
+        pfmu[i].hwPhi = data[2*i+1+PFMUOFFS](19,10);
+        pfmu[i].hwId  = data[2*i+1+PFMUOFFS](22,20);
+    }
+}
+
 void mp7wrapped_unpack_out_necomb( MP7DataWord data[MP7_NCHANN], PFChargedObj pfch[NTRACK], PFNeutralObj pfpho[NPHOTON], PFNeutralObj pfne[NSELCALO], PFChargedObj pfmu[NMU]) {//for combined neutrals
     #pragma HLS ARRAY_PARTITION variable=data complete
     #pragma HLS ARRAY_PARTITION variable=pfch complete
@@ -930,13 +1080,14 @@ void mp7wrapped_unpack_out_necomb( MP7DataWord data[MP7_NCHANN], PFChargedObj pf
 
 }
 
-void mp7wrapped_pfalgo3_full(MP7DataWord input[MP7_NCHANN], MP7DataWord output[MP7_NCHANN], z0_t Z0) {
+//void mp7wrapped_pfalgo3_full(MP7DataWord input[MP7_NCHANN], MP7DataWord output[2*NOUT_SORT], z0_t Z0) {
+void mp7wrapped_pfalgo3_full(MP7DataWord input[MP7_NCHANN], MP7DataWord output[2*NALL], z0_t Z0) {
     
     #pragma HLS ARRAY_PARTITION variable=input complete
     #pragma HLS ARRAY_PARTITION variable=output complete
     #pragma HLS INTERFACE ap_none port=output
 
-    #pragma HLS pipeline II=HLS_pipeline_II
+    #pragma HLS pipeline II=HLS_pipeline_II rewind
 
     EmCaloObj emcalo[NEMCALO]; HadCaloObj hadcalo[NCALO]; TkObj track[NTRACK]; MuObj mu[NMU];
     #pragma HLS ARRAY_PARTITION variable=emcalo complete
@@ -951,30 +1102,67 @@ void mp7wrapped_pfalgo3_full(MP7DataWord input[MP7_NCHANN], MP7DataWord output[M
     #pragma HLS ARRAY_PARTITION variable=pfmu complete
 
     mp7wrapped_unpack_in(input, emcalo, hadcalo, track, mu);
-    tk2em_dr_t drvals_tk2em[NTRACK][NPHOTON];
-    tk2calo_dr_t drvals_tk2calo[NTRACK][NSELCALO];
-    #pragma HLS ARRAY_PARTITION variable=drvals_tk2em complete dim=0
-    #pragma HLS ARRAY_PARTITION variable=drvals_tk2calo complete dim=0
-    pfalgo3_full(emcalo, hadcalo, track, mu, pfch, pfpho, pfne, pfmu, drvals_tk2em, drvals_tk2calo);
+
+    //pfalgo3_full(emcalo, hadcalo, track, mu, pfch, pfpho, pfne, pfmu, drvals_tk2em, drvals_tk2calo);
+
+
+    HadCaloObj hadcalo_sub[NCALO]; HadCaloObj hadcalo_sub_out[NCALO];
+    #pragma HLS ARRAY_PARTITION variable=hadcalo_sub complete
+    #pragma HLS ARRAY_PARTITION variable=hadcalo_sub_out complete
+    bool isMu[NTRACK];
+    bool isEle[NTRACK];
+    #pragma HLS ARRAY_PARTITION variable=isEle complete
+    bool isMu_out[NTRACK];
+    #pragma HLS ARRAY_PARTITION variable=isMu_out complete
+    bool isEle_out[NTRACK];
+    #pragma HLS ARRAY_PARTITION variable=isEle_out complete
+
+    pfalgo3_part1(emcalo, hadcalo, track, mu, pfpho, pfmu, hadcalo_sub, isMu, isEle);
+    /*for (unsigned int it = 0; it < NMU; it++) {
+        pfmu[it].hwPt = mu[it].hwPt;
+        pfmu[it].hwEta = mu[it].hwEta;
+        pfmu[it].hwPhi = mu[it].hwPhi;
+        pfmu[it].hwId = PID_Muon;
+        pfmu[it].hwZ0 = z0_t(it);
+    }
+    for (unsigned int it = 0; it < NEMCALO; it++) {
+        pfpho[it].hwPt = emcalo[it].hwPt;
+        pfpho[it].hwEta = emcalo[it].hwEta;
+        pfpho[it].hwPhi = emcalo[it].hwPhi;
+        pfpho[it].hwId = PID_Photon;
+        pfpho[it].hwPtPuppi = (emcalo[it].hwPt*it)<<3;
+    }*/
+    TkObj track_out[NTRACK];
+    #pragma HLS ARRAY_PARTITION variable=track_out complete
+    buffer_ff<TkObj,NTRACK>(track, track_out);
+    buffer_ff<bool,NTRACK>(isMu, isMu_out);
+    buffer_ff<bool,NTRACK>(isEle, isEle_out);
+    buffer_ff<HadCaloObj,NCALO>(hadcalo_sub, hadcalo_sub_out);
+    pfalgo3_part2(track_out, hadcalo_sub_out, isMu_out, isEle_out, pfch, pfne);
+    /*for (unsigned int it = 0; it < NTRACK; it++) {
+        pfch[it].hwPt = track_out[it].hwPt;
+        pfch[it].hwEta = track_out[it].hwEta;
+        pfch[it].hwPhi = track_out[it].hwPhi;
+        pfch[it].hwId = it%2==1 ? PID_Charged : PID_Electron;
+        pfch[it].hwZ0 = track_out[it].hwZ0;
+    }
+    for (unsigned int it = 0; it < NSELCALO; it++) {
+        pfne[it].hwPt = hadcalo_sub_out[it].hwPt;
+        pfne[it].hwEta = hadcalo_sub_out[it].hwEta;
+        pfne[it].hwPhi = hadcalo_sub_out[it].hwPhi;
+        pfne[it].hwId = PID_Neutral;
+        pfne[it].hwPtPuppi = (hadcalo_sub_out[it].hwPt*it)<<3;
+    }*/
+
     //concat drvals, ne
-    tk2calo_dr_t drvals[NTRACK][NNEUTRALS];
-    #pragma HLS ARRAY_PARTITION variable=drvals complete dim=0
     PFNeutralObj pfne_all[NNEUTRALS];
     #pragma HLS ARRAY_PARTITION variable=pfne_all complete dim=0
     for (int i=0; i<NPHOTON; i++) {
         #pragma HLS LOOP UNROLL
-        for (int j=0; j<NTRACK; j++) {
-            #pragma HLS LOOP UNROLL
-            drvals[j][i] = pfpho[i].hwPt == 0 ? tk2calo_dr_t(PFPUPPI_DR2MAX) : tk2calo_dr_t(drvals_tk2em[j][i]);
-        }
         pfne_all[i] = pfpho[i];
     }
     for (int i=0; i<NSELCALO; i++) {
         #pragma HLS LOOP UNROLL
-        for (int j=0; j<NTRACK; j++) {
-            #pragma HLS LOOP UNROLL
-            drvals[j][i+NPHOTON] = pfne[i].hwPt == 0 ? tk2calo_dr_t(PFPUPPI_DR2MAX) : drvals_tk2calo[j][i];
-        }
         pfne_all[i+NPHOTON] = pfne[i];
     }
 
@@ -985,13 +1173,51 @@ void mp7wrapped_pfalgo3_full(MP7DataWord input[MP7_NCHANN], MP7DataWord output[M
     buffer_ff<PFChargedObj,NTRACK>(pfch, pfch_out);
     buffer_ff<PFNeutralObj,NNEUTRALS>(pfne_all, pfne_all_out);
     buffer_ff<PFChargedObj,NMU>(pfmu, pfmu_out);
-    tk2calo_dr_t drvals_out[NTRACK][NNEUTRALS];
-    #pragma HLS ARRAY_PARTITION variable=drvals_out complete dim=0
-    buffer_ff_2d<tk2calo_dr_t,NTRACK,NNEUTRALS>(drvals, drvals_out);
 
-    simple_puppi_hw(pfch_out, pfne_all_out, drvals_out, Z0);
+    simple_puppi_hw(pfch_out, pfne_all_out, Z0);
 
-    mp7wrapped_pack_out_necomb(pfch_out, pfne_all_out, pfmu_out, output);
+    //mp7wrapped_pack_out_necomb(pfch_out, pfne_all_out, pfmu_out, output);
+    PFOutputObj pf_comb[NALL];
+    #pragma HLS ARRAY_PARTITION variable=pf_comb complete
+    for (unsigned int id = 0; id < NTRACK; id++) {
+        #pragma HLS LOOP UNROLL
+        pf_comb[id].hwPt = pfch_out[id].hwPt;
+        pf_comb[id].hwEta = pfch_out[id].hwEta;
+        pf_comb[id].hwPhi = pfch_out[id].hwPhi;
+        pf_comb[id].hwId = pfch_out[id].hwId;
+        pf_comb[id].hwZ0Pup = pfch_out[id].hwZ0;
+    }
+    for (unsigned int id = 0; id < NPHOTON; id++) {
+        #pragma HLS LOOP UNROLL
+        pf_comb[id+NTRACK].hwPt = pfne_all_out[id].hwPtPuppi;
+        pf_comb[id+NTRACK].hwEta = pfne_all_out[id].hwEta;
+        pf_comb[id+NTRACK].hwPhi = pfne_all_out[id].hwPhi;
+        pf_comb[id+NTRACK].hwId = pfne_all_out[id].hwId;
+        pf_comb[id+NTRACK].hwZ0Pup = pfne_all_out[id].hwPt;
+    }
+    for (unsigned int id = 0; id < NSELCALO; id++) {
+        #pragma HLS LOOP UNROLL
+        pf_comb[id+NTRACK+NPHOTON].hwPt = pfne_all_out[id+NPHOTON].hwPtPuppi;
+        pf_comb[id+NTRACK+NPHOTON].hwEta = pfne_all_out[id+NPHOTON].hwEta;
+        pf_comb[id+NTRACK+NPHOTON].hwPhi = pfne_all_out[id+NPHOTON].hwPhi;
+        pf_comb[id+NTRACK+NPHOTON].hwId = pfne_all_out[id+NPHOTON].hwId;
+        pf_comb[id+NTRACK+NPHOTON].hwZ0Pup = pfne_all_out[id+NPHOTON].hwPt;
+    }
+    for (unsigned int id = 0; id < NMU; id++) {
+        #pragma HLS LOOP UNROLL
+        pf_comb[id+NTRACK+NPHOTON+NSELCALO].hwPt = pfmu_out[id].hwPt;
+        pf_comb[id+NTRACK+NPHOTON+NSELCALO].hwEta = pfmu_out[id].hwEta;
+        pf_comb[id+NTRACK+NPHOTON+NSELCALO].hwPhi = pfmu_out[id].hwPhi;
+        pf_comb[id+NTRACK+NPHOTON+NSELCALO].hwId = pfmu_out[id].hwId;
+        pf_comb[id+NTRACK+NPHOTON+NSELCALO].hwZ0Pup = pfmu_out[id].hwZ0;
+    }
+    PFOutputObj pf_sort[NALL];
+    #pragma HLS ARRAY_PARTITION variable=pf_sort complete
+    buffer_ff<PFOutputObj,NALL>(pf_comb, pf_sort);
 
+    PFOutputObj pf_out[NOUT_SORT];
+    #pragma HLS ARRAY_PARTITION variable=pf_out complete
+    ptsort_hwopt<PFOutputObj,NALL,NOUT_SORT>(pf_sort,pf_out);
+    mp7wrapped_pack_out_comb<NOUT_SORT>(pf_out, output);
 }
 

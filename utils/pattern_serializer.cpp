@@ -171,6 +171,15 @@ void HumanReadablePatternSerializer::dump_outputs(const PFChargedObj outch[NTRAC
     if (file_ == stdout) fflush(file_);
 }
 
+void HumanReadablePatternSerializer::dump_outputs(const PFOutputObj outpf[NALL]) 
+{
+    for (int i = 0; i < NALL; ++i) {
+        fprintf(file_, "   pf %3d, hwPt % 7d   hwEta %+7d   hwPhi %+7d   hwId %1d   hwZ0Pup %+7d\n", i,
+                int(outpf[i].hwPt), int(outpf[i].hwEta), int(outpf[i].hwPhi), int(outpf[i].hwId), int(outpf[i].hwZ0Pup));
+    }
+    if (file_ == stdout) fflush(file_);
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

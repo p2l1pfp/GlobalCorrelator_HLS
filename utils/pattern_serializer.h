@@ -78,6 +78,7 @@ class HumanReadablePatternSerializer {
         void dump_track(const TkObj track[NTRACK], unsigned int N = NTRACK) ;
         void dump_mu(const MuObj mu[NMU], unsigned int N = NMU) ;
         void dump_outputs(const PFChargedObj outch[NTRACK], const PFNeutralObj outpho[NPHOTON], const PFNeutralObj outne[NSELCALO], const PFChargedObj outmu[NMU]) ;
+        void dump_outputs(const PFOutputObj outpf[NALL]) ;
 
     protected:
         const std::string fname_; 

@@ -1,5 +1,5 @@
 #include "simple_puppi.h"
-//#include "../../firmware/simple_fullpfalgo.h"
+#include "../../firmware/simple_fullpfalgo.h"
 #include <cassert>
 #ifndef __SYNTHESIS__
 #include <cstdio>
@@ -36,8 +36,8 @@ int _lut_shift15_divide(ap_uint<17> num, ap_uint<9> den) { // returns (num * 2^1
 	return (num * _table[den]);
 }
 
-//void simple_puppi_hw(PFChargedObj pfch[NTRACK], PFNeutralObj pfallne[NNEUTRALS], z0_t Z0) {
-void simple_puppi_hw(PFChargedObj pfch[NTRACK], PFNeutralObj pfallne[NNEUTRALS], tk2calo_dr_t drvals[NTRACK][NNEUTRALS], z0_t Z0) {
+void simple_puppi_hw(PFChargedObj pfch[NTRACK], PFNeutralObj pfallne[NNEUTRALS], z0_t Z0) {
+//void simple_puppi_hw(PFChargedObj pfch[NTRACK], PFNeutralObj pfallne[NNEUTRALS], tk2calo_dr_t drvals[NTRACK][NNEUTRALS], z0_t Z0) {
 
     const z0_t DZMAX = 256;
     const int DR2MAX = PFPUPPI_DR2MAX; // 0.4 cone
@@ -71,8 +71,7 @@ void simple_puppi_hw(PFChargedObj pfch[NTRACK], PFNeutralObj pfallne[NNEUTRALS],
             // std::cout << "pfch[it].hwPt = " << pfch[it].hwPt << std::endl;
 
             if ((Z0 - pfch[it].hwZ0 > DZMAX) || (Z0 - pfch[it].hwZ0 < -DZMAX)) continue; // if track is PV
-            //int dr2 = dr2_int(pfch[it].hwEta, pfch[it].hwPhi, pfallne[in].hwEta, pfallne[in].hwPhi); // if dr is inside puppi cone
-            int dr2 = int(drvals[it][in]);
+            int dr2 = dr2_int(pfch[it].hwEta, pfch[it].hwPhi, pfallne[in].hwEta, pfallne[in].hwPhi); // if dr is inside puppi cone
             if (dr2 < DR2MAX) {
                 ap_uint<9> dr2short = dr2 >> 5; // why?
                 int term = _lut_shift15_divide(pt2_shift[it], dr2short);
