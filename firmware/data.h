@@ -8,6 +8,7 @@ typedef ap_int<10>  etaphi_t;
 typedef ap_int<5>  vtx_t;
 typedef ap_uint<3>  particleid_t;
 typedef ap_int<10> z0_t;  // 40cm / 0.1
+typedef ap_int<16> misc_t;
 	
 typedef ap_uint<14> tk2em_dr_t;
 typedef ap_uint<14> tk2calo_dr_t;
@@ -58,6 +59,7 @@ enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=
 // PUPPI & CHS
 #define NPVTRACK 15
 #define NNEUTRALS NPHOTON+NSELCALO
+#define NALL (NTRACK+NPHOTON+NSELCALO+NMU)
 
 struct CaloObj {
 	pt_t hwPt;
@@ -116,6 +118,13 @@ struct VtxObj {
 	vtx_t mult;
 	particleid_t hwId;
 };
+struct PFOutputObj {
+        pt_t hwPt;
+	etaphi_t hwEta, hwPhi; // relative to the region center, at calo
+	particleid_t hwId;
+	misc_t hwZ0Pup;
+};
+        
 
 //TMUX
 #define NETA_TMUX 2
@@ -124,14 +133,16 @@ struct VtxObj {
 /* #define TMUX_OUT 18 */
 #define TMUX_IN 18
 #define TMUX_OUT 6
-#define NTRACK_TMUX (NTRACK*TMUX_OUT*NETA_TMUX*NPHI_TMUX)
-#define NCALO_TMUX (NCALO*TMUX_OUT*NETA_TMUX*NPHI_TMUX)
-#define NEMCALO_TMUX (NEMCALO*TMUX_OUT*NETA_TMUX*NPHI_TMUX)
-#define NMU_TMUX (NMU*TMUX_OUT*NETA_TMUX*NPHI_TMUX)
+#define NTRACK_TMUX 10000
+#define NCALO_TMUX 10000
+#define NEMCALO_TMUX 10000
+#define NMU_TMUX 10000
+///these are arbitrary, just want them to be large enough to handle really large dump files
 
 
 
 #define MP7_NCHANN 144
+#define NOUT_SORT 18
 #define CTP7_NCHANN_IN 67
 #define CTP7_NCHANN_OUT 48
 typedef ap_uint<32> MP7DataWord;
