@@ -31,7 +31,8 @@ void tk2calo_tkalgo_hgc(const TkObj track[NTRACK], const bool isEle[NTRACK], con
     for (int it = 0; it < NTRACK; ++it) {
         bool goodByPt = track[it].hwPt < (track[it].hwTightQuality ? TKPT_MAX_TIGHT : TKPT_MAX_LOOSE);
         bool good = isMu[it] || isEle[it] || goodByPt || calo_track_link_bit[it].or_reduce();
-        if (good) {
+        bool nonnull = track[it].hwPt != 0;
+        if (nonnull && good) {
             pfout[it].hwPt  = track[it].hwPt;
             pfout[it].hwEta = track[it].hwEta;
             pfout[it].hwPhi = track[it].hwPhi;
@@ -55,15 +56,19 @@ void tk2calo_caloalgo_hgc(const HadCaloObj calo[NCALO], const pt_t sumtk[NCALO],
             calopt = calo[icalo].hwPt;
         } else {
             pt_t ptdiff = calo[icalo].hwPt - sumtk[icalo];
-            if (ptdiff > 0 && (ptdiff*ptdiff > sumtkerr2[icalo])) {
+            int ptdiff2 = ptdiff*ptdiff;
+#ifdef L1PF_DSP_LATENCY3
+            #pragma HLS resource variable=ptdiff2 latency=3
+#endif
+            if (ptdiff > 0 && (ptdiff2 > sumtkerr2[icalo])) {
                 calopt = ptdiff;
             } else {
                 calopt = 0;
             }
         }
         pfout[icalo].hwPt  = calopt;
-        pfout[icalo].hwEta = calopt ? calo[icalo].hwEta : etaphi_t(0);
-        pfout[icalo].hwPhi = calopt ? calo[icalo].hwPhi : etaphi_t(0);
+        pfout[icalo].hwEta = calopt ? calo[icalo].hwEta : eta_t(0);
+        pfout[icalo].hwPhi = calopt ? calo[icalo].hwPhi : phi_t(0);
         pfout[icalo].hwId  = calopt ? (calo[icalo].hwIsEM ? PID_Photon : PID_Neutral) : 0;
     }
 }
@@ -78,7 +83,23 @@ void pfalgo2hgc(const HadCaloObj calo[NCALO], const TkObj track[NTRACK], const M
     #pragma HLS ARRAY_PARTITION variable=outne complete
     #pragma HLS ARRAY_PARTITION variable=outmu complete
 
+#ifdef HLS_pipeline_II
+ #if HLS_pipeline_II == 1
+    #pragma HLS pipeline II=1
+ #elif HLS_pipeline_II == 2
     #pragma HLS pipeline II=2
+ #elif HLS_pipeline_II == 3
+    #pragma HLS pipeline II=3
+ #elif HLS_pipeline_II == 4
+    #pragma HLS pipeline II=4
+ #elif HLS_pipeline_II == 6
+    #pragma HLS pipeline II=6
+ #endif
+#else
+    #pragma HLS pipeline II=2
+#endif
+
+    // ---------------------------------------------------------------
 
     // ---------------------------------------------------------------
     // TK-MU Linking
@@ -130,7 +151,23 @@ void pfalgo2hgc(const HadCaloObj calo[NCALO], const TkObj track[NTRACK], const M
 void packed_pfalgo2hgc(const ap_uint<PACKING_DATA_SIZE> input[PACKING_NCHANN], ap_uint<PACKING_DATA_SIZE> output[PACKING_NCHANN]) {
     #pragma HLS ARRAY_PARTITION variable=input complete
     #pragma HLS ARRAY_PARTITION variable=output complete
+#ifdef HLS_pipeline_II
+ #if HLS_pipeline_II == 1
+    #pragma HLS pipeline II=1
+ #elif HLS_pipeline_II == 2
     #pragma HLS pipeline II=2
+ #elif HLS_pipeline_II == 3
+    #pragma HLS pipeline II=3
+ #elif HLS_pipeline_II == 4
+    #pragma HLS pipeline II=4
+ #elif HLS_pipeline_II == 6
+    #pragma HLS pipeline II=6
+ #endif
+#else
+    #pragma HLS pipeline II=2
+#endif
+
+    // ---------------------------------------------------------------
 
     HadCaloObj calo[NCALO]; TkObj track[NTRACK]; MuObj mu[NMU]; 
     PFChargedObj outch[NTRACK]; PFNeutralObj outne[NSELCALO]; PFChargedObj outmu[NMU];

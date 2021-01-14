@@ -11,16 +11,25 @@ void linpuppi_set_debug(bool debug) {}
 #endif
 
 void fwdlinpuppiSum(const HadCaloObj caloin[NCALO], ap_uint<32> sums[NCALO]);
-void fwdlinpuppiSum2Pt(const HadCaloObj caloin[NCALO], const ap_uint<32> sums[NCALO], pt_t puppiPts[NCALO]);
-void fwdlinpuppiPt(const HadCaloObj caloin[NCALO], pt_t puppiPts[NCALO]);
+void fwdlinpuppiSum2Pt(const HadCaloObj caloin[NCALO], const ap_uint<32> sums[NCALO], pt_t puppiPts[NCALO], puppiWgt_t puppiWgts[NCALO]);
+void fwdlinpuppiPt(const HadCaloObj caloin[NCALO], pt_t puppiPts[NCALO], puppiWgt_t puppiWgts[NCALO]);
 
 
-int dr2_int(etaphi_t eta1, etaphi_t phi1, etaphi_t eta2, etaphi_t phi2) {
-    ap_int<etaphi_t::width+1> deta = (eta1-eta2);
-    ap_int<etaphi_t::width+1> dphi = (phi1-phi2);
+inline int dr2_int(eta_t eta1, phi_t phi1, eta_t eta2, phi_t phi2) {
+    ap_int<eta_t::width+1> deta = (eta1-eta2);
+    ap_int<phi_t::width+1> dphi = (phi1-phi2);
+    //ap_int<phi_t::width> dphi = (phi1-phi2); // intentional wrap-around
+#ifdef LINPUPPI_DR2_LATENCY3
+    int deta2 = deta*deta;
+    int dphi2 = dphi*dphi;
+    #pragma HLS resource variable=deta2 latency=3
+    #pragma HLS resource variable=dphi2 latency=3
+    int ret = deta2 + dphi2;
+    return ret;
+#else
     return deta*deta + dphi*dphi;
+#endif
 }
-
 
 void _lut_shift15_invert_init(ap_uint<16> _table[512]) { // returns 2^15 / x
     _table[0] = 32768; // this is 2^15
@@ -190,8 +199,8 @@ void fwdlinpuppi_init_w(ap_uint<9> table[fwdlinpuppi_x2w_table_size]) {
     }
 }
 
-pt_t fwdlinpuppi_calc_wpt(pt_t pt, int x2) {
-    static ap_uint<9> table[fwdlinpuppi_x2w_table_size];
+void fwdlinpuppi_calc_wpt(pt_t pt, int x2, pt_t & puppiPt, puppiWgt_t & wgt) {
+    static puppiWgt_t table[fwdlinpuppi_x2w_table_size];
 #ifdef __SYNTHESIS__
     fwdlinpuppi_init_w(table);
 #else // initialize the table only once, otherwise this is really slow
@@ -204,7 +213,8 @@ pt_t fwdlinpuppi_calc_wpt(pt_t pt, int x2) {
     if (x2 < -xavg) index = 0;
     else if (x2 >= xavg) index = fwdlinpuppi_x2w_table_size-1;
     else index = x2 + xavg;
-    return pt_t( int(pt * table[index]) >> 8 );
+    wgt  = table[index];
+    puppiPt = pt_t( int(pt * table[index]) >> 8 );
 }
 
 void fwdlinpuppiSum(const HadCaloObj caloin[NCALO], ap_uint<32> sums[NCALO]) {
@@ -241,7 +251,7 @@ void fwdlinpuppiSum(const HadCaloObj caloin[NCALO], ap_uint<32> sums[NCALO]) {
     }
 }
 
-void fwdlinpuppiPt(const HadCaloObj caloin[NCALO], pt_t puppiPts[NCALO]) {
+void fwdlinpuppiPt(const HadCaloObj caloin[NCALO], pt_t puppiPts[NCALO], puppiWgt_t puppiWgts[NCALO]) {
     #pragma HLS ARRAY_PARTITION variable=caloin complete
     #pragma HLS ARRAY_PARTITION variable=puppiPts complete
     #pragma HLS pipeline II=2
@@ -250,10 +260,10 @@ void fwdlinpuppiPt(const HadCaloObj caloin[NCALO], pt_t puppiPts[NCALO]) {
     #pragma HLS ARRAY_PARTITION variable=sums complete
     fwdlinpuppiSum(caloin, sums);
 
-    fwdlinpuppiSum2Pt(caloin, sums, puppiPts);
+    fwdlinpuppiSum2Pt(caloin, sums, puppiPts, puppiWgts);
 }
 
-void fwdlinpuppiSum2Pt(const HadCaloObj caloin[NCALO], const ap_uint<32> sums[NCALO], pt_t puppiPts[NCALO]) {
+void fwdlinpuppiSum2Pt(const HadCaloObj caloin[NCALO], const ap_uint<32> sums[NCALO], pt_t puppiPts[NCALO], puppiWgt_t puppiWgts[NCALO]) {
     #pragma HLS ARRAY_PARTITION variable=caloin complete
     #pragma HLS ARRAY_PARTITION variable=sums complete
     #pragma HLS ARRAY_PARTITION variable=puppiPts complete
@@ -291,7 +301,7 @@ void fwdlinpuppiSum2Pt(const HadCaloObj caloin[NCALO], const ap_uint<32> sums[NC
 
     for (int in = 0; in < NCALO; ++in) {
         int x2 = x2a[in]+x2ptp[in];
-        puppiPts[in] = fwdlinpuppi_calc_wpt(caloin[in].hwPt, x2);
+        fwdlinpuppi_calc_wpt(caloin[in].hwPt, x2, puppiPts[in], puppiWgts[in]);
 #ifndef __SYNTHESIS__
         if (caloin[in].hwPt == 0) continue;
         if (gdebug_) printf("hw  candidate %02d pt %7.2f  em %1d: alpha %+7.2f   x2a %+5d = %+7.3f  x2pt %+5d = %+7.3f   x2 %+5d = %+7.3f  -->                       puppi pt %7.2f\n",
@@ -306,66 +316,82 @@ void fwdlinpuppiSum2Pt(const HadCaloObj caloin[NCALO], const ap_uint<32> sums[NC
     }
 }
 
-void fwdlinpuppiNoCrop(const HadCaloObj caloin[NCALO], PFNeutralObj pfallne[NCALO]) {
+void fwdlinpuppiNoCrop(const HadCaloObj caloin[NCALO], PuppiObj pfallne[NCALO]) {
     #pragma HLS ARRAY_PARTITION variable=caloin complete
     #pragma HLS ARRAY_PARTITION variable=pfselne complete
+#ifdef HLS_pipeline_II
+ #if HLS_pipeline_II == 1
+    #pragma HLS pipeline II=1
+ #elif HLS_pipeline_II == 2
     #pragma HLS pipeline II=2
+ #elif HLS_pipeline_II == 3
+    #pragma HLS pipeline II=3
+ #elif HLS_pipeline_II == 4
+    #pragma HLS pipeline II=4
+ #elif HLS_pipeline_II == 6
+    #pragma HLS pipeline II=6
+ #endif
+#else
+    #pragma HLS pipeline II=2
+#endif
 
     pt_t puppiPts[NCALO];
     #pragma HLS ARRAY_PARTITION variable=puppiPts complete    
+    puppiWgt_t puppiWgts[NCALO];
+    #pragma HLS ARRAY_PARTITION variable=puppiWgts complete    
 
-    fwdlinpuppiPt(caloin, puppiPts);
+    fwdlinpuppiPt(caloin, puppiPts, puppiWgts);
 
     const int ptCut = LINPUPPI_ptCut;
     for (int in = 0; in < NCALO; ++in) {
         if (puppiPts[in] >= ptCut) {
-            pfallne[in].hwPt      = caloin[in].hwPt;
-            pfallne[in].hwEta     = caloin[in].hwEta;
-            pfallne[in].hwPhi     = caloin[in].hwPhi;
-            pfallne[in].hwId      = caloin[in].hwIsEM ? PID_Photon : PID_Neutral;
-            pfallne[in].hwPtPuppi = puppiPts[in];
+            fill(pfallne[in], caloin[in], puppiPts[in], puppiWgts[in]);
         } else {
-            pfallne[in].hwPt      = 0;
-            pfallne[in].hwEta     = 0;
-            pfallne[in].hwPhi     = 0;
-            pfallne[in].hwId      = 0;
-            pfallne[in].hwPtPuppi = 0;
+            clear(pfallne[in]);
         }
     }
 }
 
-void fwdlinpuppi(const HadCaloObj caloin[NCALO], PFNeutralObj pfselne[NNEUTRALS]) {
+void fwdlinpuppi(const HadCaloObj caloin[NCALO], PuppiObj pfselne[NNEUTRALS]) {
     #pragma HLS ARRAY_PARTITION variable=caloin complete
     #pragma HLS ARRAY_PARTITION variable=pfselne complete
+#ifdef HLS_pipeline_II
+ #if HLS_pipeline_II == 1
+    #pragma HLS pipeline II=1
+ #elif HLS_pipeline_II == 2
     #pragma HLS pipeline II=2
+ #elif HLS_pipeline_II == 3
+    #pragma HLS pipeline II=3
+ #elif HLS_pipeline_II == 4
+    #pragma HLS pipeline II=4
+ #elif HLS_pipeline_II == 6
+    #pragma HLS pipeline II=6
+ #endif
+#else
+    #pragma HLS pipeline II=2
+#endif
 
     pt_t puppiPts[NCALO];
     #pragma HLS ARRAY_PARTITION variable=puppiPts complete    
+    puppiWgt_t puppiWgts[NCALO];
+    #pragma HLS ARRAY_PARTITION variable=puppiWgts complete    
 
-    fwdlinpuppiPt(caloin, puppiPts);
+    fwdlinpuppiPt(caloin, puppiPts, puppiWgts);
 
-    PFNeutralObj work[NNEUTRALS];
+    PuppiObj work[NNEUTRALS];
     #pragma HLS ARRAY_PARTITION variable=work complete    
 
     for (int out = 0; out < NNEUTRALS; ++out) {
-        work[out].hwPt = 0;
-        work[out].hwEta = 0;
-        work[out].hwPhi = 0;
-        work[out].hwId = 0;
-        work[out].hwPtPuppi = 0;
+        clear(work[out]);
     }
 
     const int ptCut = LINPUPPI_ptCut;
     for (int in = 0; in < NCALO; ++in) {
         if (puppiPts[in] < ptCut) continue;
         for (int iout = NNEUTRALS-1; iout >= 0; --iout) {
-            if (work[iout].hwPtPuppi <= puppiPts[in]) {
-                if (iout == 0 || work[iout-1].hwPtPuppi > puppiPts[in]) {
-                    work[iout].hwPt      = caloin[in].hwPt;
-                    work[iout].hwEta     = caloin[in].hwEta;
-                    work[iout].hwPhi     = caloin[in].hwPhi;
-                    work[iout].hwId      = caloin[in].hwIsEM ? PID_Photon : PID_Neutral;
-                    work[iout].hwPtPuppi = puppiPts[in];
+            if (work[iout].hwPt <= puppiPts[in]) {
+                if (iout == 0 || work[iout-1].hwPt > puppiPts[in]) {
+                    fill(work[iout], caloin[in], puppiPts[in], puppiWgts[in]);
                 } else {
                     work[iout] = work[iout-1];
                 }
@@ -385,14 +411,41 @@ inline bool linpuppi_fromPV(const T & obj, z0_t pvZ0) {
        return (z0diff <= LINPUPPI_dzCut);
 }
 
-void linpuppi_chs(z0_t pvZ0, const PFChargedObj pfch[NTRACK], PFChargedObj outallch[NTRACK]) {
+PuppiObj linpuppi_chs_one(const PFChargedObj pfch, z0_t pvZ0) {
+    #pragma HLS pipeline II=1
+    #pragma HLS LATENCY min=1
+    PuppiObj ret;
+    if (linpuppi_fromPV(pfch, pvZ0) || pfch.hwId == PID_Muon) {
+        fill(ret, pfch);
+    } else {
+        clear(ret);
+    }
+    return ret;
+}
+
+void linpuppi_chs(z0_t pvZ0, const PFChargedObj pfch[NTRACK], PuppiObj outallch[NTRACK]) {
     #pragma HLS ARRAY_PARTITION variable=pfch complete
     #pragma HLS ARRAY_PARTITION variable=outallch complete
+    #pragma HLS LATENCY min=1
+#ifdef HLS_pipeline_II
+ #if HLS_pipeline_II == 1
+    #pragma HLS pipeline II=1
+ #elif HLS_pipeline_II == 2
     #pragma HLS pipeline II=2
+ #elif HLS_pipeline_II == 3
+    #pragma HLS pipeline II=3
+ #elif HLS_pipeline_II == 4
+    #pragma HLS pipeline II=4
+ #elif HLS_pipeline_II == 6
+    #pragma HLS pipeline II=6
+ #endif
+#else
+    #pragma HLS pipeline II=2
+#endif
 
     for (unsigned int i = 0; i < NTRACK; ++i) {
         if (linpuppi_fromPV(pfch[i], pvZ0) || pfch[i].hwId == PID_Muon) {
-            outallch[i] = pfch[i];
+            fill(outallch[i], pfch[i]);
         } else {
             clear(outallch[i]);
         }
@@ -426,7 +479,6 @@ void linpuppiSum(const TkObj track[NTRACK], z0_t pvZ0, const PFNeutralObj caloin
     for (int in = 0; in < NALLNEUTRALS; ++in) {
         ap_uint<32> sum = 0;
         for (int it = 0; it < NTRACK; ++it) {
-            if (it == in) continue;
             int dr2 = dr2_int(track[it].hwEta, track[it].hwPhi, caloin[in].hwEta, caloin[in].hwPhi); 
             if (dr2 <= DR2MAX && fromPV[it]) { // if dr is inside puppi cone
                 ap_uint<9> dr2short = dr2 >> 5; // reduce precision to make divide LUT cheaper
@@ -440,11 +492,8 @@ void linpuppiSum(const TkObj track[NTRACK], z0_t pvZ0, const PFNeutralObj caloin
     }
 }
 
-void linpuppiSum2All(const PFNeutralObj caloin[NALLNEUTRALS], const ap_uint<32> sums[NALLNEUTRALS], PFNeutralObj out[NALLNEUTRALS]) {
-    #pragma HLS ARRAY_PARTITION variable=caloin complete
-    #pragma HLS ARRAY_PARTITION variable=sums complete
-    #pragma HLS ARRAY_PARTITION variable=out complete
 
+void linpuppiSum2All(const PFNeutralObj & caloin, const ap_uint<32> & sum, PuppiObj & out) {
     const int x2_bits = LINPUPPI_x2_bits;    // decimal bits the discriminator values
     const int ptSlope_bits = LINPUPPI_ptSlope_bits;    // decimal bits of the ptSlope values 
     const int weight_bits = LINPUPPI_weight_bits;
@@ -474,90 +523,101 @@ void linpuppiSum2All(const PFNeutralObj caloin[NALLNEUTRALS], const ap_uint<32> 
     const int ptCut_1 = LINPUPPI_ptCut_1; 
 #endif
 
-    ap_int<12>  x2a[NALLNEUTRALS], x2ptp[NALLNEUTRALS];
-    #pragma HLS ARRAY_PARTITION variable=x2a complete    
-    #pragma HLS ARRAY_PARTITION variable=x2ptp complete    
+    ap_int<12>  x2a, x2ptp;
 
 #if defined(LINPUPPI_etaBins) && LINPUPPI_etaBins == 2
-    bool ietaBin[NALLNEUTRALS];
-    #pragma HLS ARRAY_PARTITION variable=ietaBin complete    
-    for (int in = 0; in < NALLNEUTRALS; ++in) {
-        ietaBin[in] = (caloin[in].hwEta <= LINPUPPI_etaCut) ? LINPUPPI_invertEta : (1-LINPUPPI_invertEta);
-    }
+    bool ietaBin = (caloin.hwEta <= LINPUPPI_etaCut) ? LINPUPPI_invertEta : (1-LINPUPPI_invertEta);
 #endif
 
-    for (int in = 0; in < NALLNEUTRALS; ++in) {
 #ifndef LINPUPPI_etaBins
-        x2a[in] = fwdlinpuppi_calc_x2a(sums[in]);
+    x2a = fwdlinpuppi_calc_x2a(sum);
 #elif LINPUPPI_etaBins == 2
-        x2a[in] = fwdlinpuppi_calc_x2a(sums[in], ietaBin[in]);
+    x2a = fwdlinpuppi_calc_x2a(sum, ietaBin);
+#endif
+
+    if (caloin.hwId == PID_Photon) {
+#ifndef LINPUPPI_etaBins
+        int val = (ptSlopePh*caloin.hwPt - ptSlopePh*ptZeroPh) >> (ptSlope_bits + 2 - x2_bits);
+        x2ptp =  val < 2047 ? val - priorPh : 2047; // saturate
+#elif LINPUPPI_etaBins == 2
+        int val = ((ietaBin ? ptSlopePh_1 : ptSlopePh_0)*caloin.hwPt - (ietaBin ? ptSlopePh_1*ptZeroPh_1 : ptSlopePh_0*ptZeroPh_0)) >> (ptSlope_bits + 2 - x2_bits);
+        x2ptp =  val < 2047 ? val - (ietaBin ? priorPh_1 : priorPh_0) : 2047; // saturate
+#endif
+    } else {
+#ifndef LINPUPPI_etaBins
+        int val = (ptSlopeNe*caloin.hwPt - ptSlopeNe*ptZeroNe) >> (ptSlope_bits + 2 - x2_bits);
+        x2ptp =  val < 2047 ? val - priorNe : 2047; // saturate
+#elif LINPUPPI_etaBins == 2
+        int val = ((ietaBin ? ptSlopeNe_1 : ptSlopeNe_0)*caloin.hwPt - (ietaBin ? ptSlopeNe_1*ptZeroNe_1 : ptSlopeNe_0*ptZeroNe_0)) >> (ptSlope_bits + 2 - x2_bits);
+        x2ptp =  val < 2047 ? val - (ietaBin ? priorNe_1 : priorNe_0) : 2047; // saturate
 #endif
     }
 
-    for (int in = 0; in < NALLNEUTRALS; ++in) {
-        if (caloin[in].hwId == PID_Photon) {
+    int x2 = x2a+x2ptp;
+    pt_t puppiPt; puppiWgt_t puppiWgt; fwdlinpuppi_calc_wpt(caloin.hwPt, x2, puppiPt, puppiWgt);
 #ifndef LINPUPPI_etaBins
-            int val = (ptSlopePh*caloin[in].hwPt - ptSlopePh*ptZeroPh) >> (ptSlope_bits + 2 - x2_bits);
-            x2ptp[in] =  val < 2047 ? val - priorPh : 2047; // saturate
+    if (puppiPt >= LINPUPPI_ptCut) {
 #elif LINPUPPI_etaBins == 2
-            int val = ((ietaBin[in] ? ptSlopePh_1 : ptSlopePh_0)*caloin[in].hwPt - (ietaBin[in] ? ptSlopePh_1*ptZeroPh_1 : ptSlopePh_0*ptZeroPh_0)) >> (ptSlope_bits + 2 - x2_bits);
-            x2ptp[in] =  val < 2047 ? val - (ietaBin[in] ? priorPh_1 : priorPh_0) : 2047; // saturate
+    if (puppiPt >= (ietaBin ? LINPUPPI_ptCut_1 : LINPUPPI_ptCut)) {
 #endif
-        } else {
-#ifndef LINPUPPI_etaBins
-            int val = (ptSlopeNe*caloin[in].hwPt - ptSlopeNe*ptZeroNe) >> (ptSlope_bits + 2 - x2_bits);
-            x2ptp[in] =  val < 2047 ? val - priorNe : 2047; // saturate
-#elif LINPUPPI_etaBins == 2
-            int val = ((ietaBin[in] ? ptSlopeNe_1 : ptSlopeNe_0)*caloin[in].hwPt - (ietaBin[in] ? ptSlopeNe_1*ptZeroNe_1 : ptSlopeNe_0*ptZeroNe_0)) >> (ptSlope_bits + 2 - x2_bits);
-            x2ptp[in] =  val < 2047 ? val - (ietaBin[in] ? priorNe_1 : priorNe_0) : 2047; // saturate
-#endif
-        }
+        fill(out, caloin, puppiPt, puppiWgt);
+    } else {
+        clear(out);
     }
-
-    for (int in = 0; in < NALLNEUTRALS; ++in) {
-        int x2 = x2a[in]+x2ptp[in];
-        pt_t puppiPt = fwdlinpuppi_calc_wpt(caloin[in].hwPt, x2);
-#ifndef LINPUPPI_etaBins
-        if (puppiPt >= LINPUPPI_ptCut) {
-#elif LINPUPPI_etaBins == 2
-        if (puppiPt >= (ietaBin[in] ? LINPUPPI_ptCut_1 : LINPUPPI_ptCut)) {
-#endif
-            out[in] = caloin[in];
-            out[in].hwPtPuppi = puppiPt;
-        } else {
-            clear(out[in]);
-        }
 #ifndef __SYNTHESIS__
-        if (caloin[in].hwPt == 0) continue;
 #ifndef LINPUPPI_etaBins
-        if (gdebug_) printf("hw  candidate %02d pt %7.2f  em %1d: alpha %+7.2f   x2a %+5d = %+7.3f  x2pt %+5d = %+7.3f   x2 %+5d = %+7.3f  -->                       puppi pt %7.2f\n",
-                   in, caloin[in].hwPt*LINPUPPI_ptLSB, int(caloin[in].hwId == PID_Photon), 
-                   sums[in] > 0 ? std::log2(float(sums[in]) * LINPUPPI_pt2DR2_scale / (1<<15))*std::log(2.) : 0., 
-                   int(x2a[in]), x2a[in]/float(1<<x2_bits), 
-                   (int(x2ptp[in]) + (caloin[in].hwId == PID_Photon ? priorPh : priorNe) ), 
-                   (int(x2ptp[in]) + (caloin[in].hwId == PID_Photon ? priorPh : priorNe) )/float(1<<x2_bits), 
-                   x2, x2/float(1<<x2_bits), 
-                   puppiPt*LINPUPPI_ptLSB);
+    if (gdebug_) printf("hw  candidate  pt %7.2f  em %1d: alpha %+7.2f   x2a %+5d = %+7.3f  x2pt %+5d = %+7.3f   x2 %+5d = %+7.3f  -->                       puppi pt %7.2f\n",
+               caloin.hwPt*LINPUPPI_ptLSB, int(caloin.hwId == PID_Photon), 
+               sum > 0 ? std::log2(float(sum) * LINPUPPI_pt2DR2_scale / (1<<15))*std::log(2.) : 0., 
+               int(x2a), x2a/float(1<<x2_bits), 
+               (int(x2ptp) + (caloin.hwId == PID_Photon ? priorPh : priorNe) ), 
+               (int(x2ptp) + (caloin.hwId == PID_Photon ? priorPh : priorNe) )/float(1<<x2_bits), 
+               x2, x2/float(1<<x2_bits), 
+               puppiPt*LINPUPPI_ptLSB);
 #elif LINPUPPI_etaBins == 2
-        if (gdebug_) printf("hw  candidate %02d pt %7.2f  em %1d  ieta %1d: alpha %+7.2f   x2a %+5d = %+7.3f  x2pt %+5d = %+7.3f   x2 %+5d = %+7.3f  -->                       puppi pt %7.2f\n",
-                   in, caloin[in].hwPt*LINPUPPI_ptLSB, int(caloin[in].hwId == PID_Photon), int(ietaBin[in]),
-                   sums[in] > 0 ? std::log2(float(sums[in]) * LINPUPPI_pt2DR2_scale / (1<<15))*std::log(2.) : 0., 
-                   int(x2a[in]), x2a[in]/float(1<<x2_bits), 
-                   (int(x2ptp[in]) + (caloin[in].hwId == PID_Photon ? (ietaBin[in] ? priorPh_1 : priorPh_0) : (ietaBin[in] ? priorNe_1 : priorNe_0)) ), 
-                   (int(x2ptp[in]) + (caloin[in].hwId == PID_Photon ? (ietaBin[in] ? priorPh_1 : priorPh_0) : (ietaBin[in] ? priorNe_1 : priorNe_0)) )/float(1<<x2_bits), 
-                   x2, x2/float(1<<x2_bits), 
-                   puppiPt*LINPUPPI_ptLSB);
+    if (gdebug_) printf("hw  candidate  pt %7.2f  em %1d  ieta %1d: alpha %+7.2f   x2a %+5d = %+7.3f  x2pt %+5d = %+7.3f   x2 %+5d = %+7.3f  -->                       puppi pt %7.2f\n",
+               caloin.hwPt*LINPUPPI_ptLSB, int(caloin.hwId == PID_Photon), int(ietaBin),
+               sum > 0 ? std::log2(float(sum) * LINPUPPI_pt2DR2_scale / (1<<15))*std::log(2.) : 0., 
+               int(x2a), x2a/float(1<<x2_bits), 
+               (int(x2ptp) + (caloin.hwId == PID_Photon ? (ietaBin ? priorPh_1 : priorPh_0) : (ietaBin ? priorNe_1 : priorNe_0)) ), 
+               (int(x2ptp) + (caloin.hwId == PID_Photon ? (ietaBin ? priorPh_1 : priorPh_0) : (ietaBin ? priorNe_1 : priorNe_0)) )/float(1<<x2_bits), 
+               x2, x2/float(1<<x2_bits), 
+               puppiPt*LINPUPPI_ptLSB);
 #endif // etaBins
 #endif // synthesis
+}
+
+
+void linpuppiSum2All(const PFNeutralObj caloin[NALLNEUTRALS], const ap_uint<32> sums[NALLNEUTRALS], PuppiObj out[NALLNEUTRALS]) {
+    #pragma HLS ARRAY_PARTITION variable=caloin complete
+    #pragma HLS ARRAY_PARTITION variable=sums complete
+    #pragma HLS ARRAY_PARTITION variable=out complete
+
+    for (int i = 0; i < NALLNEUTRALS; ++i) {
+        linpuppiSum2All(caloin[i], sums[i], out[i]);
     }
 }
 
 
-void linpuppiNoCrop(const TkObj track[NTRACK], z0_t pvZ0, const PFNeutralObj pfallne[NALLNEUTRALS], PFNeutralObj outallne[NALLNEUTRALS]) {
+void linpuppiNoCrop(const TkObj track[NTRACK], z0_t pvZ0, const PFNeutralObj pfallne[NALLNEUTRALS], PuppiObj outallne[NALLNEUTRALS]) {
     #pragma HLS ARRAY_PARTITION variable=track complete
     #pragma HLS ARRAY_PARTITION variable=pfallne complete
     #pragma HLS ARRAY_PARTITION variable=outallne complete
+#ifdef HLS_pipeline_II
+ #if HLS_pipeline_II == 1
+    #pragma HLS pipeline II=1
+ #elif HLS_pipeline_II == 2
     #pragma HLS pipeline II=2
+ #elif HLS_pipeline_II == 3
+    #pragma HLS pipeline II=3
+ #elif HLS_pipeline_II == 4
+    #pragma HLS pipeline II=4
+ #elif HLS_pipeline_II == 6
+    #pragma HLS pipeline II=6
+ #endif
+#else
+    #pragma HLS pipeline II=2
+#endif
 
     ap_uint<32> sums[NALLNEUTRALS];
     #pragma HLS ARRAY_PARTITION variable=sums complete
@@ -566,18 +626,32 @@ void linpuppiNoCrop(const TkObj track[NTRACK], z0_t pvZ0, const PFNeutralObj pfa
     linpuppiSum2All(pfallne, sums, outallne);
 }
 
-void linpuppi(const TkObj track[NTRACK], z0_t pvZ0, const PFNeutralObj pfallne[NALLNEUTRALS], PFNeutralObj outselne[NNEUTRALS]) {
+void linpuppi(const TkObj track[NTRACK], z0_t pvZ0, const PFNeutralObj pfallne[NALLNEUTRALS], PuppiObj outselne[NNEUTRALS]) {
     #pragma HLS ARRAY_PARTITION variable=track complete
     #pragma HLS ARRAY_PARTITION variable=pfallne complete
     #pragma HLS ARRAY_PARTITION variable=outselne complete
+#ifdef HLS_pipeline_II
+ #if HLS_pipeline_II == 1
+    #pragma HLS pipeline II=1
+ #elif HLS_pipeline_II == 2
     #pragma HLS pipeline II=2
+ #elif HLS_pipeline_II == 3
+    #pragma HLS pipeline II=3
+ #elif HLS_pipeline_II == 4
+    #pragma HLS pipeline II=4
+ #elif HLS_pipeline_II == 6
+    #pragma HLS pipeline II=6
+ #endif
+#else
+    #pragma HLS pipeline II=2
+#endif
 
-    PFNeutralObj allne[NALLNEUTRALS];
+    PuppiObj allne[NALLNEUTRALS];
     #pragma HLS ARRAY_PARTITION variable=allne complete
 
     linpuppiNoCrop(track, pvZ0, pfallne, allne);
 
-    PFNeutralObj work[NNEUTRALS];
+    PuppiObj work[NNEUTRALS];
     #pragma HLS ARRAY_PARTITION variable=work complete
 
     for (int iout = 0; iout < NNEUTRALS; ++iout) {
@@ -586,8 +660,8 @@ void linpuppi(const TkObj track[NTRACK], z0_t pvZ0, const PFNeutralObj pfallne[N
 
     for (int in = 0; in < NALLNEUTRALS; ++in) {
         for (int iout = NNEUTRALS-1; iout >= 0; --iout) {
-            if (work[iout].hwPtPuppi <= allne[in].hwPtPuppi) {
-                if (iout == 0 || work[iout-1].hwPtPuppi > allne[in].hwPtPuppi) {
+            if (work[iout].hwPt <= allne[in].hwPt) {
+                if (iout == 0 || work[iout-1].hwPt > allne[in].hwPt) {
                     work[iout] = allne[in];
                 } else {
                     work[iout] = work[iout-1];
@@ -601,13 +675,90 @@ void linpuppi(const TkObj track[NTRACK], z0_t pvZ0, const PFNeutralObj pfallne[N
     }
 }
 
+linpuppi_refobj linpuppi_prepare_track(const TkObj & track, z0_t pvZ0) {
+    #pragma HLS PIPELINE II=1
+    #pragma HLS LATENCY min=3
+
+    const int PTMAX2_SHIFT = (LINPUPPI_ptMax)*(LINPUPPI_ptMax) >> 5;
+
+    linpuppi_refobj ret;
+    ret.hwEta = track.hwEta;
+    ret.hwPhi = track.hwPhi;
+    if (linpuppi_fromPV(track, pvZ0)) {
+        int mypt2 = (track.hwPt*track.hwPt) >> 5; // reduce precision to make multiplication smaller later 
+        ret.pt2_shift = (mypt2 < PTMAX2_SHIFT? mypt2 : PTMAX2_SHIFT);
+    } else {
+        ret.pt2_shift = 0;
+    }
+    return ret;
+}
+
+PuppiObj linpuppi_one(const PFNeutralObj & in, const linpuppi_refobj sel_track[NTRACK]) {
+    #pragma HLS PIPELINE II=1
+    #pragma HLS ARRAY_PARTITION variable=sel_track complete
+
+    const int DR2MAX = LINPUPPI_DR2MAX; 
+    const int DR2MIN = LINPUPPI_DR2MIN; 
+    const int DR2MIN_SHIFT =  DR2MIN >> 5; 
+
+    int term[NTRACK];
+    #pragma HLS ARRAY_PARTITION variable=term complete
+    for (int it = 0; it < NTRACK; ++it) {
+        #pragma HLS unroll
+        int dr2 = dr2_int(sel_track[it].hwEta, sel_track[it].hwPhi, in.hwEta, in.hwPhi); 
+        if (dr2 <= DR2MAX) { // if dr is inside puppi cone
+            ap_uint<9> dr2short = dr2 >> 5; // reduce precision to make divide LUT cheaper
+            if (dr2short < DR2MIN_SHIFT) dr2short = DR2MIN_SHIFT;
+            term[it] = _lut_shift15_divide(sel_track[it].pt2_shift, dr2short);
+        } else {
+            term[it] = 0;
+        }
+    }
+    ap_uint<32> sum = 0;
+    for (int it = 0; it < NTRACK; ++it) {
+        #pragma HLS unroll
+        sum += term[it];
+    }
+    PuppiObj ret;
+    linpuppiSum2All(in, sum, ret);
+    return ret;
+}
+
+
+
+void linpuppiNoCrop_streamed(const TkObj track[NTRACK], z0_t pvZ0, const PFNeutralObj pfallne[NALLNEUTRALS], PuppiObj outallne[NALLNEUTRALS]) {
+    linpuppi_refobj sel_tracks[NTRACK];
+    for (unsigned int i = 0; i < NTRACK; ++i) {
+        sel_tracks[i] = linpuppi_prepare_track(track[i], pvZ0);
+    }
+
+    for (int in = 0; in < NALLNEUTRALS; ++in) {
+        outallne[in] = linpuppi_one(pfallne[in], sel_tracks);
+    }
+}
+
+
 #if defined(PACKING_DATA_SIZE) && defined(PACKING_NCHANN)
 void packed_fwdlinpuppi(const ap_uint<PACKING_DATA_SIZE> input[PACKING_NCHANN], ap_uint<PACKING_DATA_SIZE> output[PACKING_NCHANN]) {
     #pragma HLS ARRAY_PARTITION variable=input complete
     #pragma HLS ARRAY_PARTITION variable=output complete
+#ifdef HLS_pipeline_II
+ #if HLS_pipeline_II == 1
+    #pragma HLS pipeline II=1
+ #elif HLS_pipeline_II == 2
     #pragma HLS pipeline II=2
+ #elif HLS_pipeline_II == 3
+    #pragma HLS pipeline II=3
+ #elif HLS_pipeline_II == 4
+    #pragma HLS pipeline II=4
+ #elif HLS_pipeline_II == 6
+    #pragma HLS pipeline II=6
+ #endif
+#else
+    #pragma HLS pipeline II=2
+#endif
 
-    HadCaloObj caloin[NCALO]; PFNeutralObj pfselne[NNEUTRALS];
+    HadCaloObj caloin[NCALO]; PuppiObj pfselne[NNEUTRALS];
     #pragma HLS ARRAY_PARTITION variable=caloin complete
     #pragma HLS ARRAY_PARTITION variable=pfselne complete
     l1pf_pattern_unpack<NCALO,0>(input, caloin);
@@ -618,9 +769,23 @@ void packed_fwdlinpuppi(const ap_uint<PACKING_DATA_SIZE> input[PACKING_NCHANN], 
 void packed_fwdlinpuppiNoCrop(const ap_uint<PACKING_DATA_SIZE> input[PACKING_NCHANN], ap_uint<PACKING_DATA_SIZE> output[PACKING_NCHANN]) {
     #pragma HLS ARRAY_PARTITION variable=input complete
     #pragma HLS ARRAY_PARTITION variable=output complete
+#ifdef HLS_pipeline_II
+ #if HLS_pipeline_II == 1
+    #pragma HLS pipeline II=1
+ #elif HLS_pipeline_II == 2
     #pragma HLS pipeline II=2
+ #elif HLS_pipeline_II == 3
+    #pragma HLS pipeline II=3
+ #elif HLS_pipeline_II == 4
+    #pragma HLS pipeline II=4
+ #elif HLS_pipeline_II == 6
+    #pragma HLS pipeline II=6
+ #endif
+#else
+    #pragma HLS pipeline II=2
+#endif
 
-    HadCaloObj caloin[NCALO]; PFNeutralObj pfallne[NCALO];
+    HadCaloObj caloin[NCALO]; PuppiObj pfallne[NCALO];
     #pragma HLS ARRAY_PARTITION variable=caloin complete
     #pragma HLS ARRAY_PARTITION variable=pfallne complete
     l1pf_pattern_unpack<NCALO,0>(input, caloin);
@@ -631,9 +796,23 @@ void packed_fwdlinpuppiNoCrop(const ap_uint<PACKING_DATA_SIZE> input[PACKING_NCH
 void packed_linpuppi_chs(const ap_uint<PACKING_DATA_SIZE> input[PACKING_NCHANN], ap_uint<PACKING_DATA_SIZE> output[PACKING_NCHANN]) {
     #pragma HLS ARRAY_PARTITION variable=input complete
     #pragma HLS ARRAY_PARTITION variable=output complete
+#ifdef HLS_pipeline_II
+ #if HLS_pipeline_II == 1
+    #pragma HLS pipeline II=1
+ #elif HLS_pipeline_II == 2
     #pragma HLS pipeline II=2
+ #elif HLS_pipeline_II == 3
+    #pragma HLS pipeline II=3
+ #elif HLS_pipeline_II == 4
+    #pragma HLS pipeline II=4
+ #elif HLS_pipeline_II == 6
+    #pragma HLS pipeline II=6
+ #endif
+#else
+    #pragma HLS pipeline II=2
+#endif
 
-    z0_t pvZ0; PFChargedObj pfch[NTRACK], outallch[NTRACK];
+    z0_t pvZ0; PFChargedObj pfch[NTRACK]; PuppiObj outallch[NTRACK];
     #pragma HLS ARRAY_PARTITION variable=pfch complete
     #pragma HLS ARRAY_PARTITION variable=outallch complete
     linpuppi_chs_unpack_in(input, pvZ0, pfch);
@@ -644,9 +823,23 @@ void packed_linpuppi_chs(const ap_uint<PACKING_DATA_SIZE> input[PACKING_NCHANN],
 void packed_linpuppi(const ap_uint<PACKING_DATA_SIZE> input[PACKING_NCHANN], ap_uint<PACKING_DATA_SIZE> output[PACKING_NCHANN]) {
     #pragma HLS ARRAY_PARTITION variable=input complete
     #pragma HLS ARRAY_PARTITION variable=output complete
+#ifdef HLS_pipeline_II
+ #if HLS_pipeline_II == 1
+    #pragma HLS pipeline II=1
+ #elif HLS_pipeline_II == 2
     #pragma HLS pipeline II=2
+ #elif HLS_pipeline_II == 3
+    #pragma HLS pipeline II=3
+ #elif HLS_pipeline_II == 4
+    #pragma HLS pipeline II=4
+ #elif HLS_pipeline_II == 6
+    #pragma HLS pipeline II=6
+ #endif
+#else
+    #pragma HLS pipeline II=2
+#endif
 
-    TkObj track[NTRACK]; z0_t pvZ0; PFNeutralObj pfallne[NALLNEUTRALS], outselne[NNEUTRALS];
+    TkObj track[NTRACK]; z0_t pvZ0; PFNeutralObj pfallne[NALLNEUTRALS]; PuppiObj outselne[NNEUTRALS];
     #pragma HLS ARRAY_PARTITION variable=track complete
     #pragma HLS ARRAY_PARTITION variable=pfallne complete
     #pragma HLS ARRAY_PARTITION variable=outselne complete
@@ -658,9 +851,23 @@ void packed_linpuppi(const ap_uint<PACKING_DATA_SIZE> input[PACKING_NCHANN], ap_
 void packed_linpuppiNoCrop(const ap_uint<PACKING_DATA_SIZE> input[PACKING_NCHANN], ap_uint<PACKING_DATA_SIZE> output[PACKING_NCHANN]) {
     #pragma HLS ARRAY_PARTITION variable=input complete
     #pragma HLS ARRAY_PARTITION variable=output complete
+#ifdef HLS_pipeline_II
+ #if HLS_pipeline_II == 1
+    #pragma HLS pipeline II=1
+ #elif HLS_pipeline_II == 2
     #pragma HLS pipeline II=2
+ #elif HLS_pipeline_II == 3
+    #pragma HLS pipeline II=3
+ #elif HLS_pipeline_II == 4
+    #pragma HLS pipeline II=4
+ #elif HLS_pipeline_II == 6
+    #pragma HLS pipeline II=6
+ #endif
+#else
+    #pragma HLS pipeline II=2
+#endif
 
-    TkObj track[NTRACK]; z0_t pvZ0; PFNeutralObj pfallne[NALLNEUTRALS], outallne[NALLNEUTRALS];
+    TkObj track[NTRACK]; z0_t pvZ0; PFNeutralObj pfallne[NALLNEUTRALS]; PuppiObj outallne[NALLNEUTRALS];
     #pragma HLS ARRAY_PARTITION variable=track complete
     #pragma HLS ARRAY_PARTITION variable=pfallne complete
     #pragma HLS ARRAY_PARTITION variable=outallne complete
@@ -712,4 +919,54 @@ void linpuppi_unpack_pv(ap_uint<PACKING_DATA_SIZE> word, z0_t & pvZ0) {
     pvZ0 = word(z0_t::width-1,0);
 }
 
-#endif
+#if PACKING_DATA_SIZE == 64
+packed_linpuppi_refobj packed_linpuppi_prepare_track(const ap_uint<64> & track, const ap_uint<64> & pvZ0) {
+    #pragma HLS PIPELINE II=1
+    #pragma HLS LATENCY min=3
+    TkObj unpacked_track; l1pf_pattern_unpack_one(track, unpacked_track);
+    z0_t unpacked_pvZ0; linpuppi_unpack_pv(pvZ0, unpacked_pvZ0);
+    return linpuppi_refobj_pack(linpuppi_prepare_track(unpacked_track, unpacked_pvZ0));
+}
+
+ap_uint<64> packed_linpuppi_one(const ap_uint<64> & in, const packed_linpuppi_refobj sel_tracks[NTRACK]) {
+    #pragma HLS PIPELINE II=1
+    #pragma HLS ARRAY_PARTITION variable=sel_tracks complete
+    PFNeutralObj in_unpacked; l1pf_pattern_unpack_one(in, in_unpacked);
+    linpuppi_refobj sel_unpacked[NTRACK];
+    #pragma HLS ARRAY_PARTITION variable=sel_unpacked complete
+    for (int i = 0; i < NTRACK; ++i) sel_unpacked[i] = linpuppi_refobj_unpack(sel_tracks[i]);
+    return l1pf_pattern_pack_one(linpuppi_one(in_unpacked, sel_unpacked));
+}
+
+ap_uint<64> packed_linpuppi_chs_one(const ap_uint<64> & pfch, const ap_uint<64> & pvZ0) {
+    #pragma HLS PIPELINE II=1
+    PFChargedObj unpacked_pfch; l1pf_pattern_unpack_one(pfch, unpacked_pfch);
+    z0_t unpacked_pvZ0; linpuppi_unpack_pv(pvZ0, unpacked_pvZ0);
+    return l1pf_pattern_pack_one(linpuppi_chs_one(unpacked_pfch, unpacked_pvZ0));
+}
+
+void packed_linpuppiNoCrop_streamed(const TkObj track[NTRACK], z0_t pvZ0, const PFNeutralObj pfallne[NALLNEUTRALS], PuppiObj outallne[NALLNEUTRALS]) {
+
+    ap_uint<64> packedPV; linpuppi_pack_pv(pvZ0, packedPV);
+
+    packed_linpuppi_refobj sel_tracks[NTRACK];
+    for (int i = 0; i < NTRACK; ++i) {
+        sel_tracks[i] = packed_linpuppi_prepare_track(l1pf_pattern_pack_one(track[i]), packedPV);
+    }
+
+    for (int i = 0; i < NALLNEUTRALS; ++i) {
+        l1pf_pattern_unpack_one(packed_linpuppi_one(l1pf_pattern_pack_one(pfallne[i]), sel_tracks), outallne[i]);
+    }
+    
+}
+
+void packed_linpuppi_chs_streamed(z0_t pvZ0, const PFChargedObj pfch[NTRACK], PuppiObj outallch[NTRACK]) {
+    ap_uint<64> packedPV; linpuppi_pack_pv(pvZ0, packedPV);
+    for (int i = 0; i < NTRACK; ++i) {
+        l1pf_pattern_unpack_one( packed_linpuppi_chs_one(l1pf_pattern_pack_one(pfch[i]), packedPV), outallch[i] );
+    }
+}
+
+#endif // packing == 64
+
+#endif // packing

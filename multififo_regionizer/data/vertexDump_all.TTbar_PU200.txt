@@ -1,0 +1,198 @@
+event 1 28 4487
+vertices 1
+vertex z0      +71 sum      453
+event 1 28 4483
+vertices 1
+vertex z0     +151 sum      386
+event 1 28 4489
+vertices 1
+vertex z0       -2 sum      498
+event 1 28 4525
+vertices 1
+vertex z0      -51 sum      509
+event 1 28 4533
+vertices 1
+vertex z0       +4 sum      416
+event 1 28 4543
+vertices 1
+vertex z0      +42 sum      529
+event 1 28 4567
+vertices 1
+vertex z0      +47 sum      550
+event 1 28 4579
+vertices 1
+vertex z0      +30 sum      424
+event 1 28 4614
+vertices 1
+vertex z0      -72 sum      179
+event 1 29 4654
+vertices 1
+vertex z0      +24 sum      545
+event 1 29 4673
+vertices 1
+vertex z0      -10 sum      913
+event 1 29 4671
+vertices 1
+vertex z0      -23 sum      383
+event 1 29 4682
+vertices 1
+vertex z0      -65 sum      228
+event 1 29 4692
+vertices 1
+vertex z0      +65 sum      296
+event 1 29 4694
+vertices 1
+vertex z0      +12 sum      852
+event 1 29 4698
+vertices 1
+vertex z0     +150 sum      390
+event 1 29 4714
+vertices 1
+vertex z0       +9 sum      471
+event 1 29 4741
+vertices 1
+vertex z0      -50 sum      258
+event 1 29 4750
+vertices 1
+vertex z0      +28 sum      323
+event 1 29 4771
+vertices 1
+vertex z0       -5 sum      435
+event 1 29 4775
+vertices 1
+vertex z0      -10 sum      415
+event 1 29 4780
+vertices 1
+vertex z0      +48 sum      270
+event 1 29 4794
+vertices 1
+vertex z0     +122 sum      793
+event 1 30 4821
+vertices 1
+vertex z0      +95 sum      344
+event 1 30 4833
+vertices 1
+vertex z0      +46 sum      358
+event 1 30 4846
+vertices 1
+vertex z0     -106 sum      582
+event 1 30 4882
+vertices 1
+vertex z0      -71 sum      499
+event 1 30 4912
+vertices 1
+vertex z0       +9 sum     1095
+event 1 30 4913
+vertices 1
+vertex z0      -27 sum      759
+event 1 30 4920
+vertices 1
+vertex z0      +36 sum      865
+event 1 30 4937
+vertices 1
+vertex z0     +156 sum      297
+event 1 30 4953
+vertices 1
+vertex z0      +88 sum      540
+event 1 30 4957
+vertices 1
+vertex z0     -182 sum      590
+event 1 109 17939
+vertices 1
+vertex z0      -76 sum      377
+event 1 109 17977
+vertices 1
+vertex z0     +151 sum      348
+event 1 109 18045
+vertices 1
+vertex z0      -31 sum      675
+event 1 109 18042
+vertices 1
+vertex z0      +22 sum      300
+event 1 109 18059
+vertices 1
+vertex z0      -83 sum      453
+event 1 109 18072
+vertices 1
+vertex z0      -11 sum      445
+event 1 109 18074
+vertices 1
+vertex z0      +60 sum      675
+event 1 109 18077
+vertices 1
+vertex z0     +106 sum      315
+event 1 109 18084
+vertices 1
+vertex z0     +111 sum      380
+event 1 110 18097
+vertices 1
+vertex z0      +57 sum      714
+event 1 110 18164
+vertices 1
+vertex z0     -107 sum      433
+event 1 110 18169
+vertices 1
+vertex z0      -65 sum      344
+event 1 110 18187
+vertices 1
+vertex z0      -56 sum      353
+event 1 110 18189
+vertices 1
+vertex z0      +44 sum      546
+event 1 110 18199
+vertices 1
+vertex z0      +71 sum      461
+event 1 110 18218
+vertices 1
+vertex z0      -30 sum      590
+event 1 110 18215
+vertices 1
+vertex z0     +102 sum      402
+event 1 110 18221
+vertices 1
+vertex z0       -2 sum      222
+event 1 110 18232
+vertices 1
+vertex z0       +2 sum     1193
+event 1 110 18234
+vertices 1
+vertex z0      +11 sum     1483
+event 1 110 18240
+vertices 1
+vertex z0      -32 sum      452
+event 1 110 18242
+vertices 1
+vertex z0       +3 sum      634
+event 1 110 18257
+vertices 1
+vertex z0     +131 sum      326
+event 1 110 18253
+vertices 1
+vertex z0       -4 sum      778
+event 1 111 18279
+vertices 1
+vertex z0      -36 sum      366
+event 1 111 18271
+vertices 1
+vertex z0      -47 sum      321
+event 1 111 18327
+vertices 1
+vertex z0      +31 sum      783
+event 1 111 18351
+vertices 1
+vertex z0       -9 sum      311
+event 1 111 18382
+vertices 1
+vertex z0      +16 sum      105
+event 1 111 18385
+vertices 1
+vertex z0      -59 sum      335
+event 1 111 18401
+vertices 1
+vertex z0      +96 sum      318
+event 1 111 18403
+vertices 1
+vertex z0      +43 sum      200
+event 1 111 18418
+vertices 1
+vertex z0     +134 sum      247

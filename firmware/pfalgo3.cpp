@@ -139,8 +139,8 @@ void tk2calo_caloalgo(const HadCaloObj calo[NCALO], const pt_t sumtk[NCALO], con
             #endif
         }
         pfout[icalo].hwPt  = calopt;
-        pfout[icalo].hwEta = calopt ? calo[icalo].hwEta : etaphi_t(0);
-        pfout[icalo].hwPhi = calopt ? calo[icalo].hwPhi : etaphi_t(0);
+        pfout[icalo].hwEta = calopt ? calo[icalo].hwEta : eta_t(0);
+        pfout[icalo].hwPhi = calopt ? calo[icalo].hwPhi : phi_t(0);
         pfout[icalo].hwId  = calopt ? PID_Neutral : 0;
     }
 }
@@ -183,8 +183,8 @@ void tk2em_elealgo(const ap_uint<NEMCALO> em_track_link_bit[NTRACK], const bool 
 void tk2em_photons(const EmCaloObj calo[NEMCALO], const pt_t photonPt[NEMCALO], PFNeutralObj pfout[NSELCALO]) {
     for (int icalo = 0; icalo < NEMCALO; ++icalo) {
         pfout[icalo].hwPt  = photonPt[icalo];
-        pfout[icalo].hwEta = photonPt[icalo] ? calo[icalo].hwEta : etaphi_t(0);
-        pfout[icalo].hwPhi = photonPt[icalo] ? calo[icalo].hwPhi : etaphi_t(0);
+        pfout[icalo].hwEta = photonPt[icalo] ? calo[icalo].hwEta : eta_t(0);
+        pfout[icalo].hwPhi = photonPt[icalo] ? calo[icalo].hwPhi : phi_t(0);
         pfout[icalo].hwId  = photonPt[icalo] ? PID_Photon : 0;
         #ifndef __SYNTHESIS__
         if (gdebug_ && photonPt[icalo]) printf("HW emcalo %2d pt %7d promoted to a photon with pt %7d\n", icalo, int(calo[icalo].hwPt), int(photonPt[icalo]));
@@ -353,7 +353,23 @@ void pfalgo3(const EmCaloObj emcalo[NEMCALO], const HadCaloObj hadcalo[NCALO], c
 void packed_pfalgo3(const ap_uint<PACKING_DATA_SIZE> input[PACKING_NCHANN], ap_uint<PACKING_DATA_SIZE> output[PACKING_NCHANN]) {
     #pragma HLS ARRAY_PARTITION variable=input complete
     #pragma HLS ARRAY_PARTITION variable=output complete
+#ifdef HLS_pipeline_II
+ #if HLS_pipeline_II == 1
+    #pragma HLS pipeline II=1
+ #elif HLS_pipeline_II == 2
     #pragma HLS pipeline II=2
+ #elif HLS_pipeline_II == 3
+    #pragma HLS pipeline II=3
+ #elif HLS_pipeline_II == 4
+    #pragma HLS pipeline II=4
+ #elif HLS_pipeline_II == 6
+    #pragma HLS pipeline II=6
+ #endif
+#else
+    #pragma HLS pipeline II=2
+#endif
+
+    // ---------------------------------------------------------------
 
     EmCaloObj emcalo[NEMCALO]; HadCaloObj hadcalo[NCALO]; TkObj track[NTRACK]; MuObj mu[NMU]; 
     PFChargedObj outch[NTRACK]; PFNeutralObj outpho[NPHOTON], outne[NSELCALO]; PFChargedObj outmu[NMU];

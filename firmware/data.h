@@ -2,12 +2,17 @@
 #define FIRMWARE_DATA_H
 
 #include <ap_int.h>
+#include <cassert>
 
 typedef ap_int<16> pt_t;
-typedef ap_int<10>  etaphi_t;
+typedef ap_int<10>  eta_t;
+typedef ap_int<10>  phi_t;
+typedef ap_int<12>  glbeta_t;
+typedef ap_int<11>  glbphi_t;
 typedef ap_int<5>  vtx_t;
 typedef ap_uint<3>  particleid_t;
 typedef ap_int<10> z0_t;  // 40cm / 0.1
+typedef ap_uint<9> puppiWgt_t; // 256 = 1.0 
 typedef ap_uint<14> tk2em_dr_t;
 typedef ap_uint<14> tk2calo_dr_t;
 typedef ap_uint<10> em2calo_dr_t;
@@ -17,10 +22,10 @@ enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=
 
 // DEFINE MULTIPLICITIES
 #if defined(REG_HGCal)
-    #define NTRACK 25
+    #define NTRACK 30
     #define NCALO 20
     #define NMU 4
-    #define NSELCALO 15
+    #define NSELCALO 20
     #define NALLNEUTRALS NSELCALO
     // dummy
     #define NEMCALO 1
@@ -107,16 +112,22 @@ enum PID { PID_Charged=0, PID_Neutral=1, PID_Photon=2, PID_Electron=3, PID_Muon=
     #define PACKING_NCHANN    42
 #elif defined(BOARD_VCU118)
     #define PACKING_DATA_SIZE 64
-    #define PACKING_NCHANN    96
+    #define PACKING_NCHANN    120
 #elif defined(BOARD_APD1)
     #define PACKING_DATA_SIZE 64
     #define PACKING_NCHANN    96
 #endif
 
 
+template<int N> struct ct_log2_ceil { enum { value = ct_log2_ceil<(N/2)+(N%2)>::value + 1 }; };
+template<> struct ct_log2_ceil<2> { enum { value = 1 }; };
+template<> struct ct_log2_ceil<1> { enum { value = 0 }; };
+
+
 struct CaloObj {
 	pt_t hwPt;
-	etaphi_t hwEta, hwPhi; // relative to the region center, at calo
+	eta_t hwEta; // relative to the region center, at calo
+	phi_t hwPhi; // relative to the region center, at calo
 };
 struct HadCaloObj : public CaloObj {
 	pt_t hwEmPt;
@@ -128,25 +139,31 @@ inline void clear(HadCaloObj & c) {
 
 struct EmCaloObj {
 	pt_t hwPt, hwPtErr;
-	etaphi_t hwEta, hwPhi; // relative to the region center, at calo
+	eta_t hwEta; // relative to the region center, at calo
+	phi_t hwPhi; // relative to the region center, at calo
 };
 inline void clear(EmCaloObj & c) {
     c.hwPt = 0; c.hwPtErr = 0; c.hwEta = 0; c.hwPhi = 0; 
 }
 
+
+
 struct TkObj {
 	pt_t hwPt, hwPtErr;
-	etaphi_t hwEta, hwPhi; // relative to the region center, at calo
+	eta_t hwEta; // relative to the region center, at calo
+	phi_t hwPhi; // relative to the region center, at calo
+	bool hwCharge; // 1 = positive, 0 = negative
 	z0_t hwZ0;
 	bool hwTightQuality;
 };
 inline void clear(TkObj & c) {
-    c.hwPt = 0; c.hwPtErr = 0; c.hwEta = 0; c.hwPhi = 0; c.hwZ0 = 0; c.hwTightQuality = 0;
+    c.hwPt = 0; c.hwPtErr = 0; c.hwEta = 0; c.hwPhi = 0; c.hwZ0 = 0; c.hwCharge = 0; c.hwTightQuality = 0;
 }
 
 struct MuObj {
 	pt_t hwPt, hwPtErr;
-	etaphi_t hwEta, hwPhi; // relative to the region center, at vtx(?)
+	eta_t hwEta; // relative to the region center, at calo
+	phi_t hwPhi; // relative to the region center, at calo
 };
 inline void clear(MuObj & c) {
     c.hwPt = 0; c.hwPtErr = 0; c.hwEta = 0; c.hwPhi = 0; 
@@ -155,7 +172,8 @@ inline void clear(MuObj & c) {
 
 struct PFChargedObj {
 	pt_t hwPt;
-	etaphi_t hwEta, hwPhi; // relative to the region center, at calo
+	eta_t hwEta; // relative to the region center, at calo
+	phi_t hwPhi; // relative to the region center, at calo
 	particleid_t hwId;
 	z0_t hwZ0;
 };
@@ -165,13 +183,78 @@ inline void clear(PFChargedObj & c) {
 
 struct PFNeutralObj {
 	pt_t hwPt;
-	etaphi_t hwEta, hwPhi; // relative to the region center, at calo
+	eta_t hwEta; // relative to the region center, at calo
+	phi_t hwPhi; // relative to the region center, at calo
 	particleid_t hwId;
-	pt_t hwPtPuppi;
 };
+
 inline void clear(PFNeutralObj & c) {
-    c.hwPt = 0; c.hwEta = 0; c.hwPhi = 0; c.hwId = 0; c.hwPtPuppi = 0;
+    c.hwPt = 0; c.hwEta = 0; c.hwPhi = 0; c.hwId = 0; 
 }
+
+struct PuppiObj {
+	pt_t hwPt;
+	eta_t hwEta; // relative to the region center, at calo
+	phi_t hwPhi; // relative to the region center, at calo
+	particleid_t hwId;
+	ap_uint<12> hwData;
+
+        inline z0_t hwZ0() const { 
+            #ifndef __SYNTHESIS__
+            assert(hwId == PID_Charged || hwId == PID_Electron || hwId == PID_Muon);
+            #endif
+            return z0_t(hwData(9,0)); 
+        }
+        inline void setHwZ0(z0_t z0) { 
+            #ifndef __SYNTHESIS__
+            assert(hwId == PID_Charged || hwId == PID_Electron || hwId == PID_Muon);
+            #endif
+            hwData(9,0) = z0(9,0); 
+        }
+        inline puppiWgt_t hwPuppiW() const { 
+            #ifndef __SYNTHESIS__
+            assert(hwId == PID_Neutral || hwId == PID_Photon);
+            #endif
+            return puppiWgt_t(hwData(8,0)); 
+        }
+        inline void setHwPuppiW(puppiWgt_t w) { 
+            #ifndef __SYNTHESIS__
+            assert(hwId == PID_Neutral || hwId == PID_Photon);
+            #endif
+            hwData(8,0) = w(8,0); 
+        }
+};
+inline void clear(PuppiObj & c) {
+    c.hwPt = 0; c.hwEta = 0; c.hwPhi = 0; c.hwId = 0; c.hwData = 0;
+}
+inline void fill(PuppiObj &out, const PFChargedObj &src) {
+    out.hwEta = src.hwEta;
+    out.hwPhi = src.hwPhi;
+    out.hwId  = src.hwId;
+    out.hwPt  = src.hwPt;
+    out.hwData = 0;
+    out.setHwZ0(src.hwZ0);
+}
+inline void fill(PuppiObj &out, const PFNeutralObj &src, pt_t puppiPt, puppiWgt_t puppiWgt) {
+    out.hwEta = src.hwEta;
+    out.hwPhi = src.hwPhi;
+    out.hwId  = src.hwId;
+    out.hwPt  = puppiPt;
+    out.hwData = 0;
+    out.setHwPuppiW(puppiWgt);
+}
+inline void fill(PuppiObj &out, const HadCaloObj &src, pt_t puppiPt, puppiWgt_t puppiWgt) {
+    out.hwEta = src.hwEta;
+    out.hwPhi = src.hwPhi;
+    out.hwId  = src.hwIsEM ? PID_Photon : PID_Neutral;
+    out.hwPt  = puppiPt;
+    out.hwData = 0;
+    out.setHwPuppiW(puppiWgt);
+}
+
+
+
+
 
 //TMUX
 #define NETA_TMUX 2

@@ -1,0 +1,224 @@
+event 1 28 4487
+muons 2
+muon ipt      178 ieta     -369 iphi     -435 icharge 0 iqual 12
+muon ipt        6 ieta     -548 iphi      -25 icharge 0 iqual 8
+event 1 28 4483
+muons 0
+event 1 28 4489
+muons 2
+muon ipt       20 ieta     +274 iphi     -523 icharge 1 iqual 12
+muon ipt       12 ieta     +404 iphi     +377 icharge 0 iqual 12
+event 1 28 4525
+muons 0
+event 1 28 4533
+muons 1
+muon ipt       16 ieta     -229 iphi     -608 icharge 0 iqual 4
+event 1 28 4543
+muons 0
+event 1 28 4567
+muons 0
+event 1 28 4579
+muons 1
+muon ipt        8 ieta     +546 iphi     +235 icharge 0 iqual 12
+event 1 28 4614
+muons 0
+event 1 29 4654
+muons 1
+muon ipt      230 ieta     +446 iphi     +342 icharge 0 iqual 12
+event 1 29 4673
+muons 1
+muon ipt        8 ieta     +533 iphi       +7 icharge 0 iqual 12
+event 1 29 4671
+muons 0
+event 1 29 4682
+muons 3
+muon ipt       28 ieta     -474 iphi     +662 icharge 1 iqual 12
+muon ipt       12 ieta     -369 iphi      +62 icharge 0 iqual 12
+muon ipt       16 ieta     -359 iphi      +55 icharge 0 iqual 4
+event 1 29 4692
+muons 2
+muon ipt      206 ieta     +349 iphi      -18 icharge 1 iqual 12
+muon ipt       38 ieta     -379 iphi     +617 icharge 1 iqual 12
+event 1 29 4694
+muons 3
+muon ipt       22 ieta     +331 iphi      -80 icharge 1 iqual 12
+muon ipt       12 ieta     +401 iphi     +237 icharge 1 iqual 12
+muon ipt       18 ieta     +302 iphi      -80 icharge 0 iqual 0
+event 1 29 4698
+muons 1
+muon ipt       42 ieta     +414 iphi      -25 icharge 0 iqual 8
+event 1 29 4714
+muons 0
+event 1 29 4741
+muons 0
+event 1 29 4750
+muons 1
+muon ipt       10 ieta     +401 iphi     -310 icharge 1 iqual 4
+event 1 29 4771
+muons 0
+event 1 29 4775
+muons 1
+muon ipt        8 ieta     -508 iphi     +645 icharge 1 iqual 12
+event 1 29 4780
+muons 3
+muon ipt       72 ieta     +391 iphi     +627 icharge 1 iqual 12
+muon ipt       56 ieta     +229 iphi     -323 icharge 1 iqual 4
+muon ipt        6 ieta     +528 iphi     -513 icharge 1 iqual 8
+event 1 29 4794
+muons 1
+muon ipt        8 ieta     +459 iphi       -5 icharge 0 iqual 4
+event 1 30 4821
+muons 6
+muon ipt      534 ieta     +349 iphi     -535 icharge 0 iqual 12
+muon ipt       18 ieta     -518 iphi     -660 icharge 0 iqual 12
+muon ipt       10 ieta     +476 iphi     +505 icharge 0 iqual 12
+muon ipt        8 ieta     +491 iphi     +290 icharge 1 iqual 12
+muon ipt       10 ieta     -444 iphi     -285 icharge 1 iqual 8
+muon ipt       10 ieta     -441 iphi      +20 icharge 0 iqual 4
+event 1 30 4833
+muons 2
+muon ipt      102 ieta     -174 iphi      +75 icharge 1 iqual 12
+muon ipt       38 ieta     +391 iphi      +42 icharge 0 iqual 12
+event 1 30 4846
+muons 0
+event 1 30 4882
+muons 2
+muon ipt       24 ieta     -334 iphi     -445 icharge 1 iqual 12
+muon ipt       24 ieta     -302 iphi     -443 icharge 1 iqual 0
+event 1 30 4912
+muons 1
+muon ipt       46 ieta      -15 iphi     -250 icharge 1 iqual 12
+event 1 30 4913
+muons 1
+muon ipt        8 ieta     -466 iphi     -233 icharge 0 iqual 12
+event 1 30 4920
+muons 0
+event 1 30 4937
+muons 2
+muon ipt       40 ieta     +464 iphi      -73 icharge 0 iqual 12
+muon ipt       18 ieta     -379 iphi     -570 icharge 0 iqual 12
+event 1 30 4953
+muons 0
+event 1 30 4957
+muons 1
+muon ipt       24 ieta     +528 iphi     -535 icharge 0 iqual 12
+event 1 109 17939
+muons 4
+muon ipt      310 ieta     +429 iphi     -425 icharge 0 iqual 12
+muon ipt       24 ieta     -229 iphi      -88 icharge 0 iqual 12
+muon ipt       20 ieta     -257 iphi      -93 icharge 1 iqual 4
+muon ipt       12 ieta     -548 iphi     +642 icharge 1 iqual 8
+event 1 109 17977
+muons 3
+muon ipt       92 ieta     -474 iphi     +307 icharge 1 iqual 12
+muon ipt      100 ieta     +229 iphi     -623 icharge 1 iqual 4
+muon ipt       62 ieta     -150 iphi      +37 icharge 0 iqual 12
+event 1 109 18045
+muons 1
+muon ipt       18 ieta     -132 iphi      -75 icharge 0 iqual 12
+event 1 109 18042
+muons 2
+muon ipt       16 ieta     +147 iphi     +497 icharge 0 iqual 12
+muon ipt       10 ieta     -536 iphi     -183 icharge 1 iqual 12
+event 1 109 18059
+muons 0
+event 1 109 18072
+muons 0
+event 1 109 18074
+muons 3
+muon ipt      102 ieta     +409 iphi      -43 icharge 1 iqual 12
+muon ipt       10 ieta     +528 iphi     +107 icharge 0 iqual 12
+muon ipt       20 ieta     +528 iphi       +0 icharge 0 iqual 8
+event 1 109 18077
+muons 0
+event 1 109 18084
+muons 4
+muon ipt      102 ieta     +516 iphi     -435 icharge 1 iqual 12
+muon ipt       22 ieta     -421 iphi     +310 icharge 1 iqual 12
+muon ipt        8 ieta     -474 iphi     -558 icharge 0 iqual 8
+muon ipt       10 ieta     -493 iphi     +445 icharge 1 iqual 4
+event 1 110 18097
+muons 3
+muon ipt       64 ieta      +37 iphi     -575 icharge 0 iqual 12
+muon ipt       16 ieta     +414 iphi     -668 icharge 1 iqual 12
+muon ipt       18 ieta     +411 iphi     +265 icharge 1 iqual 8
+event 1 110 18164
+muons 0
+event 1 110 18169
+muons 0
+event 1 110 18187
+muons 1
+muon ipt       34 ieta     +349 iphi     +232 icharge 0 iqual 12
+event 1 110 18189
+muons 2
+muon ipt       24 ieta      +37 iphi     -665 icharge 1 iqual 12
+muon ipt       18 ieta     +319 iphi     +677 icharge 0 iqual 12
+event 1 110 18199
+muons 2
+muon ipt       10 ieta     +553 iphi     -545 icharge 1 iqual 12
+muon ipt        6 ieta     -531 iphi     +565 icharge 0 iqual 8
+event 1 110 18218
+muons 5
+muon ipt      180 ieta     +302 iphi     -320 icharge 0 iqual 0
+muon ipt       64 ieta     +356 iphi     -318 icharge 0 iqual 12
+muon ipt       36 ieta     +501 iphi     -225 icharge 0 iqual 8
+muon ipt        8 ieta     -543 iphi     -633 icharge 1 iqual 12
+muon ipt        8 ieta     -498 iphi     +537 icharge 1 iqual 8
+event 1 110 18215
+muons 4
+muon ipt      488 ieta     +486 iphi     +605 icharge 0 iqual 12
+muon ipt       16 ieta     -431 iphi     -703 icharge 1 iqual 12
+muon ipt       10 ieta     +481 iphi     +167 icharge 0 iqual 12
+muon ipt        8 ieta     +496 iphi     -595 icharge 0 iqual 8
+event 1 110 18221
+muons 1
+muon ipt      100 ieta     +449 iphi     +285 icharge 1 iqual 12
+event 1 110 18232
+muons 2
+muon ipt       44 ieta     -234 iphi      -60 icharge 0 iqual 4
+muon ipt       18 ieta     -234 iphi      -70 icharge 1 iqual 12
+event 1 110 18234
+muons 1
+muon ipt       34 ieta     +274 iphi     +585 icharge 1 iqual 12
+event 1 110 18240
+muons 2
+muon ipt       26 ieta     +501 iphi     -283 icharge 0 iqual 12
+muon ipt       10 ieta     -548 iphi     +135 icharge 0 iqual 4
+event 1 110 18242
+muons 4
+muon ipt       90 ieta     +533 iphi     +265 icharge 1 iqual 12
+muon ipt       26 ieta     +117 iphi     +300 icharge 1 iqual 12
+muon ipt       10 ieta     +464 iphi     -675 icharge 0 iqual 12
+muon ipt       10 ieta     -451 iphi     +522 icharge 0 iqual 12
+event 1 110 18257
+muons 2
+muon ipt       10 ieta     -466 iphi      -88 icharge 0 iqual 8
+muon ipt        8 ieta     +528 iphi      +22 icharge 0 iqual 8
+event 1 110 18253
+muons 0
+event 1 111 18279
+muons 1
+muon ipt       12 ieta     +558 iphi     -183 icharge 1 iqual 8
+event 1 111 18271
+muons 2
+muon ipt       18 ieta     +511 iphi     -698 icharge 0 iqual 12
+muon ipt       10 ieta     +528 iphi     -368 icharge 0 iqual 12
+event 1 111 18327
+muons 3
+muon ipt       48 ieta     +224 iphi     -330 icharge 0 iqual 12
+muon ipt       28 ieta     +302 iphi     +490 icharge 0 iqual 12
+muon ipt       12 ieta     -404 iphi     -550 icharge 1 iqual 4
+event 1 111 18351
+muons 1
+muon ipt       20 ieta     +274 iphi     +580 icharge 0 iqual 12
+event 1 111 18382
+muons 0
+event 1 111 18385
+muons 0
+event 1 111 18401
+muons 1
+muon ipt      268 ieta      -72 iphi     +382 icharge 0 iqual 12
+event 1 111 18403
+muons 0
+event 1 111 18418
+muons 0

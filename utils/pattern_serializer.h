@@ -62,9 +62,11 @@ class PatternSerializer {
         PatternSerializer(const std::string &fname, unsigned int nmux=1, unsigned int nzero=0, bool zero_valid=true, unsigned int nprefix=0, unsigned int npostfix=0, const std::string &boardName = "Board L1PF") ;
         ~PatternSerializer() ;
         
-        void operator()(const Word event[PACKING_NCHANN]) ;
+        void operator()(const Word event[PACKING_NCHANN], bool valid=true) ;
+        void operator()(const Word event[PACKING_NCHANN], const bool valid[PACKING_NCHANN]) ;
     
         template<typename T> void print(const T & event, bool valid = true, unsigned int ifirst = 0, unsigned int stride = 1);
+        template<typename T, typename TV> void printv(const T & event, const TV & valid, unsigned int ifirst = 0, unsigned int stride = 1);
         
     protected:
         const std::string fname_;
@@ -101,8 +103,7 @@ class HumanReadablePatternSerializer {
         void dump_mu(const MuObj mu[NMU], unsigned int N = NMU) ;
         void dump_pf(unsigned int N, const char *label, const PFChargedObj outch[/*N*/]) ;
         void dump_pf(unsigned int N, const char *label, const PFNeutralObj outch[/*N*/]) ;
-        void dump_puppi(unsigned int N, const char *label, const PFChargedObj outpuppi[/*N*/]) ;
-        void dump_puppi(unsigned int N, const char *label, const PFNeutralObj outpuppi[/*N*/]) ;
+        void dump_puppi(unsigned int N, const char *label, const PuppiObj outpuppi[/*N*/]) ;
         bool startframe();
         void endframe();
     protected:

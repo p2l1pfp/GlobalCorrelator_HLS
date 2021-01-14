@@ -31,12 +31,12 @@ int main() {
     EmCaloObj emcalo[NEMCALO]; TkObj track[NTRACK]; MuObj mu[NMU]; z0_t hwZPV;
 
     // input/output PFPUPPI objects
-    PFNeutralObj outselne[NNEUTRALS];
-    PFNeutralObj outselne_ref[NNEUTRALS];
-    PFNeutralObj outselne_flt[NNEUTRALS];
-    PFNeutralObj outallne[NCALO];
-    PFNeutralObj outallne_ref_nocut[NCALO], outallne_ref[NCALO];
-    PFNeutralObj outallne_flt_nocut[NCALO], outallne_flt[NCALO];
+    PuppiObj outselne[NNEUTRALS];
+    PuppiObj outselne_ref[NNEUTRALS];
+    PuppiObj outselne_flt[NNEUTRALS];
+    PuppiObj outallne[NCALO];
+    PuppiObj outallne_ref_nocut[NCALO], outallne_ref[NCALO];
+    PuppiObj outallne_flt_nocut[NCALO], outallne_flt[NCALO];
 
 #if defined(PACKING_DATA_SIZE) && defined(PACKING_NCHANN)
     PatternSerializer serPatternsIn("fwlinpuppi_input_patterns.txt"), serPatternsOut("fwlinpuppi_output_patterns.txt");
